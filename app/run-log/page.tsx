@@ -67,8 +67,11 @@ export default function RunLogPage() {
   // Stats for current period
   const totalDist = runsByPeriod.reduce((s, r) => s + (r.distance_km || 0), 0);
   const totalTime = runsByPeriod.reduce((s, r) => s + r.duration_minutes, 0);
-  const avgDist = runsByPeriod.length > 0 ? totalDist / runsByPeriod.filter(r => r.distance_km).length : 0;
+  const runsWithDist = runsByPeriod.filter(r => r.distance_km);
+  const avgDist = runsWithDist.length > 0 ? totalDist / runsWithDist.length : 0;
   const avgTime = runsByPeriod.length > 0 ? totalTime / runsByPeriod.length : 0;
+  const paceSamples = runsByPeriod.filter(r => r.pace_min_km).map(r => r.pace_min_km!);
+  const avgPace = paceSamples.length > 0 ? paceSamples.reduce((a, b) => a + b) / paceSamples.length : 0;
 
   const runTypeCounts: Partial<Record<RunType, number>> = {};
   for (const r of runsByPeriod) {
@@ -170,10 +173,14 @@ export default function RunLogPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="stat-card">
           <div className="stat-value">{avgTime > 0 ? formatDuration(Math.round(avgTime)) : '—'}</div>
           <div className="stat-label">Avg Time</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{avgPace > 0 ? formatPaceMinKm(avgPace) : '—'}</div>
+          <div className="stat-label">Avg Pace</div>
         </div>
         <div className="stat-card">
           <div className="stat-value text-sm leading-tight pt-1">

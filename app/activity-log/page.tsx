@@ -9,6 +9,9 @@ import {
 import { formatDuration, formatDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
 import { activitiesToCsv, downloadCsv } from '@/lib/exportCsv';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+
+type ChartWindow = '30d' | '90d' | '6m' | '1y' | 'all';
 
 export default function ActivityLogPage() {
   const { user } = useAuth();
@@ -18,6 +21,8 @@ export default function ActivityLogPage() {
   const [editing, setEditing] = useState<Activity | null>(null);
   const [filterType, setFilterType] = useState<ExerciseType | ''>('');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [chartWindow, setChartWindow] = useState<ChartWindow>('30d');
+  const [showChart, setShowChart] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -36,7 +41,13 @@ export default function ActivityLogPage() {
   const past30 = activities.filter(a => a.date >= daysAgo(30).split('T')[0]);
   const totalActivities30 = past30.length;
   const totalKm30 = past30.reduce((s, a) => s + (a.distance_km || 0), 0);
+  const totalMins30 = past30.reduce((s, a) => s + a.duration_minutes, 0);
+  const avgMins30 = totalActivities30 > 0 ? Math.round(totalMins30 / totalActivities30) : 0;
   const totalIntensity30 = past30.reduce((s, a) => s + (a.intensity_minutes || 0), 0);
+
+  // Type breakdown for past 30 days
+  const byType: Partial<Record<ExerciseType, number>> = {};
+  for (const a of past30) byType[a.exercise_type] = (byType[a.exercise_type] || 0) + 1;
 
   const filtered = activities.filter(a => {
     const matchSearch = !search || a.name.toLowerCase().includes(search.toLowerCase());
@@ -45,6 +56,22 @@ export default function ActivityLogPage() {
   });
 
   const TYPES: ExerciseType[] = ['run', 'walk', 'sport', 'hiit', 'stretch', 'bike', 'swim', 'solo_fitness'];
+
+  // Chart data
+  const chartStart = chartWindow === '30d' ? daysAgo(30).split('T')[0]
+    : chartWindow === '90d' ? daysAgo(90).split('T')[0]
+    : chartWindow === '6m' ? daysAgo(182).split('T')[0]
+    : chartWindow === '1y' ? daysAgo(365).split('T')[0]
+    : '0000-01-01';
+  const chartActivities = activities.filter(a => a.date >= chartStart);
+  const grouped: Record<string, number> = {};
+  for (const a of [...chartActivities].sort((a, b) => a.date.localeCompare(b.date))) {
+    grouped[a.date] = (grouped[a.date] || 0) + 1;
+  }
+  const chartData = Object.entries(grouped).map(([date, count]) => ({
+    date: date.slice(5),
+    count,
+  }));
 
   if (loading) return <div className="text-[#64748B] text-sm">Loading...</div>;
 
@@ -64,24 +91,90 @@ export default function ActivityLogPage() {
         </button>
       </div>
 
-      {/* 30 day quick stats */}
-      <div className="card mb-5">
+      {/* 30-day stats */}
+      <div className="card mb-4">
         <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Past 30 Days</p>
-        <div className="flex gap-4 flex-wrap">
-          <div>
-            <span className="text-lg font-bold text-blue-400">{totalActivities30}</span>
-            <span className="text-xs text-[#64748B] ml-1">activities</span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div className="stat-card">
+            <div className="stat-value">{totalActivities30}</div>
+            <div className="stat-label">Activities</div>
           </div>
-          <div>
-            <span className="text-lg font-bold text-blue-400">{totalKm30.toFixed(1)}</span>
-            <span className="text-xs text-[#64748B] ml-1">km</span>
+          <div className="stat-card">
+            <div className="stat-value">{totalKm30.toFixed(1)}</div>
+            <div className="stat-label">km</div>
           </div>
-          <div>
-            <span className="text-lg font-bold text-blue-400">{totalIntensity30}</span>
-            <span className="text-xs text-[#64748B] ml-1">intensity mins</span>
+          <div className="stat-card">
+            <div className="stat-value">{formatDuration(avgMins30)}</div>
+            <div className="stat-label">Avg Activity Time</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{totalIntensity30}</div>
+            <div className="stat-label">Intensity Mins</div>
           </div>
         </div>
+
+        {/* Type breakdown */}
+        {Object.keys(byType).length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            {(Object.entries(byType) as [ExerciseType, number][])
+              .sort((a, b) => b[1] - a[1])
+              .map(([type, count]) => (
+                <div key={type} className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: EXERCISE_TYPE_COLORS[type] }} />
+                  <span className="text-xs text-[#94A3B8] flex-1">{EXERCISE_TYPE_LABELS[type]}</span>
+                  <div className="flex-1 bg-[#0F172A] rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="h-1.5 rounded-full"
+                      style={{ width: `${(count / totalActivities30) * 100}%`, background: EXERCISE_TYPE_COLORS[type] }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-white w-4 text-right">{count}</span>
+                </div>
+              ))}
+          </div>
+        )}
       </div>
+
+      {/* Chart */}
+      {activities.length > 1 && (
+        <div className="card mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() => setShowChart(v => !v)}
+              className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wide hover:text-white transition-colors"
+            >
+              {showChart ? '▼' : '▶'} Activity Chart
+            </button>
+            {showChart && (
+              <select
+                className="text-xs bg-[#0F172A] border border-[#334155] text-[#94A3B8] rounded px-2 py-1 outline-none"
+                value={chartWindow}
+                onChange={e => setChartWindow(e.target.value as ChartWindow)}
+              >
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="6m">Last 6 months</option>
+                <option value="1y">Last year</option>
+                <option value="all">All time</option>
+              </select>
+            )}
+          </div>
+          {showChart && (
+            <ResponsiveContainer width="100%" height={140}>
+              <LineChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                <XAxis dataKey="date" tick={{ fill: '#475569', fontSize: 10 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fill: '#475569', fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8, color: '#F1F5F9', fontSize: 12 }}
+                  formatter={(val) => [`${val} activities`, 'Count']}
+                />
+                <Line type="monotone" dataKey="count" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6', r: 3 }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex gap-2 mb-4 flex-wrap">
@@ -130,7 +223,6 @@ export default function ActivityLogPage() {
                 <span className="text-[#475569] text-xs ml-1">{isOpen ? '▲' : '▼'}</span>
               </div>
 
-              {/* Expanded detail */}
               {isOpen && (
                 <div className="mt-3 pt-3 border-t border-[#334155]">
                   <button
@@ -139,38 +231,38 @@ export default function ActivityLogPage() {
                   >
                     ✏️ Edit activity
                   </button>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                  <Detail label="Duration" value={formatDuration(a.duration_minutes)} />
-                  <Detail label="Effort" value={`${a.effort}/10`} />
-                  {a.distance_km && <Detail label="Distance" value={`${a.distance_km} km`} />}
-                  {a.pace_min_km && (
-                    <>
-                      <Detail label="Avg Pace" value={formatPaceMinKm(a.pace_min_km)} />
-                      <Detail label="Speed" value={formatSpeedKmh(a.pace_min_km)} />
-                      <Detail label="Pace (mi)" value={formatPaceMinMile(a.pace_min_km)} />
-                    </>
-                  )}
-                  {a.max_pace_min_km && (
-                    <>
-                      <Detail label="Max Pace" value={formatPaceMinKm(a.max_pace_min_km)} />
-                      <Detail label="Max Speed" value={formatSpeedKmh(a.max_pace_min_km)} />
-                    </>
-                  )}
-                  {a.avg_hr && <Detail label="Avg HR" value={`${a.avg_hr} bpm`} />}
-                  {a.max_hr && <Detail label="Max HR" value={`${a.max_hr} bpm`} />}
-                  {a.intensity_minutes && <Detail label="Intensity Mins" value={`${a.intensity_minutes}`} />}
-                  {a.notes && (
-                    <div className="col-span-2">
-                      <span className="text-xs text-[#64748B] font-medium">Notes</span>
-                      <p className="text-sm text-[#94A3B8] mt-0.5">{a.notes}</p>
-                    </div>
-                  )}
-                  {a.is_pb && a.pb_description && (
-                    <div className="col-span-2">
-                      <span className="text-xs text-yellow-500 font-medium">⭐ PB: {a.pb_description}</span>
-                    </div>
-                  )}
-                </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    <Detail label="Duration" value={formatDuration(a.duration_minutes)} />
+                    <Detail label="Effort" value={`${a.effort}/10`} />
+                    {a.distance_km && <Detail label="Distance" value={`${a.distance_km} km`} />}
+                    {a.pace_min_km && (
+                      <>
+                        <Detail label="Avg Pace" value={formatPaceMinKm(a.pace_min_km)} />
+                        <Detail label="Speed" value={formatSpeedKmh(a.pace_min_km)} />
+                        <Detail label="Pace (mi)" value={formatPaceMinMile(a.pace_min_km)} />
+                      </>
+                    )}
+                    {a.max_pace_min_km && (
+                      <>
+                        <Detail label="Max Pace" value={formatPaceMinKm(a.max_pace_min_km)} />
+                        <Detail label="Max Speed" value={formatSpeedKmh(a.max_pace_min_km)} />
+                      </>
+                    )}
+                    {a.avg_hr && <Detail label="Avg HR" value={`${a.avg_hr} bpm`} />}
+                    {a.max_hr && <Detail label="Max HR" value={`${a.max_hr} bpm`} />}
+                    {a.intensity_minutes && <Detail label="Intensity Mins" value={`${a.intensity_minutes}`} />}
+                    {a.notes && (
+                      <div className="col-span-2">
+                        <span className="text-xs text-[#64748B] font-medium">Notes</span>
+                        <p className="text-sm text-[#94A3B8] mt-0.5">{a.notes}</p>
+                      </div>
+                    )}
+                    {a.is_pb && a.pb_description && (
+                      <div className="col-span-2">
+                        <span className="text-xs text-yellow-500 font-medium">⭐ PB: {a.pb_description}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
