@@ -10,7 +10,7 @@ import { activitiesToCsv, downloadCsv } from '@/lib/exportCsv';
 
 type ChartMetric = 'distance' | 'duration' | 'pace' | 'count';
 
-type Period = 'all' | 'week' | '30d' | 'month';
+type Period = 'week' | '14d' | '30d' | 'month' | '3m' | 'year' | 'all';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -19,7 +19,7 @@ export default function RunLogPage() {
   const [runs, setRuns] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Activity | null>(null);
-  const [period, setPeriod] = useState<Period>('all');
+  const [period, setPeriod] = useState<Period>('week');
   const [filterRunType, setFilterRunType] = useState<RunType | ''>('');
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -44,15 +44,17 @@ export default function RunLogPage() {
   }, [user]);
 
   const weekStart = getStartOfWeek().split('T')[0];
-  const day30Start = daysAgo(30).split('T')[0];
 
   const runsByPeriod = runs.filter(r => {
     if (period === 'week') return r.date >= weekStart;
-    if (period === '30d') return r.date >= day30Start;
+    if (period === '14d') return r.date >= daysAgo(14).split('T')[0];
+    if (period === '30d') return r.date >= daysAgo(30).split('T')[0];
+    if (period === '3m') return r.date >= daysAgo(91).split('T')[0];
     if (period === 'month') {
       const d = new Date(r.date);
       return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     }
+    if (period === 'year') return new Date(r.date).getFullYear() === selectedYear;
     return true;
   });
 
@@ -75,9 +77,8 @@ export default function RunLogPage() {
 
   const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals'];
 
-  // Available years from data
+  // Years derived from actual run data, most recent first
   const years = [...new Set(runs.map(r => new Date(r.date).getFullYear()))].sort((a, b) => b - a);
-  if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
 
   if (loading) return <div className="text-[#64748B] text-sm">Loading...</div>;
 
@@ -98,8 +99,16 @@ export default function RunLogPage() {
       </div>
 
       {/* Period selector */}
-      <div className="flex gap-1.5 flex-wrap mb-4">
-        {([['all','All Time'],['week','This Week'],['30d','Past 30 Days'],['month','By Month']] as [Period, string][]).map(([val, label]) => (
+      <div className="flex gap-1.5 flex-wrap mb-3">
+        {([
+          ['week', 'This Week'],
+          ['14d', '14 Days'],
+          ['30d', '30 Days'],
+          ['month', 'Month'],
+          ['3m', '3 Months'],
+          ['year', 'Year'],
+          ['all', 'All Time'],
+        ] as [Period, string][]).map(([val, label]) => (
           <button
             key={val}
             onClick={() => setPeriod(val)}
@@ -112,15 +121,32 @@ export default function RunLogPage() {
         ))}
       </div>
 
-      {/* Month selector */}
+      {/* Month picker */}
       {period === 'month' && (
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-3">
           <select className="input flex-1" value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))}>
             {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
           </select>
           <select className="input w-24" value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))}>
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
+        </div>
+      )}
+
+      {/* Year picker */}
+      {period === 'year' && (
+        <div className="flex gap-1.5 flex-wrap mb-3">
+          {years.map(y => (
+            <button
+              key={y}
+              onClick={() => setSelectedYear(y)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                selectedYear === y ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
+              }`}
+            >
+              {y}
+            </button>
+          ))}
         </div>
       )}
 
