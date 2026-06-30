@@ -215,7 +215,7 @@ export default function ImportPage() {
 
       <div className="card flex flex-col gap-4">
         <div>
-          <label className="label">Select Garmin CSV file</label>
+          <label className="label">Select CSV file</label>
           <input
             type="file"
             accept=".csv"
