@@ -7,12 +7,14 @@ import {
   EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, RUN_TYPE_LABELS
 } from '@/types';
 import { formatDuration, formatDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
+import EditActivityModal from '@/components/EditActivityModal';
 
 export default function ActivityLogPage() {
   const { user } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [editing, setEditing] = useState<Activity | null>(null);
   const [filterType, setFilterType] = useState<ExerciseType | ''>('');
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -117,7 +119,14 @@ export default function ActivityLogPage() {
 
               {/* Expanded detail */}
               {isOpen && (
-                <div className="mt-3 pt-3 border-t border-[#334155] grid grid-cols-2 gap-x-4 gap-y-2">
+                <div className="mt-3 pt-3 border-t border-[#334155]">
+                  <button
+                    onClick={e => { e.stopPropagation(); setEditing(a); }}
+                    className="mb-3 px-3 py-1.5 rounded-lg bg-blue-600/20 border border-blue-600/40 text-blue-400 text-xs font-medium hover:bg-blue-600/30 transition-colors"
+                  >
+                    ✏️ Edit activity
+                  </button>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                   <Detail label="Duration" value={formatDuration(a.duration_minutes)} />
                   <Detail label="Effort" value={`${a.effort}/10`} />
                   {a.distance_km && <Detail label="Distance" value={`${a.distance_km} km`} />}
@@ -149,11 +158,27 @@ export default function ActivityLogPage() {
                     </div>
                   )}
                 </div>
+                </div>
               )}
             </div>
           );
         })}
       </div>
+
+      {editing && (
+        <EditActivityModal
+          activity={editing}
+          onClose={() => setEditing(null)}
+          onSaved={updated => {
+            setActivities(prev => prev.map(a => a.id === updated.id ? updated : a));
+            setEditing(null);
+          }}
+          onDeleted={id => {
+            setActivities(prev => prev.filter(a => a.id !== id));
+            setEditing(null);
+          }}
+        />
+      )}
     </div>
   );
 }

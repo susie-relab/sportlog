@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, RunType, RUN_TYPE_LABELS, RUN_TYPE_COLORS } from '@/types';
 import { formatDuration, formatDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo, getStartOfWeek } from '@/lib/utils';
+import EditActivityModal from '@/components/EditActivityModal';
 
 type Period = 'all' | 'week' | '30d' | 'month';
 
@@ -13,6 +14,7 @@ export default function RunLogPage() {
   const { user } = useAuth();
   const [runs, setRuns] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Activity | null>(null);
   const [period, setPeriod] = useState<Period>('all');
   const [filterRunType, setFilterRunType] = useState<RunType | ''>('');
   const [search, setSearch] = useState('');
@@ -195,7 +197,14 @@ export default function RunLogPage() {
               </div>
 
               {isOpen && (
-                <div className="mt-3 pt-3 border-t border-[#334155] grid grid-cols-2 gap-x-4 gap-y-2">
+                <div className="mt-3 pt-3 border-t border-[#334155]">
+                  <button
+                    onClick={e => { e.stopPropagation(); setEditing(r); }}
+                    className="mb-3 px-3 py-1.5 rounded-lg bg-blue-600/20 border border-blue-600/40 text-blue-400 text-xs font-medium hover:bg-blue-600/30 transition-colors"
+                  >
+                    ✏️ Edit activity
+                  </button>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                   <RDetail label="Duration" value={formatDuration(r.duration_minutes)} />
                   <RDetail label="Effort" value={`${r.effort}/10`} />
                   {r.distance_km && <RDetail label="Distance" value={`${r.distance_km} km`} />}
@@ -228,11 +237,27 @@ export default function RunLogPage() {
                     </div>
                   )}
                 </div>
+                </div>
               )}
             </div>
           );
         })}
       </div>
+
+      {editing && (
+        <EditActivityModal
+          activity={editing}
+          onClose={() => setEditing(null)}
+          onSaved={updated => {
+            setRuns(prev => prev.map(r => r.id === updated.id ? updated : r));
+            setEditing(null);
+          }}
+          onDeleted={id => {
+            setRuns(prev => prev.filter(r => r.id !== id));
+            setEditing(null);
+          }}
+        />
+      )}
     </div>
   );
 }
