@@ -106,7 +106,7 @@ export default function TrainingPlanPage() {
     );
   };
 
-  const hasGoals = (g: Goal) => g.target_runs || g.target_distance_km || g.target_minutes || g.target_activities;
+  const hasGoals = (g: Goal | undefined) => !!(g?.target_runs || g?.target_distance_km || g?.target_minutes || g?.target_activities);
 
   const activeTypeInfo = ACTIVITY_TYPES.find(t => t.value === activeType)!;
   const activePeriodInfo = PERIODS.find(p => p.value === activePeriod)!;
