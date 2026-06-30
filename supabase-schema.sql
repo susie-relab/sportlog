@@ -55,13 +55,14 @@ create table if not exists goals (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade not null,
   period text not null check (period in ('week','month','quarter','year')),
+  activity_type text not null default 'all',
   target_runs integer,
   target_distance_km numeric(8,2),
   target_minutes integer,
   target_activities integer,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  unique(user_id, period)
+  unique(user_id, period, activity_type)
 );
 
 alter table goals enable row level security;
@@ -70,3 +71,8 @@ create policy "Users can manage their own goals"
   on goals for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Migration: if goals table already exists, run these:
+-- alter table goals add column if not exists activity_type text not null default 'all';
+-- alter table goals drop constraint if exists goals_user_id_period_key;
+-- alter table goals add constraint goals_user_id_period_activity_type_key unique (user_id, period, activity_type);

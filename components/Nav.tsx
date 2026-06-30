@@ -9,11 +9,11 @@ const tabs = [
   { href: '/add', label: 'Add', icon: Plus },
   { href: '/activity-log', label: 'Log', icon: List },
   { href: '/run-log', label: 'Runs', icon: Footprints },
+  { href: '/training-plan', label: 'Plan', icon: Target },
   { href: '/dash', label: 'Dash', icon: LayoutDashboard },
   { href: '/total-stats', label: 'Stats', icon: TrendingUp },
   { href: '/pbs', label: "PB's", icon: Award },
   { href: '/notes', label: 'Notes', icon: BookOpen },
-  { href: '/training-plan', label: 'Plan', icon: Target },
   { href: '/export', label: 'Export', icon: Download },
 ];
 
