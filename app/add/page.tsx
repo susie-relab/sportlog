@@ -66,6 +66,12 @@ export default function AddPage() {
     return parseFloat(m || '0') + parseFloat(s || '0') / 60;
   };
 
+  const calcAutoPace = (distStr: string, durMins: number) => {
+    const dist = parseFloat(distStr);
+    if (!dist || dist <= 0 || durMins <= 0) return undefined;
+    return Math.round((durMins / dist) * 1000) / 1000;
+  };
+
   const handleSave = async () => {
     if (!name.trim()) return setError('Please enter an activity name.');
     if (!exerciseType) return setError('Please select an exercise type.');
@@ -86,7 +92,7 @@ export default function AddPage() {
       distance_km: distance ? parseFloat(distance) : null,
       notes: notes || null,
       intensity_minutes: intensityMins ? parseInt(intensityMins) : null,
-      pace_min_km: paceToDecimal(paceMin, paceSec),
+      pace_min_km: paceToDecimal(paceMin, paceSec) ?? calcAutoPace(distance, durationMinutes),
       max_pace_min_km: paceToDecimal(maxPaceMin, maxPaceSec),
       max_hr: maxHr ? parseInt(maxHr) : null,
       avg_hr: avgHr ? parseInt(avgHr) : null,

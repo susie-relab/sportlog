@@ -51,6 +51,11 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
     if (!m && !s) return undefined;
     return parseFloat(m || '0') + parseFloat(s || '0') / 60;
   };
+  const calcAutoPace = (distStr: string, durMins: number) => {
+    const dist = parseFloat(distStr);
+    if (!dist || dist <= 0 || durMins <= 0) return undefined;
+    return Math.round((durMins / dist) * 1000) / 1000;
+  };
 
   const accentColor = exerciseType === 'run' && runType
     ? RUN_TYPE_COLORS[runType]
@@ -75,7 +80,7 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
         distance_km: distance ? parseFloat(distance) : null,
         notes: notes || null,
         intensity_minutes: intensityMins ? parseInt(intensityMins) : null,
-        pace_min_km: paceToDecimal(paceMin, paceSec) ?? null,
+        pace_min_km: paceToDecimal(paceMin, paceSec) ?? calcAutoPace(distance, durationMinutes) ?? null,
         max_pace_min_km: paceToDecimal(maxPaceMin, maxPaceSec) ?? null,
         max_hr: maxHr ? parseInt(maxHr) : null,
         avg_hr: avgHr ? parseInt(avgHr) : null,
