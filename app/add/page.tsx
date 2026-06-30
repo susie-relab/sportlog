@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import {
@@ -42,6 +43,7 @@ export default function AddPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const { setDirty, showWarning, setShowWarning, pendingHref } = useDirtyForm();
+  const router = useRouter();
 
   const isDirty = !!(name || exerciseType || hours || mins || distance || notes || effort);
 
@@ -352,13 +354,16 @@ export default function AddPage() {
               <button onClick={() => setShowWarning(false)} className="btn-secondary flex-1">
                 Keep editing
               </button>
-              <a
-                href={pendingHref}
-                className="btn-primary flex-1 text-center"
-                onClick={() => { setShowWarning(false); setDirty(false); }}
+              <button
+                className="btn-primary flex-1"
+                onClick={() => {
+                  setShowWarning(false);
+                  setDirty(false);
+                  router.push(pendingHref);
+                }}
               >
                 Leave anyway
-              </a>
+              </button>
             </div>
           </div>
         </div>
