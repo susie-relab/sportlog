@@ -9,11 +9,31 @@ function parseGarminCSV(text: string): Record<string, string>[] {
   if (lines.length < 2) return [];
   const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
   return lines.slice(1).map(line => {
-    const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+    // Handle commas inside quoted fields
+    const values: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (const ch of line) {
+      if (ch === '"') { inQuotes = !inQuotes; }
+      else if (ch === ',' && !inQuotes) { values.push(current.trim()); current = ''; }
+      else { current += ch; }
+    }
+    values.push(current.trim());
     const row: Record<string, string> = {};
-    headers.forEach((h, i) => { row[h] = values[i] || ''; });
+    headers.forEach((h, i) => { row[h] = (values[i] || '').replace(/^"|"$/g, ''); });
     return row;
   });
+}
+
+function parseGarminDate(str: string): string | null {
+  if (!str) return null;
+  // NZ format: 29/06/2026 or 29/06/2026 10:30:00
+  const nz = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (nz) return `${nz[3]}-${nz[2].padStart(2,'0')}-${nz[1].padStart(2,'0')}`;
+  // ISO format: 2026-06-29 or 2026-06-29T10:30:00
+  const iso = str.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (iso) return iso[1];
+  return null;
 }
 
 function parseDuration(str: string): number {
@@ -33,12 +53,14 @@ function parsePace(str: string): number | undefined {
 
 function guessExerciseType(actType: string): ExerciseType {
   const t = actType.toLowerCase();
-  if (t.includes('run') || t.includes('running')) return 'run';
-  if (t.includes('cycling') || t.includes('bike') || t.includes('biking')) return 'bike';
+  if (t.includes('run') || t.includes('running') || t.includes('treadmill')) return 'run';
+  if (t.includes('cycling') || t.includes('bike') || t.includes('biking') || t.includes('cycle')) return 'bike';
   if (t.includes('swim')) return 'swim';
   if (t.includes('hiit') || t.includes('cardio')) return 'hiit';
-  if (t.includes('strength') || t.includes('fitness') || t.includes('workout')) return 'solo_fitness';
-  if (t.includes('yoga') || t.includes('stretch') || t.includes('flexibility')) return 'stretch';
+  if (t.includes('walk') || t.includes('hike') || t.includes('hiking')) return 'walk';
+  if (t.includes('yoga') || t.includes('stretch') || t.includes('flexibility') || t.includes('pilates')) return 'stretch';
+  if (t.includes('sport') || t.includes('soccer') || t.includes('football') || t.includes('tennis') || t.includes('basketball')) return 'sport';
+  if (t.includes('strength') || t.includes('fitness') || t.includes('workout') || t.includes('training') || t.includes('individual')) return 'solo_fitness';
   return 'solo_fitness';
 }
 
@@ -90,22 +112,22 @@ export default function ImportPage() {
     };
     const batch: ActivityInsert[] = rows.map(row => {
       const actType = row['Activity Type'] || row['activity_type'] || '';
-      const name = row['Activity Name'] || row['Title'] || row['name'] || 'Imported Activity';
+      const name = row['Title Name'] || row['Activity Name'] || row['Title'] || row['name'] || 'Imported Activity';
       const dateStr = row['Date'] || row['date'] || row['Start Time'] || '';
       const durationStr = row['Time'] || row['Moving Time'] || row['Elapsed Time'] || row['duration'] || '0';
-      const distKm = parseFloat(row['Distance'] || row['distance'] || '0') || undefined;
+      const distRaw = row['Distance'] || row['distance'] || '0';
+      const distKm = parseFloat(distRaw.replace(/[^0-9.]/g, '')) || undefined;
       const avgPaceStr = row['Avg Pace'] || row['Average Pace'] || '';
       const maxPaceStr = row['Best Pace'] || row['Max Pace'] || '';
       const avgHr = parseInt(row['Avg HR'] || row['Average Heart Rate'] || '0') || undefined;
       const maxHr = parseInt(row['Max HR'] || row['Max Heart Rate'] || '0') || undefined;
 
-      if (!dateStr) return null;
+      const date = parseGarminDate(dateStr);
+      if (!date) return null;
 
       const exerciseType = guessExerciseType(actType);
       const duration = parseDuration(durationStr);
       if (duration === 0) return null;
-
-      const date = dateStr.split(' ')[0].split('T')[0];
 
       return {
         user_id: user.id,
