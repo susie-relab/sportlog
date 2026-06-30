@@ -26,7 +26,7 @@ export default function RunLogPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [chartMetric, setChartMetric] = useState<ChartMetric>('distance');
-  const [showChart, setShowChart] = useState(true);
+  const [showChart, setShowChart] = useState(false);
   const [chartWindow, setChartWindow] = useState<'30d' | '90d' | '6m' | '1y' | 'all'>('90d');
 
   useEffect(() => {

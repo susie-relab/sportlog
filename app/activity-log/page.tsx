@@ -22,7 +22,7 @@ export default function ActivityLogPage() {
   const [filterType, setFilterType] = useState<ExerciseType | ''>('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [chartWindow, setChartWindow] = useState<ChartWindow>('30d');
-  const [showChart, setShowChart] = useState(true);
+  const [showChart, setShowChart] = useState(false);
 
   useEffect(() => {
     if (!user) return;

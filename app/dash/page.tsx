@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
 import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak } from '@/lib/utils';
+import Link from 'next/link';
 
 interface Goal {
   period: string;
@@ -35,7 +36,7 @@ function StatCard({ value, label, color = '#60A5FA' }: { value: string; label: s
 }
 
 export default function DashPage() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,9 +110,23 @@ export default function DashPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold text-white">{greeting()} 👋</h1>
-        <p className="text-[#64748B] text-sm mt-0.5">Here's your training at a glance</p>
+      <div className="flex items-start justify-between mb-5">
+        <div>
+          <h1 className="text-2xl font-bold text-white">{greeting()} 👋</h1>
+          <p className="text-[#64748B] text-sm mt-0.5">Here's your training at a glance</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Link href="/import" className="btn-secondary text-xs px-3 py-1.5">↑ Import</Link>
+          <Link href="/profile" className="w-8 h-8 rounded-full bg-[#1E293B] border border-[#334155] flex items-center justify-center text-[#94A3B8] hover:border-[#475569] hover:text-white transition-colors text-sm">
+            ⚙
+          </Link>
+          <button
+            onClick={signOut}
+            className="text-xs text-[#64748B] hover:text-white transition-colors px-2 py-1.5 rounded-lg border border-[#334155] hover:border-[#475569]"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
 
       {/* Streaks */}

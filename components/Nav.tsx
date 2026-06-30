@@ -69,10 +69,10 @@ export default function Nav() {
         )}
       </nav>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav — hide Import and Export tabs */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#1E293B] border-t border-[#334155] z-50">
         <div className="flex">
-          {tabs.map(({ href, label, icon: Icon }) => {
+          {tabs.filter(t => t.href !== '/import' && t.href !== '/export').map(({ href, label, icon: Icon }) => {
             const active = path === href || path.startsWith(href + '/');
             return (
               <Link
