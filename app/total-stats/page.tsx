@@ -282,9 +282,9 @@ export default function TotalStatsPage() {
       {/* Combined chart with metric toggle */}
       {activities.length > 0 && (
         <div className="card mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wide">Monthly</h2>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 flex-wrap">
               {METRIC_OPTIONS.map(m => (
                 <button
                   key={m.value}

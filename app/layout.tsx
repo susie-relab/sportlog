@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/Nav";
@@ -24,6 +24,11 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "SportLog — Exercise Tracker",
   description: "Personal exercise and run tracker",
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({
