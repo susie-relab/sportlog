@@ -7,16 +7,11 @@ import {
   EXERCISE_TYPE_LABELS, RUN_TYPE_LABELS,
   EXERCISE_TYPE_COLORS, RUN_TYPE_COLORS
 } from '@/types';
+import DistancePicker from '@/components/DistancePicker';
 
 const EXERCISE_TYPES: ExerciseType[] = ['run', 'walk', 'sport', 'hiit', 'stretch', 'bike', 'swim', 'solo_fitness'];
 const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals'];
 
-const DISTANCES = [
-  0.1, 0.2, 0.4, 0.5, 0.8, 1, 1.5, 1.6, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10,
-  11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 21.1, 22, 23, 24, 25, 26, 27,
-  28, 29, 30, 32, 35, 40, 42, 42.2, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
-  95, 100
-];
 
 function ColorDot({ color }: { color: string }) {
   return <span className="inline-block w-2.5 h-2.5 rounded-full mr-2" style={{ background: color }} />;
@@ -241,12 +236,7 @@ export default function AddPage() {
         {/* Distance */}
         <div>
           <label className="label">Distance (optional)</label>
-          <select className="input" value={distance} onChange={e => setDistance(e.target.value)}>
-            <option value="">— Select distance —</option>
-            {DISTANCES.map(d => (
-              <option key={d} value={d}>{d} km</option>
-            ))}
-          </select>
+          <DistancePicker value={distance} onChange={setDistance} />
         </div>
 
         {/* Pace */}
