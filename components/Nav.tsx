@@ -14,6 +14,7 @@ const tabs = [
   { href: '/total-stats', label: 'Stats', icon: TrendingUp },
   { href: '/pbs', label: "PB's", icon: Award },
   { href: '/notes', label: 'Notes', icon: BookOpen },
+  { href: '/import', label: 'Import', icon: Upload },
   { href: '/export', label: 'Export', icon: Download },
 ];
 
@@ -57,16 +58,6 @@ export default function Nav() {
               </Link>
             );
           })}
-          <Link
-            href="/import"
-            onClick={e => handleNavClick(e, '/import')}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              path === '/import' ? 'bg-blue-600 text-white' : 'text-[#94A3B8] hover:bg-[#334155] hover:text-white'
-            }`}
-          >
-            <Upload size={18} />
-            Import Data
-          </Link>
         </div>
         {user && (
           <div className="mt-4 pt-4 border-t border-[#334155]">
