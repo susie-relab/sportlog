@@ -4,7 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import {
   Activity, ExerciseType,
-  EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, RUN_TYPE_LABELS
+  EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, RUN_TYPE_LABELS,
+  EXERCISE_TYPE_ORDER,
 } from '@/types';
 import { formatDuration, formatDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
@@ -55,7 +56,7 @@ export default function ActivityLogPage() {
     return matchSearch && matchType;
   });
 
-  const TYPES: ExerciseType[] = ['run', 'walk', 'sport', 'hiit', 'stretch', 'bike', 'swim', 'solo_fitness'];
+  const TYPES = EXERCISE_TYPE_ORDER;
 
   // Chart data
   const chartStart = chartWindow === '30d' ? daysAgo(30).split('T')[0]
@@ -86,7 +87,7 @@ export default function ActivityLogPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-4 gap-2">
-        <h1 className="text-xl font-bold text-white">Activity Log</h1>
+        <h1 className="text-xl font-bold text-white">Exercise Log</h1>
         <button
           onClick={() => {
             const csv = activitiesToCsv(activities);
@@ -101,23 +102,15 @@ export default function ActivityLogPage() {
 
       {/* 30-day stats */}
       <div className="card mb-4">
-        <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Past 30 Days</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">30 Day Overview</p>
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="stat-card">
             <div className="stat-value">{totalActivities30}</div>
             <div className="stat-label">Activities</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{totalKm30.toFixed(1)}</div>
-            <div className="stat-label">km</div>
-          </div>
-          <div className="stat-card">
             <div className="stat-value">{formatDuration(avgMins30)}</div>
             <div className="stat-label">Avg Activity Time</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{totalIntensity30}</div>
-            <div className="stat-label">Intensity Mins</div>
           </div>
         </div>
 
@@ -151,7 +144,7 @@ export default function ActivityLogPage() {
               onClick={() => setShowChart(v => !v)}
               className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wide hover:text-white transition-colors"
             >
-              {showChart ? '▼' : '▶'} Activity Chart
+              {showChart ? '▼' : '▶'} Exercise Summary
             </button>
             {showChart && (
               <select

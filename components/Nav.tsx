@@ -54,7 +54,7 @@ export default function Nav() {
                 }`}
               >
                 <Icon size={18} />
-                {label === '14 Days' ? '14 Day Stats' : label === 'Log' ? 'Activity Log' : label === 'Runs' ? 'Run Log' : label === 'Plan' ? 'Training Plan' : label}
+                {label === '14 Days' ? '14 Day Stats' : label === 'Log' ? 'Exercise Log' : label === 'Runs' ? 'Run Log' : label === 'Plan' ? 'Training Plan' : label}
               </Link>
             );
           })}

@@ -91,6 +91,9 @@ create policy "Users can manage their own notes"
 
 create index if not exists notes_user_date on notes(user_id, date desc);
 
+-- Migration: add sub_type column to activities
+-- alter table activities add column if not exists sub_type text;
+
 -- Migration: if goals table already exists, run these:
 -- alter table goals add column if not exists activity_type text not null default 'all';
 -- alter table goals drop constraint if exists goals_user_id_period_key;

@@ -6,14 +6,15 @@ import { useAuth } from '@/components/AuthProvider';
 import {
   ExerciseType, RunType,
   EXERCISE_TYPE_LABELS, RUN_TYPE_LABELS,
-  EXERCISE_TYPE_COLORS, RUN_TYPE_COLORS
+  EXERCISE_TYPE_COLORS, RUN_TYPE_COLORS,
+  EXERCISE_TYPE_ORDER,
+  SportSubType, GymSubType, WaterSnowSubType, SwimSubType, FitnessSubType, BikeSubType, StretchSubType,
+  SPORT_SUB_LABELS, GYM_SUB_LABELS, WATER_SNOW_SUB_LABELS, SWIM_SUB_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS,
 } from '@/types';
 import DistancePicker from '@/components/DistancePicker';
 import { useDirtyForm } from '@/components/DirtyFormContext';
 
-const EXERCISE_TYPES: ExerciseType[] = ['run', 'walk', 'sport', 'hiit', 'stretch', 'bike', 'swim', 'solo_fitness'];
 const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals'];
-
 
 function ColorDot({ color }: { color: string }) {
   return <span className="inline-block w-2.5 h-2.5 rounded-full mr-2" style={{ background: color }} />;
@@ -24,6 +25,8 @@ export default function AddPage() {
   const [name, setName] = useState('');
   const [exerciseType, setExerciseType] = useState<ExerciseType | ''>('');
   const [runType, setRunType] = useState<RunType | ''>('');
+  const [subType, setSubType] = useState<string>('');
+  const [gymTypes, setGymTypes] = useState<string[]>([]);
   const [hours, setHours] = useState('');
   const [mins, setMins] = useState('');
   const [effort, setEffort] = useState<number | null>(null);
@@ -75,7 +78,6 @@ export default function AddPage() {
   const handleSave = async () => {
     if (!name.trim()) return setError('Please enter an activity name.');
     if (!exerciseType) return setError('Please select an exercise type.');
-    if (exerciseType === 'run' && !runType) return setError('Please select a run type.');
     if (durationMinutes <= 0) return setError('Please enter a valid duration.');
     if (!effort) return setError('Please select effort level.');
 
@@ -86,7 +88,8 @@ export default function AddPage() {
       user_id: user!.id,
       name: name.trim(),
       exercise_type: exerciseType,
-      run_type: exerciseType === 'run' ? runType : null,
+      run_type: exerciseType === 'run' ? runType || null : null,
+      sub_type: exerciseType === 'hiit' ? gymTypes.join(',') || null : subType || null,
       duration_minutes: durationMinutes,
       effort,
       distance_km: distance ? parseFloat(distance) : null,
@@ -108,7 +111,7 @@ export default function AddPage() {
     } else {
       setSuccess(true);
       // Reset form
-      setName(''); setExerciseType(''); setRunType(''); setHours(''); setMins('');
+      setName(''); setExerciseType(''); setRunType(''); setSubType(''); setGymTypes([]); setHours(''); setMins('');
       setEffort(null); setDistance(''); setNotes(''); setIntensityMins('');
       setPaceMin(''); setPaceSec(''); setMaxPaceMin(''); setMaxPaceSec('');
       setMaxHr(''); setAvgHr(''); setIsPb(false); setPbDesc('');
@@ -154,12 +157,12 @@ export default function AddPage() {
 
         {/* Exercise Type */}
         <div>
-          <label className="label">Exercise Type *</label>
+          <label className="label">Exercise Session *</label>
           <div className="grid grid-cols-2 gap-2">
-            {EXERCISE_TYPES.map(type => (
+            {EXERCISE_TYPE_ORDER.map(type => (
               <button
                 key={type}
-                onClick={() => { setExerciseType(type); setRunType(''); }}
+                onClick={() => { setExerciseType(type); setRunType(''); setSubType(''); setGymTypes([]); }}
                 className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium border transition-all text-left ${
                   exerciseType === type
                     ? 'border-2 text-white'
@@ -180,12 +183,12 @@ export default function AddPage() {
         {/* Run Type */}
         {exerciseType === 'run' && (
           <div>
-            <label className="label">Run Type *</label>
+            <label className="label">Run Type <span className="text-[#64748B]">(optional)</span></label>
             <div className="grid grid-cols-2 gap-2">
               {RUN_TYPES.map(type => (
                 <button
                   key={type}
-                  onClick={() => setRunType(type)}
+                  onClick={() => setRunType(runType === type ? '' : type)}
                   className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium border transition-all text-left ${
                     runType === type
                       ? 'border-2 text-white'
@@ -198,6 +201,103 @@ export default function AddPage() {
                 >
                   <ColorDot color={RUN_TYPE_COLORS[type]} />
                   {RUN_TYPE_LABELS[type]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sport subtype */}
+        {exerciseType === 'sport' && (
+          <div>
+            <label className="label">Sport Type <span className="text-[#64748B]">(optional)</span></label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(Object.keys(SPORT_SUB_LABELS) as SportSubType[]).map(t => (
+                <button key={t} onClick={() => setSubType(subType === t ? '' : t)}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${subType === t ? 'border-orange-500 bg-orange-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                  {SPORT_SUB_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Gym subtype — multi select */}
+        {exerciseType === 'hiit' && (
+          <div>
+            <label className="label">Workout Focus <span className="text-[#64748B]">(optional, pick multiple)</span></label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(Object.keys(GYM_SUB_LABELS) as GymSubType[]).map(t => {
+                const active = gymTypes.includes(t);
+                return (
+                  <button key={t} onClick={() => setGymTypes(active ? gymTypes.filter(x => x !== t) : [...gymTypes, t])}
+                    className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${active ? 'border-red-500 bg-red-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                    {GYM_SUB_LABELS[t]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {exerciseType === 'water_snow' && (
+          <div>
+            <label className="label">Activity <span className="text-[#64748B]">(optional)</span></label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(Object.keys(WATER_SNOW_SUB_LABELS) as WaterSnowSubType[]).map(t => (
+                <button key={t} onClick={() => setSubType(subType === t ? '' : t)}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${subType === t ? 'border-sky-500 bg-sky-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                  {WATER_SNOW_SUB_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {exerciseType === 'swim' && (
+          <div>
+            <label className="label">Swim Type <span className="text-[#64748B]">(optional)</span></label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(Object.keys(SWIM_SUB_LABELS) as SwimSubType[]).map(t => (
+                <button key={t} onClick={() => setSubType(subType === t ? '' : t)}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${subType === t ? 'border-cyan-500 bg-cyan-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                  {SWIM_SUB_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {exerciseType === 'solo_fitness' && (
+          <div>
+            <label className="label">Activity Type <span className="text-[#64748B]">(optional)</span></label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(Object.keys(FITNESS_SUB_LABELS) as FitnessSubType[]).map(t => (
+                <button key={t} onClick={() => setSubType(subType === t ? '' : t)}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${subType === t ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                  {FITNESS_SUB_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {exerciseType === 'bike' && (
+          <div>
+            <label className="label">Ride Type <span className="text-[#64748B]">(optional)</span></label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(Object.keys(BIKE_SUB_LABELS) as BikeSubType[]).map(t => (
+                <button key={t} onClick={() => setSubType(subType === t ? '' : t)}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${subType === t ? 'border-yellow-500 bg-yellow-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                  {BIKE_SUB_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {exerciseType === 'stretch' && (
+          <div>
+            <label className="label">Stretch Type <span className="text-[#64748B]">(optional)</span></label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(Object.keys(STRETCH_SUB_LABELS) as StretchSubType[]).map(t => (
+                <button key={t} onClick={() => setSubType(subType === t ? '' : t)}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${subType === t ? 'border-green-500 bg-green-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                  {STRETCH_SUB_LABELS[t]}
                 </button>
               ))}
             </div>
