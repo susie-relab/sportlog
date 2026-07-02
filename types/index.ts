@@ -79,7 +79,7 @@ export const SPORT_SUB_LABELS: Record<SportSubType, string> = {
 export const GYM_SUB_LABELS: Record<GymSubType, string> = {
   hiit_workout: 'HIIT', strength: 'Strength', conditioning: 'Conditioning',
   crossfit: 'CrossFit', hyrox: 'Hyrox', arms: 'Arms', legs: 'Legs',
-  back_shoulders: 'Back & Shoulders', core: 'Core', row_indoor: 'Row (Indoor)',
+  back_shoulders: 'Back & Shoulders', core: 'Core', row_indoor: 'Row Indoor',
   stair_climber: 'Stair Climber', ski_erg: 'Ski Erg',
 };
 export const WATER_SNOW_SUB_LABELS: Record<WaterSnowSubType, string> = {
