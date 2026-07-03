@@ -47,6 +47,10 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
   const weeksToGo = Math.max(0, plan.weeks - currentIdx);
   const goalDate = addDays(plan.start_date, plan.weeks * 7 - 1);
 
+  // If the plan doesn't start on a Monday, label the first week "Week 0".
+  const startsMonday = new Date(plan.start_date + 'T00:00:00').getDay() === 1;
+  const labelOffset = startsMonday ? 0 : -1;
+
   const currentWeek = data.weeks[currentIdx];
   const cwRuns = WEEKDAYS.filter(d => isRunSession(currentWeek.days[d]));
   const cwDone = cwRuns.filter(d => currentWeek.days[d].completed).length;
@@ -134,7 +138,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
             <div key={i} className="flex-1 h-1.5 rounded-full" style={{ background: currentWeek.days[d].completed ? '#22C55E' : '#293548' }} />
           ))}
         </div>
-        <p className="text-xs text-[#64748B]">Week {currentWeekNo} workouts completed: {cwDone} of {cwRuns.length}</p>
+        <p className="text-xs text-[#64748B]">Week {currentWeekNo + labelOffset} workouts completed: {cwDone} of {cwRuns.length}</p>
       </div>
 
       {/* Big progress card */}
@@ -153,7 +157,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
       </div>
 
       {/* Week table */}
-      <PlanWeekTable plan={data} currentWeek={currentWeekNo} onDayClick={(week, day) => setSelected({ week, day })} />
+      <PlanWeekTable plan={data} currentWeek={currentWeekNo} labelOffset={labelOffset} onDayClick={(week, day) => setSelected({ week, day })} />
 
       <RunTypeGlossary />
 

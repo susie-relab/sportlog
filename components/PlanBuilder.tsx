@@ -35,10 +35,20 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
   const [goalS, setGoalS] = useState(existing?.goal_time_seconds ? String(existing.goal_time_seconds % 60) : '');
   const [startKm, setStartKm] = useState(existing?.start_distance_km ? String(existing.start_distance_km) : '');
   const [startDate, setStartDate] = useState(existing?.start_date ?? new Date().toISOString().split('T')[0]);
+  const [lengthMode, setLengthMode] = useState<'weeks' | 'date'>('weeks');
+  const [endDate, setEndDate] = useState('');
 
   const [preview, setPreview] = useState(existing?.plan_data ?? null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // Effective weeks: from the slider, or computed from a goal end date.
+  const weeksFromDates = (() => {
+    if (!endDate) return null;
+    const days = Math.round((new Date(endDate + 'T00:00:00').getTime() - new Date(startDate + 'T00:00:00').getTime()) / 86400000);
+    return days > 0 ? Math.max(1, Math.ceil((days + 1) / 7)) : null;
+  })();
+  const effectiveWeeks = lengthMode === 'date' && weeksFromDates ? weeksFromDates : weeks;
 
   const toggleDay = (d: Weekday) => {
     setTrainDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
@@ -49,7 +59,7 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
     return {
       distance,
       customDistanceKm: distance === 'custom' ? parseFloat(customKm) || undefined : undefined,
-      level, weeks, daysPerWeek: daysMax, daysPerWeekMin: daysMin, trainDays,
+      level, weeks: effectiveWeeks, daysPerWeek: daysMax, daysPerWeekMin: daysMin, trainDays,
       goalTimeSeconds: goalSecs > 0 ? goalSecs : null,
       startDistanceKm: startKm ? parseFloat(startKm) : null,
     };
@@ -62,6 +72,10 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
     }
     if (distance === 'custom' && !(parseFloat(customKm) > 0)) {
       setError('Enter a custom distance in km.');
+      return;
+    }
+    if (lengthMode === 'date' && !weeksFromDates) {
+      setError('Pick an end date after the start date.');
       return;
     }
     setError('');
@@ -79,7 +93,7 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
       distance,
       custom_distance_km: distance === 'custom' ? (parseFloat(customKm) || 0) : 0,
       level,
-      weeks,
+      weeks: effectiveWeeks,
       days_per_week: daysMax,
       days_per_week_min: daysMin,
       train_days: trainDays,
@@ -143,10 +157,30 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
         <p className="text-xs text-[#64748B] mt-1.5">{LEVELS.find(l => l.value === level)!.desc}</p>
       </div>
 
-      {/* Weeks */}
+      {/* Length: weeks or end date */}
       <div>
-        <label className="label">Weeks: <span className="text-white font-bold">{weeks}</span></label>
-        <input type="range" min="4" max="16" value={weeks} onChange={e => setWeeks(parseInt(e.target.value))} className="w-full accent-blue-500" />
+        <label className="label">Plan length</label>
+        <div className="grid grid-cols-2 gap-1.5 mb-2">
+          <button onClick={() => setLengthMode('weeks')}
+            className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${lengthMode === 'weeks' ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+            By weeks
+          </button>
+          <button onClick={() => setLengthMode('date')}
+            className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${lengthMode === 'date' ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+            By goal date
+          </button>
+        </div>
+        {lengthMode === 'weeks' ? (
+          <div>
+            <span className="text-xs text-[#64748B]">Weeks: <span className="text-white font-bold">{weeks}</span></span>
+            <input type="range" min="4" max="16" value={weeks} onChange={e => setWeeks(parseInt(e.target.value))} className="w-full accent-blue-500" />
+          </div>
+        ) : (
+          <div>
+            <input type="date" className="input" value={endDate} min={startDate} onChange={e => setEndDate(e.target.value)} />
+            {weeksFromDates && <p className="text-xs text-[#64748B] mt-1">= {weeksFromDates} weeks</p>}
+          </div>
+        )}
       </div>
 
       {/* Runs per week — range or exact */}

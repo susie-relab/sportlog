@@ -223,12 +223,19 @@ function longRun(km: number, cfg: PlanConfig, isPeak: boolean): Session {
 function tempoRun(cfg: PlanConfig): Session {
   const hard = cfg.level === 'tough';
   if (chance(0.5)) {
+    // distance-based — labelled by the tempo volume (e.g. 2 km)
     const km = randInt(hard ? 3 : 1, hard ? 7 : 5);
-    return { type: 'tempo', title: 'Tempo Run', distanceKm: km + 2,
+    if (km >= 4 && chance(0.4)) {
+      const half = round(km / 2, 0.5);
+      return { type: 'tempo', title: 'Tempo Run', distanceKm: km,
+        detail: `1 km warm-up, 2 x ${half} km at a steady "comfortably hard" pace (short jog between), 1 km cooldown.` };
+    }
+    return { type: 'tempo', title: 'Tempo Run', distanceKm: km,
       detail: `1 km warm-up, ${km} km at a steady "comfortably hard" pace, 1 km cooldown.` };
   }
+  // time-based — labelled by total time (warm-up + tempo + cooldown)
   const min = pick(hard ? [20, 25, 30] : [10, 15, 20, 25]);
-  return { type: 'tempo', title: 'Tempo Run', timeMin: min + 10, distanceKm: round((min + 10) / 6, 0.5),
+  return { type: 'tempo', title: 'Tempo Run', timeMin: 10 + min + 5,
     detail: `10 min warm-up, ${min} min steady at "comfortably hard", 5 min cooldown.` };
 }
 
