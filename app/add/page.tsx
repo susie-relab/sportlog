@@ -49,6 +49,20 @@ export default function AddPage() {
   const [error, setError] = useState('');
   const { setDirty, showWarning, setShowWarning, pendingHref } = useDirtyForm();
   const router = useRouter();
+  const [planLink, setPlanLink] = useState<{ planId: string; week: number; day: string } | null>(null);
+
+  // Prefill from query params (e.g. clicking a session in a training plan)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get('title'); if (t) setName(t);
+    const type = params.get('type'); if (type) setExerciseType(type as ExerciseType);
+    const rt = params.get('runType'); if (rt) setRunType(rt as RunType);
+    const dist = params.get('distance'); if (dist) setDistance(dist);
+    const time = params.get('time');
+    if (time) { const m = parseInt(time); if (m > 0) { setHours(Math.floor(m / 60) ? String(Math.floor(m / 60)) : ''); setMins(m % 60 ? String(m % 60) : ''); } }
+    const planId = params.get('planId'), week = params.get('week'), day = params.get('day');
+    if (planId && week && day) setPlanLink({ planId, week: parseInt(week), day });
+  }, []);
 
   const isDirty = !!(name || exerciseType || hours || mins || distance || notes || effort);
 
@@ -86,7 +100,7 @@ export default function AddPage() {
     setSaving(true);
     setError('');
 
-    const { error: dbErr } = await supabase.from('activities').insert({
+    const { data: inserted, error: dbErr } = await supabase.from('activities').insert({
       user_id: user!.id,
       name: name.trim(),
       exercise_type: exerciseType,
@@ -105,7 +119,22 @@ export default function AddPage() {
       is_pb: isPb,
       pb_description: isPb ? pbDesc : null,
       date,
-    });
+    }).select('id').single();
+
+    // If this came from a training plan session, mark that day complete.
+    if (!dbErr && planLink) {
+      const { data: planRow } = await supabase.from('training_plans').select('plan_data').eq('id', planLink.planId).single();
+      if (planRow?.plan_data) {
+        const pd = planRow.plan_data;
+        const wk = pd.weeks.find((w: { weekNumber: number }) => w.weekNumber === planLink.week);
+        if (wk && wk.days[planLink.day]) {
+          wk.days[planLink.day].completed = true;
+          wk.days[planLink.day].completedActivityId = inserted?.id ?? null;
+          await supabase.from('training_plans').update({ plan_data: pd, updated_at: new Date().toISOString() }).eq('id', planLink.planId);
+        }
+      }
+      setPlanLink(null);
+    }
 
     setSaving(false);
 

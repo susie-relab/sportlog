@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
 import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak } from '@/lib/utils';
+import { PlanRecord, RUN_DISTANCE_LABELS, todaysSession, isRunSession, planSessionHref } from '@/lib/runPlanGenerator';
+import { SESSION_COLORS, sessionTarget } from '@/components/PlanWeekTable';
 import Link from 'next/link';
 
 interface Goal {
@@ -39,6 +41,7 @@ export default function DashPage() {
   const { user, signOut } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [plans, setPlans] = useState<PlanRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,12 +49,20 @@ export default function DashPage() {
     Promise.all([
       supabase.from('activities').select('*').eq('user_id', user.id).order('date', { ascending: false }),
       supabase.from('goals').select('*').eq('user_id', user.id),
-    ]).then(([{ data: acts }, { data: g }]) => {
+      supabase.from('training_plans').select('*').eq('user_id', user.id),
+    ]).then(([{ data: acts }, { data: g }, { data: p }]) => {
       setActivities((acts as Activity[]) || []);
       setGoals((g as Goal[]) || []);
+      setPlans((p as PlanRecord[]) || []);
       setLoading(false);
     });
   }, [user]);
+
+  // Today's scheduled sessions across active plans
+  const todayISO = new Date().toISOString().split('T')[0];
+  const todayPlanItems = plans
+    .map(p => ({ plan: p, today: todaysSession(p, todayISO) }))
+    .filter((x): x is { plan: PlanRecord; today: NonNullable<ReturnType<typeof todaysSession>> } => !!x.today);
 
   const now14 = daysAgo(14).split('T')[0];
   const last14 = activities.filter(a => a.date >= now14);
@@ -128,6 +139,36 @@ export default function DashPage() {
           </button>
         </div>
       </div>
+
+      {/* Today's Plan */}
+      {todayPlanItems.length > 0 && (
+        <div className="card mb-5">
+          <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wide mb-3">Today's Plan</h2>
+          <div className="flex flex-col gap-2">
+            {todayPlanItems.map(({ plan, today }) => {
+              const s = today.session;
+              const done = s.completed;
+              const runnable = isRunSession(s);
+              return (
+                <div key={plan.id} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[#293548] bg-[#0F172A]">
+                  <span className="w-1.5 h-9 rounded-full flex-shrink-0" style={{ background: SESSION_COLORS[s.type] }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-semibold truncate ${done ? 'text-[#64748B] line-through' : 'text-white'}`}>{s.title}</span>
+                      {done && <span className="text-green-400 text-xs">✓</span>}
+                    </div>
+                    <span className="text-xs text-[#64748B]">{RUN_DISTANCE_LABELS[plan.distance]}{sessionTarget(s) ? ` · ${sessionTarget(s)}` : ''}</span>
+                  </div>
+                  {runnable && !done && (
+                    <Link href={planSessionHref(s, plan.id, today.week, today.day)}
+                      className="btn-primary text-xs px-3 py-1.5 flex-shrink-0">Complete</Link>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Streaks */}
       <div className="grid grid-cols-2 gap-3 mb-5">

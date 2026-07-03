@@ -93,6 +93,36 @@ create policy "Users can manage their own notes"
 
 create index if not exists notes_user_date on notes(user_id, date desc);
 
+-- Training plans table (run plan builder)
+create table if not exists training_plans (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  plan_kind text not null default 'run',      -- 'run' (future: sport, etc.)
+  distance text not null,                       -- 5k/10k/half/marathon/keep_fit/speed/ultra_*/custom
+  custom_distance_km numeric(6,2) not null default 0, -- 0 for non-custom (keeps unique constraint reliable)
+  level text not null,                          -- relaxed/moderate/tough
+  weeks integer not null,
+  days_per_week integer not null,
+  train_days jsonb not null default '[]',       -- ['mon','wed',...]
+  goal_time_seconds integer,
+  start_distance_km numeric(6,2),
+  start_date date not null,
+  plan_data jsonb not null,                     -- generated weeks + per-day sessions w/ completed state
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  -- one saved plan per distance (and per custom distance)
+  unique(user_id, plan_kind, distance, custom_distance_km)
+);
+
+alter table training_plans enable row level security;
+
+create policy "Users can manage their own training plans"
+  on training_plans for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create index if not exists training_plans_user on training_plans(user_id, created_at desc);
+
 -- Migration: add sub_type column to activities
 -- alter table activities add column if not exists sub_type text;
 
