@@ -276,6 +276,21 @@ function longIntervals(): Session {
 }
 
 function sprintReps(cfg: PlanConfig): Session {
+  // Multi-block session (mixed distances + sport-specific phase plays).
+  if (chance(0.35)) {
+    const blockPool = [
+      `${randInt(4, 6)} x 50 m (30 sec rest, or go every 45 sec)`,
+      `${randInt(3, 4)} x 150 m (30 sec rest, or go every min)`,
+      `${randInt(3, 5)} x 80 m (run 20 m & back twice; 20 sec rest, or go every 40 sec)`,
+      `${randInt(4, 6)} x 100 m (full recovery between)`,
+      `${randInt(3, 4)} x 200 m (walk-back recovery)`,
+      `${randInt(2, 3)} x 1 min phase plays (mimic your movements and plays in your sport)`,
+      `${randInt(5, 8)} shuttle runs (5 m & back, 10 m & back, 15 m & back, 20 m & back)`,
+    ];
+    const blocks = pickN(blockPool, randInt(3, 4));
+    return { type: 'sprint_reps', title: 'Sprint Reps', distanceKm: round(blocks.length * 0.8 + 1.5, 0.5),
+      detail: '5 min warm-up\n' + blocks.map((b, i) => `Block ${i + 1}: ${b}`).join('\n') + '\n5 min cooldown' };
+  }
   const pool = [
     'shuttle runs (5 m & back, 10 m & back, 15 m & back, 20 m & back)',
     'pyramid runs (10 m, 20 m, 30 m, 20 m, 10 m)',
