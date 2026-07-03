@@ -403,14 +403,14 @@ export default function AddPage() {
           className="flex items-center gap-2 text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors py-1"
         >
           <span>{showMore ? '▼' : '▶'}</span>
-          {showMore ? 'Hide details' : 'More details (pace, HR, intensity, notes)'}
+          {showMore ? 'Hide optional details' : 'More optional details'}
         </button>
 
         {showMore && (
           <>
             {/* Pace */}
             <div>
-              <label className="label">Average Pace (optional) <span className="text-[#64748B]">min/km</span></label>
+              <label className="label">Average Pace <span className="text-[#64748B]">min/km</span></label>
               <div className="flex gap-2 items-center">
                 <input type="number" className="input" placeholder="Min" min="0" value={paceMin} onChange={e => setPaceMin(e.target.value)} />
                 <span className="text-[#64748B]">:</span>
@@ -419,7 +419,7 @@ export default function AddPage() {
             </div>
 
             <div>
-              <label className="label">Max Pace (optional) <span className="text-[#64748B]">min/km</span></label>
+              <label className="label">Max Pace <span className="text-[#64748B]">min/km</span></label>
               <div className="flex gap-2 items-center">
                 <input type="number" className="input" placeholder="Min" min="0" value={maxPaceMin} onChange={e => setMaxPaceMin(e.target.value)} />
                 <span className="text-[#64748B]">:</span>
@@ -430,41 +430,41 @@ export default function AddPage() {
             {/* HR */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="label">Avg Heart Rate (optional)</label>
+                <label className="label">Avg Heart Rate</label>
                 <input type="number" className="input" placeholder="bpm" value={avgHr} onChange={e => setAvgHr(e.target.value)} />
               </div>
               <div>
-                <label className="label">Max Heart Rate (optional)</label>
+                <label className="label">Max Heart Rate</label>
                 <input type="number" className="input" placeholder="bpm" value={maxHr} onChange={e => setMaxHr(e.target.value)} />
               </div>
             </div>
 
             {/* Intensity Minutes */}
             <div>
-              <label className="label">Intensity Minutes (optional)</label>
+              <label className="label">Intensity Minutes</label>
               <input type="number" className="input" placeholder="e.g. 25" value={intensityMins} onChange={e => setIntensityMins(e.target.value)} />
             </div>
 
             {/* Elevation Gain */}
             <div>
-              <label className="label">Elevation Gain (optional) <span className="text-[#64748B]">m</span></label>
+              <label className="label">Elevation Gain <span className="text-[#64748B]">m</span></label>
               <input type="number" className="input" placeholder="e.g. 120" min="0" value={elevationGain} onChange={e => setElevationGain(e.target.value)} />
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="label">Notes / Highlights (optional)</label>
-              <textarea
-                className="input"
-                placeholder="How did it go? Any highlights?"
-                rows={3}
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                style={{ resize: 'vertical' }}
-              />
             </div>
           </>
         )}
+
+        {/* Notes — always visible */}
+        <div>
+          <label className="label">Notes / Highlights (optional)</label>
+          <textarea
+            className="input"
+            placeholder="How did it go? Any highlights?"
+            rows={3}
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            style={{ resize: 'vertical' }}
+          />
+        </div>
 
         {/* PB */}
         <div>
