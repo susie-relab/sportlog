@@ -231,7 +231,13 @@ function tempoRun(cfg: PlanConfig): Session {
 }
 
 function fartlek(cfg: PlanConfig): Session {
-  if (chance(0.6)) {
+  const roll = rand();
+  if (roll < 0.25) {
+    // pyramid fartlek: 1-2-3-4-5-4-3-2-1 min fast with slow floats between
+    return { type: 'fartlek', title: 'Fartlek (Pyramid)', distanceKm: round(6.5, 0.5),
+      detail: '5:00 warm-up, then a pyramid:\n1 min fast / 1 min slow\n2 min fast / 2 min slow\n3 min fast / 2 min slow\n4 min fast / 2 min slow\n5 min fast / 2 min slow\n4 min fast / 2 min slow\n3 min fast / 2 min slow\n2 min fast / 2 min slow\n1 min fast / 1 min slow\n5:00 cooldown.' };
+  }
+  if (roll < 0.7) {
     const opts: [number, string, number][] = [
       [30, '30 sec', 20], [60, '1 min', 12], [90, '90 sec', 10], [120, '2 min', 8],
     ];
