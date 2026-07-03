@@ -311,6 +311,13 @@ function hillReps(cfg: PlanConfig): Session {
     return { type: 'hill_reps', title: 'Hill Repeats', distanceKm: round(reps * (hi / 1000) * 2 + 1.5, 0.5),
       detail: `${reps} x ${lo}–${hi} m uphill fast, jog/walk back down to recover.` };
   }
+  // long time-based hills with a big warm-up/cooldown, e.g. 3 x 3min
+  if (chance(0.3)) {
+    const reps = randInt(3, 5);
+    const t = pick(['2 min', '3 min', '4 min']);
+    return { type: 'hill_reps', title: 'Hill Repeats', distanceKm: round(reps * 0.6 + 3.5, 0.5),
+      detail: `10 min warm-up\n${reps} x ${t} hills at a strong effort, jog back down to recover\n10 min cooldown` };
+  }
   const opts = ['30 sec', '45–60 sec', '1 min'];
   const t = pick(opts);
   const reps = t === '30 sec' ? randInt(5, 12) : randInt(5, 8);
