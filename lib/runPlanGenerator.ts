@@ -37,6 +37,7 @@ export interface PlanWeek {
   weekNumber: number;
   phase: Phase;
   totalKm: number;
+  focus?: string; // one-line coaching note for the week
   days: Record<Weekday, Session>;
 }
 
@@ -71,21 +72,24 @@ export function finalDayLabel(distance: RunDistance, customKm?: number): string 
   }
 }
 
+export type PlanKind = 'run' | 'sport' | 'custom';
+
 /** A saved plan row from the `training_plans` table. */
 export interface PlanRecord {
   id: string;
   user_id: string;
-  plan_kind: 'run';
+  plan_kind: PlanKind;
   distance: RunDistance;
   custom_distance_km: number;
   level: PlanLevel;
   weeks: number;
-  days_per_week: number;      // max runs/week
-  days_per_week_min: number;  // min runs/week (equals max for an exact count)
+  days_per_week: number;      // max sessions/week
+  days_per_week_min: number;  // min sessions/week (equals max for an exact count)
   train_days: Weekday[];
   goal_time_seconds: number | null;
   start_distance_km: number | null;
   start_date: string;
+  name?: string | null;       // optional label (esp. sport/custom plans)
   plan_data: PlanData;
   created_at: string;
   updated_at?: string;
@@ -525,12 +529,32 @@ function applyFinalDay(plan: PlanData, cfg: PlanConfig) {
   lastWeek.totalKm = round(sumKm(lastWeek.days), 0.5);
 }
 
+// ---------- weekly focus notes ----------
+function weeklyFocus(week: PlanWeek, prev: PlanWeek | undefined, isLast: boolean, cfg: PlanConfig): string {
+  if (isLast) return cfg.distance === 'keep_fit' || cfg.distance === 'speed' ? 'Finish strong — you made it!' : 'Race week — trust your training and go for the PB.';
+  const longKm = Math.max(...WEEKDAYS.map(d => week.days[d].type === 'long' || week.days[d].type === 'trail' ? (week.days[d].distanceKm || 0) : 0));
+  const prevTotal = prev?.totalKm ?? 0;
+  const down = prev && week.totalKm < prevTotal - 1;
+  const biggestLong = prev ? longKm > Math.max(...WEEKDAYS.map(d => prev.days[d].distanceKm && (prev.days[d].type === 'long' || prev.days[d].type === 'trail') ? prev.days[d].distanceKm! : 0)) : true;
+  switch (week.phase) {
+    case 'Base': return 'Build the habit — keep the easy runs truly easy.';
+    case 'Build':
+      if (down) return 'Cut-back week — lighter load so your body absorbs the work.';
+      if (biggestLong && longKm) return `Endurance week — your biggest long run yet (${longKm} km).`;
+      return 'Steady build — a bit more volume than last week.';
+    case 'Peak':
+      return down ? 'Ease back a touch before the final push.' : 'Peak week — sharpen up with your hardest quality sessions.';
+    case 'Taper': return 'Taper — cut the volume, stay fresh, keep the legs snappy.';
+  }
+}
+
 // ---------- public API ----------
 export function generateRunPlan(cfg: PlanConfig): PlanData {
   const weeks: PlanWeek[] = [];
   for (let i = 0; i < cfg.weeks; i++) weeks.push(assignWeek(cfg, i));
   const plan: PlanData = { weeks };
   applyFinalDay(plan, cfg);
+  weeks.forEach((w, i) => { w.focus = weeklyFocus(w, weeks[i - 1], i === weeks.length - 1, cfg); });
   return plan;
 }
 

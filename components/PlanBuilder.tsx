@@ -34,7 +34,9 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
   const [goalM, setGoalM] = useState(existing?.goal_time_seconds ? String(Math.floor((existing.goal_time_seconds % 3600) / 60)) : '');
   const [goalS, setGoalS] = useState(existing?.goal_time_seconds ? String(existing.goal_time_seconds % 60) : '');
   const [startKm, setStartKm] = useState(existing?.start_distance_km ? String(existing.start_distance_km) : '');
-  const [startDate, setStartDate] = useState(existing?.start_date ?? new Date().toISOString().split('T')[0]);
+  const todayISO = new Date().toISOString().split('T')[0];
+  const tomorrowISO = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })();
+  const [startDate, setStartDate] = useState(existing?.start_date ?? tomorrowISO);
   const [lengthMode, setLengthMode] = useState<'weeks' | 'date'>('weeks');
   const [endDate, setEndDate] = useState('');
 
@@ -103,11 +105,10 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
       plan_data: preview,
       updated_at: new Date().toISOString(),
     };
-    const { data, error: dbErr } = await supabase
-      .from('training_plans')
-      .upsert(payload, { onConflict: 'user_id,plan_kind,distance,custom_distance_km' })
-      .select()
-      .single();
+    const q = existing
+      ? supabase.from('training_plans').update(payload).eq('id', existing.id).select().single()
+      : supabase.from('training_plans').insert(payload).select().single();
+    const { data, error: dbErr } = await q;
     setSaving(false);
     if (dbErr) { setError(dbErr.message); return; }
     onSaved(data as PlanRecord);
@@ -223,7 +224,13 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
       {/* Start date */}
       <div>
         <label className="label">Start date</label>
-        <input type="date" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} />
+        <div className="flex gap-2">
+          <input type="date" className="input flex-1" value={startDate} onChange={e => setStartDate(e.target.value)} />
+          <button type="button" onClick={() => setStartDate(todayISO)}
+            className={`px-3 rounded-lg text-sm font-semibold border transition-all flex-shrink-0 ${startDate === todayISO ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+            Today
+          </button>
+        </div>
       </div>
 
       {/* Optional inputs */}

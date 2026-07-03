@@ -108,11 +108,11 @@ create table if not exists training_plans (
   goal_time_seconds integer,
   start_distance_km numeric(6,2),
   start_date date not null,
+  name text,                                    -- optional user label (esp. sport/custom plans)
   plan_data jsonb not null,                     -- generated weeks + per-day sessions w/ completed state
   created_at timestamptz default now(),
-  updated_at timestamptz default now(),
-  -- one saved plan per distance (and per custom distance)
-  unique(user_id, plan_kind, distance, custom_distance_km)
+  updated_at timestamptz default now()
+  -- (multiple plans of any kind allowed; keyed by id)
 );
 
 alter table training_plans enable row level security;
@@ -126,6 +126,10 @@ create index if not exists training_plans_user on training_plans(user_id, create
 
 -- Migration: add days_per_week_min to training_plans (runs-per-week range)
 -- alter table training_plans add column if not exists days_per_week_min integer not null default 0;
+
+-- Migration: allow multiple plans of any kind + optional name
+-- alter table training_plans drop constraint if exists training_plans_user_id_plan_kind_distance_custom_distance_km_key;
+-- alter table training_plans add column if not exists name text;
 
 -- Migration: add sub_type column to activities
 -- alter table activities add column if not exists sub_type text;

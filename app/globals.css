@@ -146,3 +146,11 @@ select.input {
     padding: 0.875rem;
   }
 }
+
+/* Print: clean plan layout — hide app chrome + interactive controls */
+@media print {
+  nav, .plan-no-print { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+  .main-content { margin: 0 !important; padding: 0 !important; }
+  .card { border-color: #ccc !important; }
+}

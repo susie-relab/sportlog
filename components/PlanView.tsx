@@ -8,6 +8,9 @@ import {
 } from '@/lib/runPlanGenerator';
 import PlanWeekTable, { SESSION_COLORS, sessionTarget } from './PlanWeekTable';
 import RunTypeGlossary from './RunTypeGlossary';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+
+const PHASE_COLORS: Record<string, string> = { Base: '#3B82F6', Build: '#8B5CF6', Peak: '#F97316', Taper: '#22C55E' };
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr + 'T00:00:00');
@@ -33,6 +36,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
   const [copied, setCopied] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
+  const [viewAll, setViewAll] = useState(false);
 
   const data = plan.plan_data;
   const totalRuns = data.weeks.reduce((s, w) => s + WEEKDAYS.filter(d => isRunSession(w.days[d])).length, 0);
@@ -168,8 +172,42 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
         </div>
       </div>
 
+      {/* Weekly volume graph */}
+      {data.weeks.length > 1 && (
+        <div className="card plan-no-print">
+          <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Weekly Volume</p>
+          <ResponsiveContainer width="100%" height={110}>
+            <BarChart data={data.weeks.map(w => ({ label: w.weekNumber + labelOffset, km: w.totalKm, phase: w.phase, current: w.weekNumber === currentWeekNo }))} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+              <XAxis dataKey="label" tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} axisLine={false} />
+              <Tooltip contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8, color: '#F1F5F9', fontSize: 12 }} formatter={(v) => [`${v} km`, 'Volume']} labelFormatter={(l) => `Week ${l}`} cursor={{ fill: '#ffffff08' }} />
+              <Bar dataKey="km" radius={[3, 3, 0, 0]}>
+                {data.weeks.map((w, i) => (
+                  <Cell key={i} fill={PHASE_COLORS[w.phase]} opacity={w.weekNumber === currentWeekNo ? 1 : 0.55} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <div className="flex items-center justify-between plan-no-print">
+        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wide">{viewAll ? 'Full Plan' : `This Week (Week ${currentWeekNo + labelOffset})`}</h2>
+        <div className="flex gap-1.5">
+          <button onClick={() => setViewAll(false)} className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${!viewAll ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>This week</button>
+          <button onClick={() => setViewAll(true)} className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${viewAll ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>Full plan</button>
+        </div>
+      </div>
+
       {/* Week table */}
-      <PlanWeekTable plan={data} currentWeek={currentWeekNo} labelOffset={labelOffset} onDayClick={(week, day) => setSelected({ week, day })} />
+      <div className="plan-print-full">
+        <PlanWeekTable
+          plan={viewAll ? data : { weeks: data.weeks.filter(w => w.weekNumber === currentWeekNo) }}
+          currentWeek={currentWeekNo}
+          labelOffset={labelOffset}
+          onDayClick={(week, day) => setSelected({ week, day })}
+        />
+      </div>
 
       <RunTypeGlossary />
 
