@@ -57,6 +57,8 @@ export default function AddPage() {
     const t = params.get('title'); if (t) setName(t);
     const type = params.get('type'); if (type) setExerciseType(type as ExerciseType);
     const rt = params.get('runType'); if (rt) setRunType(rt as RunType);
+    const st = params.get('subType');
+    if (st) { if (type === 'hiit') setGymTypes([st]); else setSubType(st); }
     const dist = params.get('distance'); if (dist) setDistance(dist);
     const time = params.get('time');
     if (time) { const m = parseInt(time); if (m > 0) { setHours(Math.floor(m / 60) ? String(Math.floor(m / 60)) : ''); setMins(m % 60 ? String(m % 60) : ''); } }

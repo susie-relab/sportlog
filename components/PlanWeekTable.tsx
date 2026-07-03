@@ -1,5 +1,6 @@
 'use client';
 import { PlanData, PlanWeek, Session, SessionType, Weekday, WEEKDAYS, WEEKDAY_LABELS, WEEKDAY_SHORT } from '@/lib/runPlanGenerator';
+import { EXERCISE_TYPE_COLORS, ExerciseType } from '@/types';
 
 export const SESSION_COLORS: Record<SessionType, string> = {
   rest: '#475569',
@@ -14,7 +15,14 @@ export const SESSION_COLORS: Record<SessionType, string> = {
   sprint_reps: '#EC4899',
   hill_reps: '#14B8A6',
   trail: '#84CC16',
+  sport: '#3B82F6',
 };
+
+/** Colour for a session — sport/custom sessions use their exercise-type colour. */
+export function sessionColor(s: Session): string {
+  if (s.type === 'sport' && s.exerciseType) return EXERCISE_TYPE_COLORS[s.exerciseType as ExerciseType] || SESSION_COLORS.sport;
+  return SESSION_COLORS[s.type];
+}
 
 const PHASE_COLORS: Record<string, string> = {
   Base: '#3B82F6', Build: '#8B5CF6', Peak: '#F97316', Taper: '#22C55E',
@@ -35,7 +43,7 @@ interface Props {
 }
 
 function DayCell({ s, onClick, compact }: { s: Session; onClick?: () => void; compact?: boolean }) {
-  const color = SESSION_COLORS[s.type];
+  const color = sessionColor(s);
   const isRest = s.type === 'rest';
   const isCross = s.type === 'crosstrain';
   const muted = isRest || isCross;

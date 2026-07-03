@@ -6,7 +6,7 @@ import {
   PlanRecord, Session, Weekday, WEEKDAYS, WEEKDAY_LABELS, RUN_DISTANCE_LABELS,
   switchDifficulty, isRunSession, PlanConfig, planSessionHref,
 } from '@/lib/runPlanGenerator';
-import PlanWeekTable, { SESSION_COLORS, sessionTarget } from './PlanWeekTable';
+import PlanWeekTable, { sessionColor, sessionTarget } from './PlanWeekTable';
 import RunTypeGlossary from './RunTypeGlossary';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -39,6 +39,11 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
   const [viewAll, setViewAll] = useState(false);
 
   const data = plan.plan_data;
+  const isRun = plan.plan_kind === 'run';
+  const planTitle = isRun
+    ? `${RUN_DISTANCE_LABELS[plan.distance]}${plan.distance === 'custom' && plan.custom_distance_km ? ` (${plan.custom_distance_km} km)` : ''}`
+    : (plan.name || 'Custom Plan');
+  const noun = isRun ? 'RUN' : 'SESSION';
   const totalRuns = data.weeks.reduce((s, w) => s + WEEKDAYS.filter(d => isRunSession(w.days[d])).length, 0);
   const runsCompleted = data.weeks.reduce((s, w) => s + WEEKDAYS.filter(d => w.days[d].completed).length, 0);
   const kmDone = data.weeks.reduce((s, w) => s + WEEKDAYS.reduce((k, d) => k + (w.days[d].completed ? (w.days[d].distanceKm || 0) : 0), 0), 0);
@@ -128,7 +133,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const isRace = plan.distance !== 'keep_fit' && plan.distance !== 'speed';
+  const isRace = isRun && plan.distance !== 'keep_fit' && plan.distance !== 'speed';
 
   return (
     <div className="flex flex-col gap-5">
@@ -146,7 +151,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
         <h1 className="text-2xl font-extrabold text-white" style={{ fontFamily: 'var(--font-display)' }}>
           {weeksToGo} {weeksToGo === 1 ? 'Week' : 'Weeks'} to Go
         </h1>
-        <p className="text-[#64748B] text-sm mt-0.5">{RUN_DISTANCE_LABELS[plan.distance]} plan · {isRace ? `Goal day ${fmtNiceDate(goalDate)}` : 'Keep it rolling'}</p>
+        <p className="text-[#64748B] text-sm mt-0.5">{planTitle} · {isRace ? `Goal day ${fmtNiceDate(goalDate)}` : 'Keep it rolling'}</p>
 
         {/* segmented progress for current week */}
         <div className="flex gap-1.5 mt-4 mb-2">
@@ -160,20 +165,29 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
       {/* Big progress card */}
       <div className="card">
         <div className="text-3xl font-extrabold" style={{ fontFamily: 'var(--font-display)', color: '#5B7A76' }}>
-          {runsCompleted} {runsCompleted === 1 ? 'RUN' : 'RUNS'} COMPLETED
+          {runsCompleted} {noun}{runsCompleted === 1 ? '' : 'S'} COMPLETED
         </div>
-        <p className="text-sm font-semibold text-white mt-1">{RUN_DISTANCE_LABELS[plan.distance]}{plan.distance === 'custom' && plan.custom_distance_km ? ` (${plan.custom_distance_km} km)` : ''}</p>
+        <p className="text-sm font-semibold text-white mt-1">{planTitle}</p>
         {isRace && <p className="text-xs text-[#64748B]">Goal day: {fmtNiceDate(goalDate)}</p>}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
           <div className="stat-card"><div className="stat-value">{weeksToGo}</div><div className="stat-label">Weeks to Go</div></div>
-          <div className="stat-card"><div className="stat-value">{totalRuns - runsCompleted}</div><div className="stat-label">Runs Left</div></div>
-          <div className="stat-card"><div className="stat-value">{kmDone.toFixed(0)}</div><div className="stat-label">km Done</div></div>
-          <div className="stat-card"><div className="stat-value">{totalKm.toFixed(0)}</div><div className="stat-label">Total km</div></div>
+          <div className="stat-card"><div className="stat-value">{totalRuns - runsCompleted}</div><div className="stat-label">{isRun ? 'Runs' : 'Sessions'} Left</div></div>
+          {isRun ? (
+            <>
+              <div className="stat-card"><div className="stat-value">{kmDone.toFixed(0)}</div><div className="stat-label">km Done</div></div>
+              <div className="stat-card"><div className="stat-value">{totalKm.toFixed(0)}</div><div className="stat-label">Total km</div></div>
+            </>
+          ) : (
+            <>
+              <div className="stat-card"><div className="stat-value">{runsCompleted}</div><div className="stat-label">Done</div></div>
+              <div className="stat-card"><div className="stat-value">{totalRuns}</div><div className="stat-label">Total</div></div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Weekly volume graph */}
-      {data.weeks.length > 1 && (
+      {/* Weekly volume graph (run plans only) */}
+      {isRun && data.weeks.length > 1 && (
         <div className="card plan-no-print">
           <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Weekly Volume</p>
           <ResponsiveContainer width="100%" height={110}>
@@ -209,7 +223,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
         />
       </div>
 
-      <RunTypeGlossary />
+      {isRun && <RunTypeGlossary />}
 
       {/* Restart */}
       <div>
@@ -241,11 +255,11 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelected(null)} />
           <div className="relative w-full md:max-w-md bg-[#1E293B] border border-[#334155] rounded-t-2xl md:rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full" style={{ background: SESSION_COLORS[sel.type] }} />
+              <span className="w-2 h-2 rounded-full" style={{ background: sessionColor(sel) }} />
               <span className="text-xs text-[#64748B] uppercase tracking-wide">Week {selected.week} · {WEEKDAY_LABELS[selected.day]}</span>
             </div>
             <h3 className="text-lg font-bold text-white">{sel.title}</h3>
-            {sessionTarget(sel) && <p className="text-sm font-semibold mt-0.5" style={{ color: SESSION_COLORS[sel.type] }}>{sessionTarget(sel)}</p>}
+            {sessionTarget(sel) && <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(sel) }}>{sessionTarget(sel)}</p>}
             {sel.detail && <p className="text-sm text-[#94A3B8] mt-2 whitespace-pre-line leading-relaxed">{sel.detail}</p>}
 
             <div className="flex flex-col gap-2 mt-4">

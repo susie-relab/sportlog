@@ -5,7 +5,9 @@ import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
 import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak } from '@/lib/utils';
 import { PlanRecord, RUN_DISTANCE_LABELS, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS } from '@/lib/runPlanGenerator';
-import { SESSION_COLORS, sessionTarget } from '@/components/PlanWeekTable';
+import { sessionColor, sessionTarget } from '@/components/PlanWeekTable';
+
+const planLabel = (p: PlanRecord) => p.plan_kind === 'run' ? RUN_DISTANCE_LABELS[p.distance] : (p.name || 'Custom Plan');
 import Link from 'next/link';
 
 interface Goal {
@@ -176,13 +178,13 @@ export default function DashPage() {
               const runnable = isRunSession(s);
               return (
                 <div key={plan.id} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[#293548] bg-[#0F172A]">
-                  <span className="w-1.5 h-9 rounded-full flex-shrink-0" style={{ background: SESSION_COLORS[s.type] }} />
+                  <span className="w-1.5 h-9 rounded-full flex-shrink-0" style={{ background: sessionColor(s) }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-semibold truncate ${done ? 'text-[#64748B] line-through' : 'text-white'}`}>{s.title}</span>
                       {done && <span className="text-green-400 text-xs">✓</span>}
                     </div>
-                    <span className="text-xs text-[#64748B]">{RUN_DISTANCE_LABELS[plan.distance]}{sessionTarget(s) ? ` · ${sessionTarget(s)}` : ''}</span>
+                    <span className="text-xs text-[#64748B]">{planLabel(plan)}{sessionTarget(s) ? ` · ${sessionTarget(s)}` : ''}</span>
                   </div>
                   {runnable && !done && (
                     <Link href={planSessionHref(s, plan.id, today.week, today.day)}
@@ -195,13 +197,13 @@ export default function DashPage() {
             {/* Next run (upcoming) */}
             {nextRun && (
               <div className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[#293548] bg-[#0F172A]">
-                <span className="w-1.5 h-9 rounded-full flex-shrink-0" style={{ background: SESSION_COLORS[nextRun.next.session.type] }} />
+                <span className="w-1.5 h-9 rounded-full flex-shrink-0" style={{ background: sessionColor(nextRun.next.session) }} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-semibold text-[#64748B] uppercase">Next Run · {fmtDay(nextRun.next.dateISO)}</span>
                   </div>
                   <span className="text-sm font-semibold text-white truncate block">{nextRun.next.session.title}</span>
-                  <span className="text-xs text-[#64748B]">{RUN_DISTANCE_LABELS[nextRun.plan.distance]}{sessionTarget(nextRun.next.session) ? ` · ${sessionTarget(nextRun.next.session)}` : ''}</span>
+                  <span className="text-xs text-[#64748B]">{planLabel(nextRun.plan)}{sessionTarget(nextRun.next.session) ? ` · ${sessionTarget(nextRun.next.session)}` : ''}</span>
                 </div>
                 <Link href={planSessionHref(nextRun.next.session, nextRun.plan.id, nextRun.next.week, nextRun.next.day)}
                   className="btn-secondary text-xs px-3 py-1.5 flex-shrink-0">Log</Link>

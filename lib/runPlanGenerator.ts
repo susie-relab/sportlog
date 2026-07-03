@@ -17,11 +17,14 @@ export const WEEKDAY_SHORT: Record<Weekday, string> = {
 export type SessionType =
   | 'rest' | 'crosstrain'
   | 'easy' | 'recovery' | 'long' | 'tempo' | 'fartlek' | 'progression'
-  | 'long_intervals' | 'sprint_reps' | 'hill_reps' | 'trail';
+  | 'long_intervals' | 'sprint_reps' | 'hill_reps' | 'trail'
+  | 'sport'; // generic non-run session (sport / custom plans)
 
 export interface Session {
   type: SessionType;
   title: string;        // display heading, e.g. "Tempo Run"
+  exerciseType?: string;// for sport/custom sessions: an ExerciseType key
+  subType?: string;     // e.g. 'football', 'strength'
   distanceKm?: number;  // counted toward weekly total + shown
   timeMin?: number;     // if a time-based session
   detail: string;       // short description / structure text
@@ -43,6 +46,27 @@ export interface PlanWeek {
 
 export interface PlanData {
   weeks: PlanWeek[];
+  customConfig?: CustomConfig; // stored on custom plans so they can be edited/regenerated
+}
+
+/** One selected activity in a custom mix plan. */
+export interface CustomActivity {
+  exerciseType: string; // ExerciseType key ('run','sport','swim',...)
+  subType?: string;     // optional subtype key ('football','strength',...)
+  label: string;        // display name
+  quantity: number;     // sessions per week
+  durationMin?: number; // suggested duration range (minutes)
+  durationMax?: number;
+}
+
+export interface CustomConfig {
+  name?: string;
+  activities: CustomActivity[];
+  weeks: number;
+  daysPerWeek: number;
+  trainDays: Weekday[];
+  level: PlanLevel;
+  startDate: string;
 }
 
 export type RunDistance =
@@ -558,6 +582,65 @@ export function generateRunPlan(cfg: PlanConfig): PlanData {
   return plan;
 }
 
+// ---------- custom / sport mix plans ----------
+function customSessionFrom(act: CustomActivity): Session {
+  const dur = act.durationMin != null && act.durationMax != null
+    ? randInt(act.durationMin, act.durationMax)
+    : (act.durationMin ?? act.durationMax ?? undefined);
+  const durTxt = dur ? ` (${dur} min)` : '';
+  if (act.exerciseType === 'run') {
+    return { type: 'easy', exerciseType: 'run', title: act.label, timeMin: dur,
+      detail: `${act.label}${durTxt} — run at a comfortable pace.` };
+  }
+  return { type: 'sport', exerciseType: act.exerciseType, subType: act.subType, title: act.label, timeMin: dur,
+    detail: `${act.label}${durTxt}.` };
+}
+
+/**
+ * Build a custom mix plan. Expands each activity by its weekly quantity into a
+ * pool of sessions, then lays them across the training days. If the pool is
+ * larger than the days available, it cycles the leftovers into following weeks.
+ */
+export function generateCustomPlan(cfg: CustomConfig): PlanData {
+  // full weekly pool (one entry per session, respecting quantity)
+  const pool: CustomActivity[] = [];
+  for (const a of cfg.activities) for (let i = 0; i < Math.max(1, a.quantity); i++) pool.push(a);
+
+  const perWeek = Math.min(cfg.daysPerWeek, cfg.trainDays.length);
+  const available = orderTrainDays(cfg.trainDays);
+  const weeks: PlanWeek[] = [];
+  let cursor = 0; // position in the cycling pool
+
+  for (let w = 0; w < cfg.weeks; w++) {
+    // take the next `perWeek` sessions from the cycling pool
+    const picks: CustomActivity[] = [];
+    for (let i = 0; i < perWeek && pool.length; i++) {
+      picks.push(pool[cursor % pool.length]);
+      cursor++;
+    }
+    const sessions = picks.map(customSessionFrom);
+
+    const days: Partial<Record<Weekday, Session>> = {};
+    available.slice(0, perWeek).forEach((d, i) => { if (sessions[i]) days[d] = sessions[i]; });
+
+    // rest + crosstrain on the rest (exactly 1 rest day)
+    const rest = WEEKDAYS.filter(d => !days[d]);
+    const restChoice = rest[0];
+    for (const d of WEEKDAYS) if (!days[d]) days[d] = d === restChoice ? restDay() : crosstrain();
+
+    weeks.push({ weekNumber: w + 1, phase: 'Build', totalKm: 0, days: days as Record<Weekday, Session> });
+  }
+
+  // final day celebration
+  if (weeks.length) {
+    const last = weeks[weeks.length - 1];
+    const pbDay = (['sun', 'sat'].find(d => available.includes(d as Weekday)) as Weekday) ?? available[available.length - 1] ?? 'sun';
+    last.days[pbDay] = { type: 'sport', title: 'Congratulations — completed!', detail: 'You made it — nice work. Time to pick your next plan!', completed: false };
+  }
+
+  return { weeks, customConfig: cfg };
+}
+
 // ---------- difficulty switching ----------
 // Returns a harder or easier variant of a session, or the original when reset.
 export function switchDifficulty(session: Session, dir: 'easier' | 'harder' | 'reset', cfg: PlanConfig): Session {
@@ -594,9 +677,13 @@ export function sessionRunType(type: SessionType): string | null {
 export function planSessionHref(s: Session, planId: string, week: number, day: Weekday): string {
   const p = new URLSearchParams();
   p.set('title', s.title);
-  p.set('type', 'run');
-  const rt = sessionRunType(s.type);
-  if (rt) p.set('runType', rt);
+  const exType = s.type === 'sport' && s.exerciseType ? s.exerciseType : 'run';
+  p.set('type', exType);
+  if (exType === 'run') {
+    const rt = sessionRunType(s.type);
+    if (rt) p.set('runType', rt);
+  }
+  if (s.subType) p.set('subType', s.subType);
   if (s.distanceKm) p.set('distance', String(s.distanceKm));
   if (s.timeMin) p.set('time', String(s.timeMin));
   p.set('planId', planId);

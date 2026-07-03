@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { PlanRecord, RUN_DISTANCE_LABELS, WEEKDAYS, isRunSession } from '@/lib/runPlanGenerator';
 import PlanBuilder from '@/components/PlanBuilder';
+import CustomPlanBuilder from '@/components/CustomPlanBuilder';
 import PlanView from '@/components/PlanView';
 import GoalsPanel from '@/components/GoalsPanel';
 
@@ -15,13 +16,19 @@ function planProgress(p: PlanRecord) {
   return { runs, done };
 }
 
+function planTitle(p: PlanRecord) {
+  if (p.plan_kind === 'run') return `${RUN_DISTANCE_LABELS[p.distance]}${p.distance === 'custom' && p.custom_distance_km ? ` (${p.custom_distance_km} km)` : ''}`;
+  return p.name || 'Custom Plan';
+}
+
 export default function PlanPage() {
   const { user } = useAuth();
   const [mode, setMode] = useState<Mode>('plans');
   const [plans, setPlans] = useState<PlanRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<PlanRecord | null>(null);
-  const [building, setBuilding] = useState(false);
+  const [buildKind, setBuildKind] = useState<'run' | 'custom' | null>(null);
+  const [choosing, setChoosing] = useState(false);
   const [editing, setEditing] = useState<PlanRecord | null>(null);
 
   useEffect(() => {
@@ -38,7 +45,7 @@ export default function PlanPage() {
       const exists = prev.some(p => p.id === rec.id);
       return exists ? prev.map(p => p.id === rec.id ? rec : p) : [rec, ...prev];
     });
-    setBuilding(false);
+    setBuildKind(null);
     setEditing(null);
     setSelected(rec);
   };
@@ -49,13 +56,18 @@ export default function PlanPage() {
     setSelected(null);
   };
 
+  const cancelBuild = () => { setBuildKind(null); setEditing(null); };
+
   if (loading) return <div className="text-[#64748B] text-sm">Loading...</div>;
 
-  // Building / editing
-  if (building || editing) {
+  // Building / editing — pick the right builder by kind
+  const activeKind = editing ? (editing.plan_kind === 'run' ? 'run' : 'custom') : buildKind;
+  if (buildKind || editing) {
     return (
       <div className="max-w-2xl mx-auto">
-        <PlanBuilder existing={editing} onSaved={handleSaved} onCancel={() => { setBuilding(false); setEditing(null); }} />
+        {activeKind === 'custom'
+          ? <CustomPlanBuilder existing={editing} onSaved={handleSaved} onCancel={cancelBuild} />
+          : <PlanBuilder existing={editing} onSaved={handleSaved} onCancel={cancelBuild} />}
       </div>
     );
   }
@@ -75,6 +87,23 @@ export default function PlanPage() {
     );
   }
 
+  const chooseCard = (
+    <div className="card">
+      <p className="text-sm font-semibold text-white mb-3">What kind of plan?</p>
+      <div className="grid grid-cols-2 gap-2">
+        <button onClick={() => { setChoosing(false); setBuildKind('run'); }} className="py-4 rounded-lg border border-[#334155] hover:border-blue-500 text-white text-sm font-semibold transition-colors">
+          🏃 Run plan
+          <span className="block text-xs text-[#64748B] font-normal mt-1">5K → ultra, auto-generated</span>
+        </button>
+        <button onClick={() => { setChoosing(false); setBuildKind('custom'); }} className="py-4 rounded-lg border border-[#334155] hover:border-blue-500 text-white text-sm font-semibold transition-colors">
+          🎯 Custom mix
+          <span className="block text-xs text-[#64748B] font-normal mt-1">Any sports & activities</span>
+        </button>
+      </div>
+      <button onClick={() => setChoosing(false)} className="w-full mt-3 text-xs text-[#64748B] hover:text-white">Cancel</button>
+    </div>
+  );
+
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-xl font-bold text-white mb-4">Training Plan</h1>
@@ -93,37 +122,39 @@ export default function PlanPage() {
 
       {mode === 'goals' ? <GoalsPanel /> : (
         <div className="flex flex-col gap-4">
-          {plans.length === 0 ? (
+          {choosing && chooseCard}
+          {plans.length === 0 && !choosing ? (
             <div className="card text-center py-8">
               <p className="text-white font-semibold mb-1">No training plans yet</p>
-              <p className="text-[#64748B] text-sm mb-4">Build a custom run plan — pick a distance, difficulty, and how many weeks you've got.</p>
-              <button onClick={() => setBuilding(true)} className="btn-primary">+ Create a plan</button>
+              <p className="text-[#64748B] text-sm mb-4">Build an auto-generated run plan, or a custom mix of any sports and activities.</p>
+              <button onClick={() => setChoosing(true)} className="btn-primary">+ Create a plan</button>
             </div>
-          ) : (
+          ) : !choosing ? (
             <>
               <div className="flex items-center justify-between">
                 <p className="text-sm text-[#64748B]">{plans.length} saved plan{plans.length > 1 ? 's' : ''}</p>
-                <button onClick={() => setBuilding(true)} className="btn-primary text-sm px-4 py-2">+ New plan</button>
+                <button onClick={() => setChoosing(true)} className="btn-primary text-sm px-4 py-2">+ New plan</button>
               </div>
               {plans.map(p => {
                 const { runs, done } = planProgress(p);
                 const pct = runs > 0 ? Math.round((done / runs) * 100) : 0;
+                const noun = p.plan_kind === 'run' ? 'runs' : 'sessions';
                 return (
                   <button key={p.id} onClick={() => setSelected(p)}
                     className="card text-left hover:border-[#475569] transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-white">{RUN_DISTANCE_LABELS[p.distance]}{p.distance === 'custom' && p.custom_distance_km ? ` (${p.custom_distance_km} km)` : ''}</span>
-                      <span className="text-xs text-[#64748B] capitalize">{p.level} · {p.weeks} wks · {p.days_per_week_min && p.days_per_week_min > 0 && p.days_per_week_min !== p.days_per_week ? `${p.days_per_week_min}–${p.days_per_week}` : p.days_per_week}/wk</span>
+                    <div className="flex items-center justify-between mb-2 gap-2">
+                      <span className="font-bold text-white truncate">{planTitle(p)}</span>
+                      <span className="text-xs text-[#64748B] capitalize flex-shrink-0">{p.level} · {p.weeks} wks</span>
                     </div>
                     <div className="w-full bg-[#0F172A] rounded-full h-2 overflow-hidden">
                       <div className="h-2 rounded-full bg-green-500 transition-all" style={{ width: `${pct}%` }} />
                     </div>
-                    <p className="text-xs text-[#64748B] mt-1.5">{done} of {runs} runs completed</p>
+                    <p className="text-xs text-[#64748B] mt-1.5">{done} of {runs} {noun} completed</p>
                   </button>
                 );
               })}
             </>
-          )}
+          ) : null}
         </div>
       )}
     </div>
