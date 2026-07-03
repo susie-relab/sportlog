@@ -79,10 +79,8 @@ export default function DashPage() {
   };
 
   // This week's completion across active plans + whether today's sessions are done.
-  const weekAgg = todayPlanItems.reduce((acc, { plan }) => {
-    const daysSince = Math.floor((new Date(todayISO + 'T00:00:00').getTime() - new Date(plan.start_date + 'T00:00:00').getTime()) / 86400000);
-    const idx = Math.min(Math.max(0, Math.floor(daysSince / 7)), plan.weeks - 1);
-    const wk = plan.plan_data.weeks[idx];
+  const weekAgg = todayPlanItems.reduce((acc, { plan, today }) => {
+    const wk = plan.plan_data.weeks.find(w => w.weekNumber === today.week);
     if (wk) for (const d of WEEKDAYS) if (isRunSession(wk.days[d])) { acc.total++; if (wk.days[d].completed) acc.done++; }
     return acc;
   }, { done: 0, total: 0 });

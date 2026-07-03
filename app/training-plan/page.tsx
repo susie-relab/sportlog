@@ -11,8 +11,9 @@ import GoalsPanel from '@/components/GoalsPanel';
 type Mode = 'plans' | 'goals';
 
 function planProgress(p: PlanRecord) {
-  const runs = p.plan_data.weeks.reduce((s, w) => s + WEEKDAYS.filter(d => isRunSession(w.days[d])).length, 0);
-  const done = p.plan_data.weeks.reduce((s, w) => s + WEEKDAYS.filter(d => w.days[d].completed).length, 0);
+  const realWeeks = p.plan_data.weeks.filter(w => w.weekNumber > 0);
+  const runs = realWeeks.reduce((s, w) => s + WEEKDAYS.filter(d => isRunSession(w.days[d])).length, 0);
+  const done = realWeeks.reduce((s, w) => s + WEEKDAYS.filter(d => w.days[d].completed).length, 0);
   return { runs, done };
 }
 

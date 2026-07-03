@@ -4,19 +4,15 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import {
   PlanRecord, Session, Weekday, WEEKDAYS, WEEKDAY_LABELS, RUN_DISTANCE_LABELS,
-  switchDifficulty, isRunSession, PlanConfig, planSessionHref,
+  isRunSession, PlanConfig, planSessionHref, todaysSession, planEndDateISO,
 } from '@/lib/runPlanGenerator';
-import PlanWeekTable, { sessionColor, sessionTarget } from './PlanWeekTable';
+import PlanWeekTable, { sessionTarget } from './PlanWeekTable';
+import PlanDaySheet from './PlanDaySheet';
 import RunTypeGlossary from './RunTypeGlossary';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const PHASE_COLORS: Record<string, string> = { Base: '#3B82F6', Build: '#8B5CF6', Peak: '#F97316', Taper: '#22C55E' };
 
-function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
-}
 function fmtNiceDate(dateStr: string): string {
   const [y, m, d] = dateStr.split('-');
   return `${d}/${m}/${y}`;
@@ -44,32 +40,29 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
     ? `${RUN_DISTANCE_LABELS[plan.distance]}${plan.distance === 'custom' && plan.custom_distance_km ? ` (${plan.custom_distance_km} km)` : ''}`
     : (plan.name || 'Custom Plan');
   const noun = isRun ? 'RUN' : 'SESSION';
-  const totalRuns = data.weeks.reduce((s, w) => s + WEEKDAYS.filter(d => isRunSession(w.days[d])).length, 0);
-  const runsCompleted = data.weeks.reduce((s, w) => s + WEEKDAYS.filter(d => w.days[d].completed).length, 0);
-  const kmDone = data.weeks.reduce((s, w) => s + WEEKDAYS.reduce((k, d) => k + (w.days[d].completed ? (w.days[d].distanceKm || 0) : 0), 0), 0);
-  const totalKm = data.weeks.reduce((s, w) => s + w.totalKm, 0);
+  const realWeeks = data.weeks.filter(w => w.weekNumber > 0);
+  const totalRuns = realWeeks.reduce((s, w) => s + WEEKDAYS.filter(d => isRunSession(w.days[d])).length, 0);
+  const runsCompleted = realWeeks.reduce((s, w) => s + WEEKDAYS.filter(d => w.days[d].completed).length, 0);
+  const kmDone = realWeeks.reduce((s, w) => s + WEEKDAYS.reduce((k, d) => k + (w.days[d].completed ? (w.days[d].distanceKm || 0) : 0), 0), 0);
+  const totalKm = realWeeks.reduce((s, w) => s + w.totalKm, 0);
 
-  // current week from start date
   const today = new Date().toISOString().split('T')[0];
-  const daysSince = Math.floor((new Date(today + 'T00:00:00').getTime() - new Date(plan.start_date + 'T00:00:00').getTime()) / 86400000);
-  const currentIdx = Math.min(Math.max(0, Math.floor(daysSince / 7)), plan.weeks - 1);
-  const currentWeekNo = currentIdx + 1;
-  const weeksToGo = Math.max(0, plan.weeks - currentIdx);
-  const goalDate = addDays(plan.start_date, plan.weeks * 7 - 1);
+  const pos = todaysSession(plan, today);
+  // Before the plan starts: show the first scheduled week. After it ends: clamp to the last real week.
+  const currentWeekNo = pos ? pos.week : (today < plan.start_date ? (data.weeks[0]?.weekNumber ?? 1) : plan.weeks);
+  const weeksToGo = Math.max(0, plan.weeks - Math.max(0, currentWeekNo - 1));
+  const goalDate = planEndDateISO(plan);
 
-  // If the plan doesn't start on a Monday, label the first week "Week 0".
-  const startsMonday = new Date(plan.start_date + 'T00:00:00').getDay() === 1;
-  const labelOffset = startsMonday ? 0 : -1;
-
-  const currentWeek = data.weeks[currentIdx];
-  const cwRuns = WEEKDAYS.filter(d => isRunSession(currentWeek.days[d]));
-  const cwDone = cwRuns.filter(d => currentWeek.days[d].completed).length;
+  const currentWeek = data.weeks.find(w => w.weekNumber === currentWeekNo) ?? data.weeks[0];
+  const cwRuns = currentWeek ? WEEKDAYS.filter(d => isRunSession(currentWeek.days[d])) : [];
+  const cwDone = currentWeek ? cwRuns.filter(d => currentWeek.days[d].completed).length : 0;
 
   const cfg: PlanConfig = {
     distance: plan.distance, customDistanceKm: plan.custom_distance_km || undefined,
     level: plan.level, weeks: plan.weeks, daysPerWeek: plan.days_per_week,
     daysPerWeekMin: plan.days_per_week_min || plan.days_per_week,
     trainDays: plan.train_days, goalTimeSeconds: plan.goal_time_seconds, startDistanceKm: plan.start_distance_km,
+    startDate: plan.start_date,
   };
 
   const persist = async (newData: typeof data) => {
@@ -89,39 +82,15 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
     setConfirmRestart(false);
   };
 
-  const mutateDay = (week: number, day: Weekday, fn: (s: Session) => Session) => {
-    const newData = { ...data, weeks: data.weeks.map(w => w.weekNumber !== week ? w : {
-      ...w, days: { ...w.days, [day]: fn(w.days[day]) },
-      totalKm: WEEKDAYS.reduce((k, d) => k + ((d === day ? fn(w.days[day]) : w.days[d]).distanceKm || 0), 0),
-    }) };
-    persist(newData);
-  };
-
-  // Swap a session with another day in the same week (reorder).
-  const moveDay = (week: number, from: Weekday, to: Weekday) => {
-    if (from === to) return;
-    const newData = { ...data, weeks: data.weeks.map(w => {
-      if (w.weekNumber !== week) return w;
-      const days = { ...w.days };
-      const tmp = days[to]; days[to] = days[from]; days[from] = tmp;
-      return { ...w, days };
-    }) };
-    persist(newData);
-  };
-
-  const sel = selected ? data.weeks.find(w => w.weekNumber === selected.week)!.days[selected.day] : null;
-
   const logSession = (s: Session) => {
     if (!selected) return;
-    const href = planSessionHref(s, plan.id, selected.week, selected.day);
-    setSelected(null);
-    router.push(href);
+    router.push(planSessionHref(s, plan.id, selected.week, selected.day));
   };
 
   const copyPlan = async () => {
-    const lines: string[] = [`${RUN_DISTANCE_LABELS[plan.distance]} Training Plan — ${plan.weeks} weeks, ${plan.level}`, ''];
+    const lines: string[] = [`${planTitle} Training Plan — ${plan.weeks} weeks, ${plan.level}`, ''];
     for (const w of data.weeks) {
-      lines.push(`Week ${w.weekNumber} (${w.phase}) — ${w.totalKm} km`);
+      lines.push(`Week ${w.weekNumber}${w.weekNumber === 0 ? ' (Lead-in)' : ` (${w.phase})`} — ${w.totalKm} km`);
       for (const d of WEEKDAYS) {
         const s = w.days[d];
         lines.push(`  ${WEEKDAY_LABELS[d]}: ${s.title}${sessionTarget(s) ? ' — ' + sessionTarget(s) : ''}`);
@@ -153,13 +122,16 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
         </h1>
         <p className="text-[#64748B] text-sm mt-0.5">{planTitle} · {isRace ? `Goal day ${fmtNiceDate(goalDate)}` : 'Keep it rolling'}</p>
 
-        {/* segmented progress for current week */}
-        <div className="flex gap-1.5 mt-4 mb-2">
-          {cwRuns.map((d, i) => (
-            <div key={i} className="flex-1 h-1.5 rounded-full" style={{ background: currentWeek.days[d].completed ? '#22C55E' : '#293548' }} />
-          ))}
-        </div>
-        <p className="text-xs text-[#64748B]">Week {currentWeekNo + labelOffset} workouts completed: {cwDone} of {cwRuns.length}</p>
+        {cwRuns.length > 0 && (
+          <>
+            <div className="flex gap-1.5 mt-4 mb-2">
+              {cwRuns.map((d, i) => (
+                <div key={i} className="flex-1 h-1.5 rounded-full" style={{ background: currentWeek.days[d].completed ? '#22C55E' : '#293548' }} />
+              ))}
+            </div>
+            <p className="text-xs text-[#64748B]">Week {currentWeekNo}{currentWeekNo === 0 ? ' (Lead-in)' : ''} workouts completed: {cwDone} of {cwRuns.length}</p>
+          </>
+        )}
       </div>
 
       {/* Big progress card */}
@@ -186,16 +158,16 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
         </div>
       </div>
 
-      {/* Weekly volume graph (run plans only) */}
-      {isRun && data.weeks.length > 1 && (
+      {/* Weekly volume graph (run plans only; excludes the lead-in Week 0) */}
+      {isRun && realWeeks.length > 1 && (
         <div className="card plan-no-print">
           <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Weekly Volume</p>
           <ResponsiveContainer width="100%" height={110}>
-            <BarChart data={data.weeks.map(w => ({ label: w.weekNumber + labelOffset, km: w.totalKm, phase: w.phase, current: w.weekNumber === currentWeekNo }))} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+            <BarChart data={realWeeks.map(w => ({ label: w.weekNumber, km: w.totalKm, phase: w.phase }))} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
               <XAxis dataKey="label" tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} axisLine={false} />
               <Tooltip contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8, color: '#F1F5F9', fontSize: 12 }} formatter={(v) => [`${v} km`, 'Volume']} labelFormatter={(l) => `Week ${l}`} cursor={{ fill: '#ffffff08' }} />
               <Bar dataKey="km" radius={[3, 3, 0, 0]}>
-                {data.weeks.map((w, i) => (
+                {realWeeks.map((w, i) => (
                   <Cell key={i} fill={PHASE_COLORS[w.phase]} opacity={w.weekNumber === currentWeekNo ? 1 : 0.55} />
                 ))}
               </Bar>
@@ -206,7 +178,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
 
       {/* Navigation */}
       <div className="flex items-center justify-between plan-no-print">
-        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wide">{viewAll ? 'Full Plan' : `This Week (Week ${currentWeekNo + labelOffset})`}</h2>
+        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wide">{viewAll ? 'Full Plan' : `This Week (Week ${currentWeekNo})`}</h2>
         <div className="flex gap-1.5">
           <button onClick={() => setViewAll(false)} className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${!viewAll ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>This week</button>
           <button onClick={() => setViewAll(true)} className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${viewAll ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>Full plan</button>
@@ -218,7 +190,6 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
         <PlanWeekTable
           plan={viewAll ? data : { weeks: data.weeks.filter(w => w.weekNumber === currentWeekNo) }}
           currentWeek={currentWeekNo}
-          labelOffset={labelOffset}
           onDayClick={(week, day) => setSelected({ week, day })}
         />
       </div>
@@ -250,63 +221,15 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
       </div>
 
       {/* Day action sheet */}
-      {selected && sel && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelected(null)} />
-          <div className="relative w-full md:max-w-md bg-[#1E293B] border border-[#334155] rounded-t-2xl md:rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full" style={{ background: sessionColor(sel) }} />
-              <span className="text-xs text-[#64748B] uppercase tracking-wide">Week {selected.week} · {WEEKDAY_LABELS[selected.day]}</span>
-            </div>
-            <h3 className="text-lg font-bold text-white">{sel.title}</h3>
-            {sessionTarget(sel) && <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(sel) }}>{sessionTarget(sel)}</p>}
-            {sel.detail && <p className="text-sm text-[#94A3B8] mt-2 whitespace-pre-line leading-relaxed">{sel.detail}</p>}
-
-            <div className="flex flex-col gap-2 mt-4">
-              {isRunSession(sel) && !sel.completed && (
-                <button onClick={() => logSession(sel)} className="btn-primary w-full">✓ Log & Complete</button>
-              )}
-              {isRunSession(sel) && (
-                <button onClick={() => { mutateDay(selected.week, selected.day, s => ({ ...s, completed: !s.completed })); setSelected(null); }}
-                  className="btn-secondary w-full">
-                  {sel.completed ? 'Mark as not done' : 'Mark done (without logging)'}
-                </button>
-              )}
-              {isRunSession(sel) && (
-                <div className="grid grid-cols-3 gap-2">
-                  <button onClick={() => { mutateDay(selected.week, selected.day, s => switchDifficulty(s, 'easier', cfg)); setSelected(null); }}
-                    className="py-2 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">Easier</button>
-                  <button onClick={() => { mutateDay(selected.week, selected.day, s => switchDifficulty(s, 'reset', cfg)); setSelected(null); }}
-                    className="py-2 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">Reset</button>
-                  <button onClick={() => { mutateDay(selected.week, selected.day, s => switchDifficulty(s, 'harder', cfg)); setSelected(null); }}
-                    className="py-2 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">Harder</button>
-                </div>
-              )}
-              {sel.type !== 'rest' && (
-                <button onClick={() => { mutateDay(selected.week, selected.day, () => ({ type: 'rest', title: 'Rest', detail: 'Take a full day off. Recovery is where the gains happen.', completed: false })); setSelected(null); }}
-                  className="py-2 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">Make this a Rest day</button>
-              )}
-
-              {/* Move to another day (swaps) */}
-              <div>
-                <p className="text-xs text-[#64748B] mb-1.5">Move to another day (swaps)</p>
-                <div className="grid grid-cols-7 gap-1">
-                  {WEEKDAYS.map(d => (
-                    <button key={d} disabled={d === selected.day}
-                      onClick={() => { moveDay(selected.week, selected.day, d); setSelected(null); }}
-                      className={`py-1.5 rounded text-[10px] font-semibold border transition-all ${
-                        d === selected.day ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
-                      }`}>
-                      {WEEKDAY_LABELS[d].slice(0, 1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button onClick={() => setSelected(null)} className="text-sm text-[#64748B] hover:text-white py-1">Close</button>
-            </div>
-          </div>
-        </div>
+      {selected && (
+        <PlanDaySheet
+          data={data}
+          selected={selected}
+          cfg={cfg}
+          onLogAndComplete={logSession}
+          onSave={persist}
+          onClose={() => setSelected(null)}
+        />
       )}
     </div>
   );

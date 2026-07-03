@@ -3,10 +3,11 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import {
-  generateRunPlan, RunDistance, RUN_DISTANCE_LABELS, PlanLevel, Weekday, WEEKDAYS, WEEKDAY_SHORT,
-  PlanConfig, PlanRecord,
+  generateRunPlan, RunDistance, RUN_DISTANCE_LABELS, PlanLevel, Weekday, WEEKDAYS, WEEKDAY_SHORT, WEEKDAY_LABELS,
+  PlanConfig, PlanRecord, PlanData,
 } from '@/lib/runPlanGenerator';
 import PlanWeekTable from './PlanWeekTable';
+import PlanDaySheet from './PlanDaySheet';
 
 const DISTANCES: RunDistance[] = ['5k', '10k', 'half', 'marathon', 'keep_fit', 'speed', 'ultra_50k', 'ultra_100k', 'ultra_100mile', 'custom'];
 const LEVELS: { value: PlanLevel; label: string; desc: string }[] = [
@@ -39,8 +40,10 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
   const [startDate, setStartDate] = useState(existing?.start_date ?? tomorrowISO);
   const [lengthMode, setLengthMode] = useState<'weeks' | 'date'>('weeks');
   const [endDate, setEndDate] = useState('');
+  const [longRunDay, setLongRunDay] = useState<Weekday | 'random' | 'auto'>('auto');
 
-  const [preview, setPreview] = useState(existing?.plan_data ?? null);
+  const [preview, setPreview] = useState<PlanData | null>(existing?.plan_data ?? null);
+  const [selected, setSelected] = useState<{ week: number; day: Weekday } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -64,6 +67,8 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
       level, weeks: effectiveWeeks, daysPerWeek: daysMax, daysPerWeekMin: daysMin, trainDays,
       goalTimeSeconds: goalSecs > 0 ? goalSecs : null,
       startDistanceKm: startKm ? parseFloat(startKm) : null,
+      startDate,
+      longRunDay: longRunDay === 'auto' ? null : longRunDay,
     };
   };
 
@@ -221,6 +226,27 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
         </div>
       </div>
 
+      {/* Long run day */}
+      <div>
+        <label className="label">Long run day</label>
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+          <button onClick={() => setLongRunDay('auto')}
+            className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${longRunDay === 'auto' ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+            Auto (weekend)
+          </button>
+          <button onClick={() => setLongRunDay('random')}
+            className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${longRunDay === 'random' ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+            Random each week
+          </button>
+          {trainDays.map(d => (
+            <button key={d} onClick={() => setLongRunDay(d)}
+              className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${longRunDay === d ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+              {WEEKDAY_LABELS[d]}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Start date */}
       <div>
         <label className="label">Start date</label>
@@ -266,9 +292,19 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
       {/* Preview */}
       {preview && (
         <div>
-          <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Preview — regenerate for a different plan</p>
-          <PlanWeekTable plan={preview} />
+          <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Preview — click a day for more info or to reorder before saving</p>
+          <PlanWeekTable plan={preview} onDayClick={(week, day) => setSelected({ week, day })} />
         </div>
+      )}
+
+      {selected && preview && (
+        <PlanDaySheet
+          data={preview}
+          selected={selected}
+          cfg={buildConfig()}
+          onSave={setPreview}
+          onClose={() => setSelected(null)}
+        />
       )}
     </div>
   );

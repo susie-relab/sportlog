@@ -28,8 +28,8 @@ const PHASE_COLORS: Record<string, string> = {
   Base: '#3B82F6', Build: '#8B5CF6', Peak: '#F97316', Taper: '#22C55E',
 };
 
+// Each session has either a distance goal or a time goal, never both.
 function target(s: Session): string {
-  if (s.distanceKm && s.timeMin) return `${s.distanceKm} km · ${s.timeMin} min`;
   if (s.distanceKm) return `${s.distanceKm} km`;
   if (s.timeMin) return `${s.timeMin} min`;
   return '';
@@ -38,7 +38,6 @@ function target(s: Session): string {
 interface Props {
   plan: PlanData;
   currentWeek?: number;
-  labelOffset?: number; // -1 makes the first week read "Week 0" (non-Monday start)
   onDayClick?: (weekNumber: number, day: Weekday) => void;
 }
 
@@ -71,19 +70,19 @@ function DayCell({ s, onClick, compact }: { s: Session; onClick?: () => void; co
   );
 }
 
-function WeekHeader({ w, labelOffset = 0 }: { w: PlanWeek; labelOffset?: number }) {
+function WeekHeader({ w }: { w: PlanWeek }) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-sm font-bold text-white">Week {w.weekNumber + labelOffset}</span>
+      <span className="text-sm font-bold text-white">Week {w.weekNumber}</span>
       <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded" style={{ background: PHASE_COLORS[w.phase] + '22', color: PHASE_COLORS[w.phase] }}>
-        {w.phase} Phase
+        {w.weekNumber === 0 ? 'Lead-in' : `${w.phase} Phase`}
       </span>
       <span className="text-xs text-[#64748B] ml-auto">{w.totalKm} km</span>
     </div>
   );
 }
 
-export default function PlanWeekTable({ plan, currentWeek, labelOffset = 0, onDayClick }: Props) {
+export default function PlanWeekTable({ plan, currentWeek, onDayClick }: Props) {
   return (
     <>
       {/* Desktop: full week × day table */}
@@ -102,8 +101,8 @@ export default function PlanWeekTable({ plan, currentWeek, labelOffset = 0, onDa
               <tr key={w.weekNumber} className={currentWeek === w.weekNumber ? 'ring-1 ring-blue-500/40' : ''}>
                 <td className="align-top px-2 py-2 rounded-lg bg-[#0F172A] border border-[#293548]" style={{ minWidth: '8rem' }}>
                   <div className="flex flex-col gap-1">
-                    <span className="text-sm font-bold text-white">Week {w.weekNumber + labelOffset}</span>
-                    <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded self-start" style={{ background: PHASE_COLORS[w.phase] + '22', color: PHASE_COLORS[w.phase] }}>{w.phase}</span>
+                    <span className="text-sm font-bold text-white">Week {w.weekNumber}</span>
+                    <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded self-start" style={{ background: PHASE_COLORS[w.phase] + '22', color: PHASE_COLORS[w.phase] }}>{w.weekNumber === 0 ? 'Lead-in' : w.phase}</span>
                     <span className="text-xs text-[#60A5FA] font-bold">{w.totalKm} km</span>
                     {w.focus && <span className="text-[10px] text-[#64748B] leading-snug mt-0.5">{w.focus}</span>}
                   </div>
@@ -124,7 +123,7 @@ export default function PlanWeekTable({ plan, currentWeek, labelOffset = 0, onDa
         {plan.weeks.map(w => (
           <div key={w.weekNumber} className={`rounded-xl border p-3 ${currentWeek === w.weekNumber ? 'border-blue-500/50 bg-blue-500/5' : 'border-[#293548] bg-[#141d2e]'}`}>
             <div className="mb-2.5">
-              <WeekHeader w={w} labelOffset={labelOffset} />
+              <WeekHeader w={w} />
               {w.focus && <p className="text-[11px] text-[#64748B] mt-1">{w.focus}</p>}
             </div>
             <div className="flex flex-col gap-1.5">

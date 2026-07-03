@@ -25,8 +25,9 @@ export interface Session {
   title: string;        // display heading, e.g. "Tempo Run"
   exerciseType?: string;// for sport/custom sessions: an ExerciseType key
   subType?: string;     // e.g. 'football', 'strength'
-  distanceKm?: number;  // counted toward weekly total + shown
-  timeMin?: number;     // if a time-based session
+  distanceKm?: number;  // the session's displayed distance GOAL (mutually exclusive with timeMin)
+  timeMin?: number;     // the session's displayed time GOAL (mutually exclusive with distanceKm)
+  estKm?: number;       // internal-only distance estimate for weekly volume totals (not displayed as a goal)
   detail: string;       // short description / structure text
   completed?: boolean;
   completedActivityId?: string | null;
@@ -129,6 +130,8 @@ export interface PlanConfig {
   trainDays: Weekday[];   // which weekdays are available to train
   goalTimeSeconds?: number | null;
   startDistanceKm?: number | null; // week-1 total distance baseline
+  startDate: string;      // ISO date the plan begins — used to build a lead-in "Week 0" if not a Monday
+  longRunDay?: Weekday | 'random' | null; // fixed day for the long run, or 'random' each week (default: auto/weekend)
 }
 
 // ---------- small random helpers ----------
@@ -191,11 +194,11 @@ function phaseForWeek(weekIdx: number, totalWeeks: number): Phase {
 
 // Long-run distance for each week, ramping with cut-back weeks + taper.
 function longRunSchedule(cfg: PlanConfig): number[] {
-  const maxKm = longRunMaxFor(cfg);
-  const startKm = Math.min(
+  const maxKm = Math.max(MIN_KM_LONG, longRunMaxFor(cfg));
+  const startKm = Math.max(MIN_KM_LONG, Math.min(
     maxKm,
     cfg.level === 'relaxed' ? 6 : 8,
-  );
+  ));
   const out: number[] = [];
   const taperWeeks = Math.min(2, Math.max(1, Math.round(cfg.weeks * 0.12)));
   const buildEnd = cfg.weeks - taperWeeks - 1; // last non-taper week index
@@ -217,25 +220,31 @@ function longRunSchedule(cfg: PlanConfig): number[] {
   return out;
 }
 
+// Distance floors by session category (per spec): sprint/hill/long-intervals have
+// no minimum; tempo/easy/progression/fartlek must be >=2km; long/trail >=5km.
+const MIN_KM_STANDARD = 2;
+const MIN_KM_LONG = 5;
+
 // ---------- session builders ----------
 function easyRun(cfg: PlanConfig): Session {
   if (chance(0.5)) {
     const t = pick([20, 25, 30, 35, 40, 45]);
-    return { type: 'easy', title: 'Easy Run', timeMin: t, distanceKm: round(t / 6.5, 0.5),
+    return { type: 'easy', title: 'Easy Run', timeMin: t, estKm: round(t / 6.5, 0.5),
       detail: `${t} min at a comfortable, conversational pace.` };
   }
-  const km = pick([3, 4, 5, 6, 7]);
+  const km = Math.max(MIN_KM_STANDARD, pick([3, 4, 5, 6, 7]));
   return { type: 'easy', title: 'Easy Run', distanceKm: km,
     detail: `${km} km at a comfortable pace — you should be able to hold a conversation.` };
 }
 
 function recoveryRun(): Session {
-  const km = pick([2, 3, 4]);
+  const km = Math.max(MIN_KM_STANDARD, pick([2, 3, 4]));
   return { type: 'recovery', title: 'Recovery Run', distanceKm: km,
     detail: `${km} km very easy. Let your body recover — keep it gentle.` };
 }
 
 function longRun(km: number, cfg: PlanConfig, isPeak: boolean): Session {
+  km = Math.max(MIN_KM_LONG, km);
   const variants: { title: string; detail: string }[] = [
     { title: 'Long Run', detail: `${km} km at a comfortable, conversational pace.` },
     { title: 'Long Run (Progression)', detail: `${km} km. Start slow and increase the pace slightly each km — your last km should be your fastest.` },
@@ -252,7 +261,7 @@ function tempoRun(cfg: PlanConfig): Session {
   const hard = cfg.level === 'tough';
   if (chance(0.5)) {
     // distance-based — labelled by the tempo volume (e.g. 2 km)
-    const km = randInt(hard ? 3 : 1, hard ? 7 : 5);
+    const km = Math.max(MIN_KM_STANDARD, randInt(hard ? 3 : 2, hard ? 7 : 5));
     if (km >= 4 && chance(0.4)) {
       const half = round(km / 2, 0.5);
       return { type: 'tempo', title: 'Tempo Run', distanceKm: km,
@@ -275,12 +284,12 @@ function fartlek(cfg: PlanConfig): Session {
     const easy = tough ? '20 sec' : '30 sec';
     const r1 = randInt(tough ? 5 : 3, tough ? 7 : 5);
     const r2 = randInt(tough ? 4 : 2, tough ? 5 : 4);
-    return { type: 'fartlek', title: 'Fartlek (Mixed)', distanceKm: round(6, 0.5),
+    return { type: 'fartlek', title: 'Fartlek (Mixed)', distanceKm: Math.max(MIN_KM_STANDARD, round(6, 0.5)),
       detail: `5 min warm-up\n${r1} x [30 sec fast / ${easy} easy]\n2 min tempo\n${r2} x [1 min fast / 1 min easy]\n5 min cooldown` };
   }
   if (roll < 0.35) {
     // pyramid fartlek: 1-2-3-4-5-4-3-2-1 min fast with slow floats between
-    return { type: 'fartlek', title: 'Fartlek (Pyramid)', distanceKm: round(6.5, 0.5),
+    return { type: 'fartlek', title: 'Fartlek (Pyramid)', distanceKm: Math.max(MIN_KM_STANDARD, round(6.5, 0.5)),
       detail: '5:00 warm-up, then a pyramid:\n1 min fast / 1 min slow\n2 min fast / 2 min slow\n3 min fast / 2 min slow\n4 min fast / 2 min slow\n5 min fast / 2 min slow\n4 min fast / 2 min slow\n3 min fast / 2 min slow\n2 min fast / 2 min slow\n1 min fast / 1 min slow\n5:00 cooldown.' };
   }
   if (roll < 0.7) {
@@ -289,15 +298,17 @@ function fartlek(cfg: PlanConfig): Session {
     ];
     const [, label, maxReps] = pick(opts);
     const reps = randInt(Math.max(6, Math.round(maxReps * 0.5)), maxReps);
-    return { type: 'fartlek', title: 'Fartlek', distanceKm: round(reps * 0.4 + 2, 0.5),
+    return { type: 'fartlek', title: 'Fartlek', distanceKm: Math.max(MIN_KM_STANDARD, round(reps * 0.4 + 2, 0.5)),
       detail: `5:00 warm-up, then ${reps} x ${label} fast with 1:00 easy recovery between.` };
   }
+  // time-based — labelled by time only (no clashing distance goal)
   const min = pick([20, 25, 30, 35]);
-  return { type: 'fartlek', title: 'Fartlek', timeMin: min, distanceKm: round(min / 6, 0.5),
+  return { type: 'fartlek', title: 'Fartlek', timeMin: min, estKm: round(min / 6, 0.5),
     detail: `${min} min steady — at random moments pick a point ahead and surge to it as fast as you can.` };
 }
 
 function progression(km: number): Session {
+  km = Math.max(MIN_KM_STANDARD, km);
   return { type: 'progression', title: 'Progression Run', distanceKm: km,
     detail: `${km} km steady, increasing your pace each km. Your last km should be your fastest.` };
 }
@@ -397,6 +408,7 @@ function hillReps(cfg: PlanConfig): Session {
 }
 
 function trailRun(km: number): Session {
+  km = Math.max(MIN_KM_LONG, km);
   return { type: 'trail', title: 'Trail Run', distanceKm: km,
     detail: `${km} km on hilly trails — the hardest terrain option. Run by effort, hike the steep bits.` };
 }
@@ -477,12 +489,18 @@ function assignWeek(cfg: PlanConfig, weekIdx: number): PlanWeek {
   const available = orderTrainDays(cfg.trainDays);
   const days: Partial<Record<Weekday, Session>> = {};
 
-  // Long run → prefer a weekend day.
+  // Long run → user's chosen day, a random day each week, or default to a weekend day.
   const longSession = sessions.find(s => s.type === 'long' || s.type === 'trail');
   const weekendPref: Weekday[] = ['sun', 'sat'];
   let longDay: Weekday | undefined;
   if (longSession) {
-    longDay = weekendPref.find(d => available.includes(d)) ?? available[available.length - 1];
+    if (cfg.longRunDay && cfg.longRunDay !== 'random' && available.includes(cfg.longRunDay)) {
+      longDay = cfg.longRunDay;
+    } else if (cfg.longRunDay === 'random') {
+      longDay = pick(available);
+    } else {
+      longDay = weekendPref.find(d => available.includes(d)) ?? available[available.length - 1];
+    }
     days[longDay] = longSession;
   }
 
@@ -530,7 +548,7 @@ function assignWeek(cfg: PlanConfig, weekIdx: number): PlanWeek {
 }
 
 function sumKm(days: Record<Weekday, Session>): number {
-  return WEEKDAYS.reduce((s, d) => s + (days[d].distanceKm || 0), 0);
+  return WEEKDAYS.reduce((s, d) => s + (days[d].distanceKm || days[d].estKm || 0), 0);
 }
 
 // ---------- final week / PB day ----------
@@ -579,6 +597,8 @@ export function generateRunPlan(cfg: PlanConfig): PlanData {
   const plan: PlanData = { weeks };
   applyFinalDay(plan, cfg);
   weeks.forEach((w, i) => { w.focus = weeklyFocus(w, weeks[i - 1], i === weeks.length - 1, cfg); });
+  const leadIn = buildLeadInWeek(cfg.startDate, () => recoveryRun());
+  if (leadIn) { leadIn.focus = 'Lead-in — a few easy days before Week 1 begins on Monday.'; weeks.unshift(leadIn); }
   return plan;
 }
 
@@ -638,6 +658,9 @@ export function generateCustomPlan(cfg: CustomConfig): PlanData {
     last.days[pbDay] = { type: 'sport', title: 'Congratulations — completed!', detail: 'You made it — nice work. Time to pick your next plan!', completed: false };
   }
 
+  const leadIn = buildLeadInWeek(cfg.startDate, () => restDay());
+  if (leadIn) { leadIn.focus = 'Lead-in — a few days before Week 1 begins on Monday.'; weeks.unshift(leadIn); }
+
   return { weeks, customConfig: cfg };
 }
 
@@ -649,6 +672,7 @@ export function switchDifficulty(session: Session, dir: 'easier' | 'harder' | 'r
   const next: Session = { ...session, variant: dir };
   if (next.distanceKm) next.distanceKm = round(next.distanceKm * scale, 0.5);
   if (next.timeMin) next.timeMin = Math.round(next.timeMin * scale);
+  if (next.estKm) next.estKm = round(next.estKm * scale, 0.5);
   // Hill reps can escalate to a trail run (the hardest option).
   if (session.type === 'hill_reps' && dir === 'harder') {
     return { ...trailRun(round((session.distanceKm || 6) * 1.2, 0.5)), variant: 'harder' };
@@ -702,19 +726,58 @@ function weekdayOf(dateISO: string): Weekday {
   return (['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as Weekday[])[jsDay];
 }
 
+/** The Monday on/after the given date (same date if it's already a Monday). */
+function firstMonday(dateISO: string): string {
+  const jsDay = new Date(dateISO + 'T00:00:00').getDay(); // 0 Sun .. 6 Sat
+  const diff = jsDay === 1 ? 0 : jsDay === 0 ? 1 : 8 - jsDay;
+  return addDaysISO(dateISO, diff);
+}
+
+/**
+ * A partial "Week 0" covering the lead-in days between a non-Monday start
+ * date and the following Monday, when the real Week 1 begins. Returns null
+ * if the plan already starts on a Monday (no lead-in needed).
+ */
+function buildLeadInWeek(startDate: string, sessionForLeadIn: () => Session): PlanWeek | null {
+  const anchor = firstMonday(startDate);
+  if (anchor === startDate) return null;
+  const leadInDays: Weekday[] = [];
+  for (let d = startDate; d < anchor; d = addDaysISO(d, 1)) leadInDays.push(weekdayOf(d));
+  const days: Partial<Record<Weekday, Session>> = {};
+  for (const d of WEEKDAYS) {
+    days[d] = leadInDays.includes(d) ? sessionForLeadIn() : { type: 'rest', title: '—', detail: 'Before your plan starts.', completed: false };
+  }
+  const full = days as Record<Weekday, Session>;
+  return { weekNumber: 0, phase: 'Base', totalKm: round(sumKm(full), 0.5), days: full };
+}
+
 type PlanLike = { plan_data: PlanData; start_date: string; weeks: number };
+
+/** Resolve which {weekNumber, day} a calendar date falls on, or null if outside the plan's range. */
+function planDateIndex(plan: PlanLike, dateISO: string): { weekNumber: number; day: Weekday } | null {
+  if (dateISO < plan.start_date) return null;
+  const anchor = firstMonday(plan.start_date);
+  if (dateISO < anchor) return { weekNumber: 0, day: weekdayOf(dateISO) };
+  const daysSinceAnchor = Math.round((new Date(dateISO + 'T00:00:00').getTime() - new Date(anchor + 'T00:00:00').getTime()) / 86400000);
+  const weekIdx = Math.floor(daysSinceAnchor / 7);
+  if (weekIdx >= plan.weeks) return null;
+  return { weekNumber: weekIdx + 1, day: weekdayOf(dateISO) };
+}
+
+/** The calendar date of the last day of a plan's final (real) week. */
+export function planEndDateISO(plan: PlanLike): string {
+  const anchor = firstMonday(plan.start_date);
+  return addDaysISO(anchor, plan.weeks * 7 - 1);
+}
 
 /** Today's session for a plan, given its start date, or null if out of range. */
 export function todaysSession(plan: PlanLike, todayISO: string):
   { week: number; day: Weekday; session: Session } | null {
-  const daysSince = Math.floor((new Date(todayISO + 'T00:00:00').getTime() - new Date(plan.start_date + 'T00:00:00').getTime()) / 86400000);
-  if (daysSince < 0) return null;
-  const weekIdx = Math.floor(daysSince / 7);
-  if (weekIdx >= plan.weeks) return null;
-  const day = weekdayOf(todayISO);
-  const week = plan.plan_data.weeks[weekIdx];
+  const pos = planDateIndex(plan, todayISO);
+  if (!pos) return null;
+  const week = plan.plan_data.weeks.find(w => w.weekNumber === pos.weekNumber);
   if (!week) return null;
-  return { week: week.weekNumber, day, session: week.days[day] };
+  return { week: pos.weekNumber, day: pos.day, session: week.days[pos.day] };
 }
 
 /**
@@ -726,19 +789,34 @@ export function nextSession(
   match: (s: Session) => boolean,
   opts: { after?: boolean; includeCompleted?: boolean } = {},
 ): { week: number; day: Weekday; session: Session; dateISO: string } | null {
-  const daysSince = Math.floor((new Date(fromISO + 'T00:00:00').getTime() - new Date(plan.start_date + 'T00:00:00').getTime()) / 86400000);
-  const startOffset = Math.max(0, daysSince) + (opts.after ? 1 : 0);
-  const totalDays = plan.weeks * 7;
-  for (let idx = startOffset; idx < totalDays; idx++) {
-    const dateISO = addDaysISO(plan.start_date, idx);
-    const weekIdx = Math.floor(idx / 7);
-    const week = plan.plan_data.weeks[weekIdx];
-    if (!week) continue;
-    const day = weekdayOf(dateISO);
-    const s = week.days[day];
-    if (match(s) && (opts.includeCompleted || !s.completed)) {
-      return { week: week.weekNumber, day, session: s, dateISO };
+  const endISO = planEndDateISO(plan);
+  let d = fromISO < plan.start_date ? plan.start_date : fromISO;
+  if (opts.after) d = addDaysISO(d, 1);
+  while (d <= endISO) {
+    const pos = planDateIndex(plan, d);
+    if (pos) {
+      const week = plan.plan_data.weeks.find(w => w.weekNumber === pos.weekNumber);
+      const s = week?.days[pos.day];
+      if (s && match(s) && (opts.includeCompleted || !s.completed)) {
+        return { week: pos.weekNumber, day: pos.day, session: s, dateISO: d };
+      }
     }
+    d = addDaysISO(d, 1);
   }
   return null;
+}
+
+/** Swap two scheduled sessions — can be within the same week or across different weeks. Pure. */
+export function movePlanSession(data: PlanData, from: { week: number; day: Weekday }, to: { week: number; day: Weekday }): PlanData {
+  if (from.week === to.week && from.day === to.day) return data;
+  const weeks = data.weeks.map(w => (w.weekNumber === from.week || w.weekNumber === to.week) ? { ...w, days: { ...w.days } } : w);
+  const fromWeek = weeks.find(w => w.weekNumber === from.week);
+  const toWeek = weeks.find(w => w.weekNumber === to.week);
+  if (!fromWeek || !toWeek) return data;
+  const tmp = toWeek.days[to.day];
+  toWeek.days[to.day] = fromWeek.days[from.day];
+  fromWeek.days[from.day] = tmp;
+  fromWeek.totalKm = round(sumKm(fromWeek.days), 0.5);
+  toWeek.totalKm = round(sumKm(toWeek.days), 0.5);
+  return { ...data, weeks };
 }

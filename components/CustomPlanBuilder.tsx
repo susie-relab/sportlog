@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import {
-  generateCustomPlan, CustomActivity, CustomConfig, PlanLevel, Weekday, WEEKDAYS, WEEKDAY_SHORT, PlanRecord,
+  generateCustomPlan, CustomActivity, CustomConfig, PlanLevel, Weekday, WEEKDAYS, WEEKDAY_SHORT, PlanRecord, PlanData,
 } from '@/lib/runPlanGenerator';
 import {
   ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, EXERCISE_TYPE_ORDER,
@@ -11,6 +11,7 @@ import {
   FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS,
 } from '@/types';
 import PlanWeekTable from './PlanWeekTable';
+import PlanDaySheet from './PlanDaySheet';
 
 const SUB_LABELS: Partial<Record<ExerciseType, Record<string, string>>> = {
   sport: SPORT_SUB_LABELS, hiit: GYM_SUB_LABELS, water_snow: WATER_SNOW_SUB_LABELS,
@@ -44,7 +45,8 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
   const [durMin, setDurMin] = useState('45');
   const [durMax, setDurMax] = useState('60');
 
-  const [preview, setPreview] = useState(existing?.plan_data ?? null);
+  const [preview, setPreview] = useState<PlanData | null>(existing?.plan_data ?? null);
+  const [selected, setSelected] = useState<{ week: number; day: Weekday } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -215,9 +217,18 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
 
       {preview && (
         <div>
-          <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Preview</p>
-          <PlanWeekTable plan={preview} />
+          <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Preview — click a day for more info or to reorder before saving</p>
+          <PlanWeekTable plan={preview} onDayClick={(week, day) => setSelected({ week, day })} />
         </div>
+      )}
+
+      {selected && preview && (
+        <PlanDaySheet
+          data={preview}
+          selected={selected}
+          onSave={setPreview}
+          onClose={() => setSelected(null)}
+        />
       )}
     </div>
   );
