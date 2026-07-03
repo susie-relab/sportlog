@@ -113,7 +113,7 @@ export default function PlanPage() {
                     className="card text-left hover:border-[#475569] transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-bold text-white">{RUN_DISTANCE_LABELS[p.distance]}{p.distance === 'custom' && p.custom_distance_km ? ` (${p.custom_distance_km} km)` : ''}</span>
-                      <span className="text-xs text-[#64748B] capitalize">{p.level} · {p.weeks} wks · {p.days_per_week}/wk</span>
+                      <span className="text-xs text-[#64748B] capitalize">{p.level} · {p.weeks} wks · {p.days_per_week_min && p.days_per_week_min > 0 && p.days_per_week_min !== p.days_per_week ? `${p.days_per_week_min}–${p.days_per_week}` : p.days_per_week}/wk</span>
                     </div>
                     <div className="w-full bg-[#0F172A] rounded-full h-2 overflow-hidden">
                       <div className="h-2 rounded-full bg-green-500 transition-all" style={{ width: `${pct}%` }} />

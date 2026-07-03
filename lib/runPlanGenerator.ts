@@ -80,7 +80,8 @@ export interface PlanRecord {
   custom_distance_km: number;
   level: PlanLevel;
   weeks: number;
-  days_per_week: number;
+  days_per_week: number;      // max runs/week
+  days_per_week_min: number;  // min runs/week (equals max for an exact count)
   train_days: Weekday[];
   goal_time_seconds: number | null;
   start_distance_km: number | null;
@@ -95,7 +96,8 @@ export interface PlanConfig {
   customDistanceKm?: number;
   level: PlanLevel;
   weeks: number;          // 4–16 (or more)
-  daysPerWeek: number;    // 2–6 running days
+  daysPerWeek: number;    // max running days per week (2–6)
+  daysPerWeekMin?: number; // min running days per week; if < daysPerWeek, the plan varies week to week
   trainDays: Weekday[];   // which weekdays are available to train
   goalTimeSeconds?: number | null;
   startDistanceKm?: number | null; // week-1 total distance baseline
@@ -374,15 +376,15 @@ function restDay(): Session {
 }
 
 // ---------- weekly quality-session menu ----------
-function qualityCount(cfg: PlanConfig): number {
-  let n = cfg.daysPerWeek <= 3 ? 1 : cfg.daysPerWeek === 4 ? (chance(0.5) ? 1 : 2) : 2;
-  if (cfg.level === 'tough' && cfg.daysPerWeek >= 4) n += 1;
-  if (cfg.level === 'relaxed') n = Math.min(n, cfg.daysPerWeek <= 3 ? 1 : 1);
-  return Math.min(n, Math.max(0, cfg.daysPerWeek - 1)); // leave room for the long run
+function qualityCount(cfg: PlanConfig, runDays: number): number {
+  let n = runDays <= 3 ? 1 : runDays === 4 ? (chance(0.5) ? 1 : 2) : 2;
+  if (cfg.level === 'tough' && runDays >= 4) n += 1;
+  if (cfg.level === 'relaxed') n = 1;
+  return Math.min(n, Math.max(0, runDays - 1)); // leave room for the long run
 }
 
-function buildQualitySessions(cfg: PlanConfig, weekIdx: number, phase: Phase): Session[] {
-  const n = qualityCount(cfg);
+function buildQualitySessions(cfg: PlanConfig, weekIdx: number, phase: Phase, runDays: number): Session[] {
+  const n = qualityCount(cfg, runDays);
   const out: Session[] = [];
   // Speed-training plans lean heavily into sprint/interval work.
   const pool: (() => Session)[] = cfg.distance === 'speed'
@@ -404,7 +406,12 @@ function orderTrainDays(trainDays: Weekday[]): Weekday[] {
 function assignWeek(cfg: PlanConfig, weekIdx: number): PlanWeek {
   const phase = phaseForWeek(weekIdx, cfg.weeks);
   const longKm = longRunSchedule(cfg)[weekIdx];
-  const runDays = Math.min(cfg.daysPerWeek, cfg.trainDays.length);
+  const maxRunDays = Math.min(cfg.daysPerWeek, cfg.trainDays.length);
+  const minRunDays = Math.min(cfg.daysPerWeekMin ?? cfg.daysPerWeek, maxRunDays);
+  // Vary runs/week within the chosen range; taper weeks lean toward the lower end.
+  const runDays = phase === 'Taper'
+    ? minRunDays
+    : randInt(minRunDays, maxRunDays);
 
   // Build the list of run sessions for the week.
   const sessions: Session[] = [];
@@ -417,7 +424,7 @@ function assignWeek(cfg: PlanConfig, weekIdx: number): PlanWeek {
   }
 
   // Quality sessions (reduced during taper).
-  const qs = isTaper ? buildQualitySessions(cfg, weekIdx, phase).slice(0, 1) : buildQualitySessions(cfg, weekIdx, phase);
+  const qs = isTaper ? buildQualitySessions(cfg, weekIdx, phase, runDays).slice(0, 1) : buildQualitySessions(cfg, weekIdx, phase, runDays);
   sessions.push(...qs);
 
   // Fill the rest with easy / recovery runs.

@@ -102,7 +102,8 @@ create table if not exists training_plans (
   custom_distance_km numeric(6,2) not null default 0, -- 0 for non-custom (keeps unique constraint reliable)
   level text not null,                          -- relaxed/moderate/tough
   weeks integer not null,
-  days_per_week integer not null,
+  days_per_week integer not null,               -- max runs/week
+  days_per_week_min integer not null default 0, -- min runs/week (0/equal = exact count)
   train_days jsonb not null default '[]',       -- ['mon','wed',...]
   goal_time_seconds integer,
   start_distance_km numeric(6,2),
@@ -122,6 +123,9 @@ create policy "Users can manage their own training plans"
   with check (auth.uid() = user_id);
 
 create index if not exists training_plans_user on training_plans(user_id, created_at desc);
+
+-- Migration: add days_per_week_min to training_plans (runs-per-week range)
+-- alter table training_plans add column if not exists days_per_week_min integer not null default 0;
 
 -- Migration: add sub_type column to activities
 -- alter table activities add column if not exists sub_type text;

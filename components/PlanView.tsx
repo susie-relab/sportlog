@@ -54,6 +54,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
   const cfg: PlanConfig = {
     distance: plan.distance, customDistanceKm: plan.custom_distance_km || undefined,
     level: plan.level, weeks: plan.weeks, daysPerWeek: plan.days_per_week,
+    daysPerWeekMin: plan.days_per_week_min || plan.days_per_week,
     trainDays: plan.train_days, goalTimeSeconds: plan.goal_time_seconds, startDistanceKm: plan.start_distance_km,
   };
 

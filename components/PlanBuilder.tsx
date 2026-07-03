@@ -27,7 +27,8 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
   const [customKm, setCustomKm] = useState(existing?.custom_distance_km ? String(existing.custom_distance_km) : '');
   const [level, setLevel] = useState<PlanLevel>(existing?.level ?? 'moderate');
   const [weeks, setWeeks] = useState(existing?.weeks ?? 12);
-  const [daysPerWeek, setDaysPerWeek] = useState(existing?.days_per_week ?? 4);
+  const [daysMax, setDaysMax] = useState(existing?.days_per_week ?? 4);
+  const [daysMin, setDaysMin] = useState(existing?.days_per_week_min && existing.days_per_week_min > 0 ? existing.days_per_week_min : (existing?.days_per_week ?? 4));
   const [trainDays, setTrainDays] = useState<Weekday[]>(existing?.train_days ?? ['mon', 'tue', 'thu', 'sat']);
   const [goalH, setGoalH] = useState(existing?.goal_time_seconds ? String(Math.floor(existing.goal_time_seconds / 3600)) : '');
   const [goalM, setGoalM] = useState(existing?.goal_time_seconds ? String(Math.floor((existing.goal_time_seconds % 3600) / 60)) : '');
@@ -48,15 +49,15 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
     return {
       distance,
       customDistanceKm: distance === 'custom' ? parseFloat(customKm) || undefined : undefined,
-      level, weeks, daysPerWeek, trainDays,
+      level, weeks, daysPerWeek: daysMax, daysPerWeekMin: daysMin, trainDays,
       goalTimeSeconds: goalSecs > 0 ? goalSecs : null,
       startDistanceKm: startKm ? parseFloat(startKm) : null,
     };
   };
 
   const handleGenerate = () => {
-    if (trainDays.length < daysPerWeek) {
-      setError(`Pick at least ${daysPerWeek} training days (you selected ${trainDays.length}).`);
+    if (trainDays.length < daysMax) {
+      setError(`Pick at least ${daysMax} training days (you selected ${trainDays.length}).`);
       return;
     }
     if (distance === 'custom' && !(parseFloat(customKm) > 0)) {
@@ -79,7 +80,8 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
       custom_distance_km: distance === 'custom' ? (parseFloat(customKm) || 0) : 0,
       level,
       weeks,
-      days_per_week: daysPerWeek,
+      days_per_week: daysMax,
+      days_per_week_min: daysMin,
       train_days: trainDays,
       goal_time_seconds: cfg.goalTimeSeconds,
       start_distance_km: cfg.startDistanceKm,
@@ -141,21 +143,37 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
         <p className="text-xs text-[#64748B] mt-1.5">{LEVELS.find(l => l.value === level)!.desc}</p>
       </div>
 
-      {/* Weeks + days */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="label">Weeks: <span className="text-white font-bold">{weeks}</span></label>
-          <input type="range" min="4" max="16" value={weeks} onChange={e => setWeeks(parseInt(e.target.value))} className="w-full accent-blue-500" />
-        </div>
-        <div>
-          <label className="label">Runs / week: <span className="text-white font-bold">{daysPerWeek}</span></label>
-          <input type="range" min="2" max="6" value={daysPerWeek} onChange={e => setDaysPerWeek(parseInt(e.target.value))} className="w-full accent-blue-500" />
+      {/* Weeks */}
+      <div>
+        <label className="label">Weeks: <span className="text-white font-bold">{weeks}</span></label>
+        <input type="range" min="4" max="16" value={weeks} onChange={e => setWeeks(parseInt(e.target.value))} className="w-full accent-blue-500" />
+      </div>
+
+      {/* Runs per week — range or exact */}
+      <div>
+        <label className="label">
+          Runs / week: <span className="text-white font-bold">{daysMin === daysMax ? daysMax : `${daysMin}–${daysMax}`}</span>
+          {daysMin !== daysMax && <span className="text-[#64748B] text-xs"> (varies week to week)</span>}
+        </label>
+        <div className="grid grid-cols-2 gap-3 mt-1">
+          <div>
+            <span className="text-xs text-[#64748B]">Min</span>
+            <input type="range" min="2" max="6" value={daysMin}
+              onChange={e => { const v = parseInt(e.target.value); setDaysMin(v); if (v > daysMax) setDaysMax(v); }}
+              className="w-full accent-blue-500" />
+          </div>
+          <div>
+            <span className="text-xs text-[#64748B]">Max</span>
+            <input type="range" min="2" max="6" value={daysMax}
+              onChange={e => { const v = parseInt(e.target.value); setDaysMax(v); if (v < daysMin) setDaysMin(v); }}
+              className="w-full accent-blue-500" />
+          </div>
         </div>
       </div>
 
       {/* Train days */}
       <div>
-        <label className="label">Available training days <span className="text-[#64748B]">(pick at least {daysPerWeek})</span></label>
+        <label className="label">Available training days <span className="text-[#64748B]">(pick at least {daysMax})</span></label>
         <div className="grid grid-cols-7 gap-1">
           {WEEKDAYS.map(d => (
             <button key={d} onClick={() => toggleDay(d)}
