@@ -755,19 +755,30 @@ export function planSessionHref(s: Session, planId: string, week: number, day: W
   return `/add?${p.toString()}`;
 }
 
+// All date math below works purely in UTC (parse → operate → format) so it is
+// timezone-independent. Using local `new Date(x+'T00:00:00')` + `.toISOString()`
+// is NOT safe: in timezones ahead of UTC (e.g. NZT) the round-trip can fail to
+// advance the date, causing an infinite loop in nextSession(). Keep this UTC-only.
+function utcDate(dateISO: string): Date {
+  const [y, m, d] = dateISO.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
 function addDaysISO(dateISO: string, days: number): string {
-  const d = new Date(dateISO + 'T00:00:00');
-  d.setDate(d.getDate() + days);
+  const d = utcDate(dateISO);
+  d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().split('T')[0];
 }
+function daysBetween(aISO: string, bISO: string): number {
+  return Math.round((utcDate(bISO).getTime() - utcDate(aISO).getTime()) / 86400000);
+}
 function weekdayOf(dateISO: string): Weekday {
-  const jsDay = new Date(dateISO + 'T00:00:00').getDay(); // 0 Sun .. 6 Sat
+  const jsDay = utcDate(dateISO).getUTCDay(); // 0 Sun .. 6 Sat
   return (['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as Weekday[])[jsDay];
 }
 
 /** The Monday on/after the given date (same date if it's already a Monday). */
 function firstMonday(dateISO: string): string {
-  const jsDay = new Date(dateISO + 'T00:00:00').getDay(); // 0 Sun .. 6 Sat
+  const jsDay = utcDate(dateISO).getUTCDay(); // 0 Sun .. 6 Sat
   const diff = jsDay === 1 ? 0 : jsDay === 0 ? 1 : 8 - jsDay;
   return addDaysISO(dateISO, diff);
 }
@@ -797,7 +808,7 @@ function planDateIndex(plan: PlanLike, dateISO: string): { weekNumber: number; d
   if (dateISO < plan.start_date) return null;
   const anchor = firstMonday(plan.start_date);
   if (dateISO < anchor) return { weekNumber: 0, day: weekdayOf(dateISO) };
-  const daysSinceAnchor = Math.round((new Date(dateISO + 'T00:00:00').getTime() - new Date(anchor + 'T00:00:00').getTime()) / 86400000);
+  const daysSinceAnchor = daysBetween(anchor, dateISO);
   const weekIdx = Math.floor(daysSinceAnchor / 7);
   if (weekIdx >= plan.weeks) return null;
   return { weekNumber: weekIdx + 1, day: weekdayOf(dateISO) };
@@ -831,7 +842,10 @@ export function nextSession(
   const endISO = planEndDateISO(plan);
   let d = fromISO < plan.start_date ? plan.start_date : fromISO;
   if (opts.after) d = addDaysISO(d, 1);
-  while (d <= endISO) {
+  // Hard cap on iterations as a defensive backstop against any date-math bug —
+  // a plan can never span more than weeks*7 + a lead-in week of days.
+  let guard = (plan.weeks + 2) * 7 + 2;
+  while (d <= endISO && guard-- > 0) {
     const pos = planDateIndex(plan, d);
     if (pos) {
       const week = plan.plan_data.weeks.find(w => w.weekNumber === pos.weekNumber);
