@@ -13,6 +13,8 @@ import {
 } from '@/types';
 import DistancePicker from '@/components/DistancePicker';
 import { useDirtyForm } from '@/components/DirtyFormContext';
+import ConfettiBurst from '@/components/ConfettiBurst';
+import { todayLocalISO } from '@/lib/utils';
 
 const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals'];
 
@@ -42,10 +44,11 @@ export default function AddPage() {
   const [elevationGain, setElevationGain] = useState('');
   const [isPb, setIsPb] = useState(false);
   const [pbDesc, setPbDesc] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayLocalISO());
   const [showMore, setShowMore] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [confettiColor, setConfettiColor] = useState<string | null>(null);
   const [error, setError] = useState('');
   const { setDirty, showWarning, setShowWarning, pendingHref } = useDirtyForm();
   const router = useRouter();
@@ -144,12 +147,14 @@ export default function AddPage() {
       setError(dbErr.message);
     } else {
       setSuccess(true);
+      setConfettiColor(accentColor);
+      setTimeout(() => setConfettiColor(null), 2200);
       // Reset form
       setName(''); setExerciseType(''); setRunType(''); setSubType(''); setGymTypes([]); setHours(''); setMins('');
       setEffort(null); setDistance(''); setNotes(''); setIntensityMins('');
       setPaceMin(''); setPaceSec(''); setMaxPaceMin(''); setMaxPaceSec('');
       setMaxHr(''); setAvgHr(''); setElevationGain(''); setIsPb(false); setPbDesc('');
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(todayLocalISO());
       setTimeout(() => setSuccess(false), 3000);
       // form is clean after save
     }
@@ -165,9 +170,10 @@ export default function AddPage() {
     <div className="max-w-lg mx-auto">
       <h1 className="text-xl font-bold text-white mb-5">Add Exercise</h1>
 
+      {confettiColor && <ConfettiBurst color={confettiColor} />}
       {success && (
         <div className="mb-4 p-3 rounded-lg bg-green-900/40 border border-green-700 text-green-300 text-sm">
-          Activity saved! 🎉
+          Exercise saved! 🎉
         </div>
       )}
       {error && (
@@ -500,7 +506,7 @@ export default function AddPage() {
           className="btn-primary w-full mt-2 py-3 text-base"
           style={{ background: accentColor }}
         >
-          {saving ? 'Saving...' : 'Save Activity'}
+          {saving ? 'Saving...' : 'Save Exercise'}
         </button>
       </div>
 

@@ -28,8 +28,10 @@ const PHASE_COLORS: Record<string, string> = {
   Base: '#3B82F6', Build: '#8B5CF6', Peak: '#F97316', Taper: '#22C55E',
 };
 
-// Each session has either a distance goal or a time goal, never both.
+// Each session has either a distance goal, a time goal, or (for long intervals /
+// sprint reps / hill reps) a rep notation — never more than one of these.
 function target(s: Session): string {
+  if (s.repLabel) return s.repLabel;
   if (s.distanceKm) return `${s.distanceKm} km`;
   if (s.timeMin) return `${s.timeMin} min`;
   return '';
@@ -42,6 +44,9 @@ interface Props {
 }
 
 function DayCell({ s, onClick, compact }: { s: Session; onClick?: () => void; compact?: boolean }) {
+  if (s.beforeStart) {
+    return <div className={`w-full rounded-lg border border-dashed border-[#1E293B] ${compact ? 'h-8' : 'p-2.5 h-[52px]'}`} />;
+  }
   const color = sessionColor(s);
   const isRest = s.type === 'rest';
   const isCross = s.type === 'crosstrain';

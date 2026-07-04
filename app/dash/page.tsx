@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
-import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak } from '@/lib/utils';
+import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak, todayLocalISO } from '@/lib/utils';
 import { PlanRecord, RUN_DISTANCE_LABELS, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS } from '@/lib/runPlanGenerator';
 import { sessionColor, sessionTarget } from '@/components/PlanWeekTable';
 
@@ -61,7 +61,7 @@ export default function DashPage() {
   }, [user]);
 
   // Today's scheduled sessions across active plans
-  const todayISO = new Date().toISOString().split('T')[0];
+  const todayISO = todayLocalISO();
   const todayPlanItems = plans
     .map(p => ({ plan: p, today: todaysSession(p, todayISO) }))
     .filter((x): x is { plan: PlanRecord; today: NonNullable<ReturnType<typeof todaysSession>> } => !!x.today);
@@ -102,7 +102,7 @@ export default function DashPage() {
   const intensity14 = last14.reduce((s, a) => s + (a.intensity_minutes || 0), 0);
 
   // This week
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocalISO();
   const weekStart = (() => {
     const d = new Date();
     const day = d.getDay();

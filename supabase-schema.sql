@@ -107,8 +107,10 @@ create table if not exists training_plans (
   train_days jsonb not null default '[]',       -- ['mon','wed',...]
   goal_time_seconds integer,
   start_distance_km numeric(6,2),
+  long_run_cap_km numeric(6,2),                 -- optional user ceiling for long runs
   start_date date not null,
   name text,                                    -- optional user label (esp. sport/custom plans)
+  active boolean not null default true,         -- run plans: only one active at a time (switching ends the other)
   plan_data jsonb not null,                     -- generated weeks + per-day sessions w/ completed state
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -130,6 +132,13 @@ create index if not exists training_plans_user on training_plans(user_id, create
 -- Migration: allow multiple plans of any kind + optional name
 -- alter table training_plans drop constraint if exists training_plans_user_id_plan_kind_distance_custom_distance_km_key;
 -- alter table training_plans add column if not exists name text;
+
+-- Migration: add long_run_cap_km + active (multi-plan switch) to training_plans
+-- alter table training_plans add column if not exists long_run_cap_km numeric(6,2);
+-- alter table training_plans add column if not exists active boolean not null default true;
+
+-- Migration: add sort_order to notes (reorder notes logged on the same date)
+-- alter table notes add column if not exists sort_order integer not null default 0;
 
 -- Migration: add sub_type column to activities
 -- alter table activities add column if not exists sub_type text;

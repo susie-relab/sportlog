@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
-import { formatDate } from '@/lib/utils';
+import { formatDate, todayLocalISO } from '@/lib/utils';
 
 interface StandaloneNote {
   id: string;
@@ -11,6 +11,7 @@ interface StandaloneNote {
   body: string;
   date: string;
   created_at: string;
+  sort_order: number;
   _type: 'note';
 }
 
@@ -32,7 +33,7 @@ export default function NotesPage() {
 
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayLocalISO());
 
   useEffect(() => {
     if (!user) return;
@@ -51,7 +52,7 @@ export default function NotesPage() {
     setEditingNote(null);
     setTitle('');
     setBody('');
-    setDate(new Date().toISOString().split('T')[0]);
+    setDate(todayLocalISO());
     setShowForm(true);
   };
 
@@ -77,7 +78,7 @@ export default function NotesPage() {
       }
     } else {
       const { data, error } = await supabase.from('notes')
-        .insert({ user_id: user.id, title: title.trim(), body: body.trim(), date })
+        .insert({ user_id: user.id, title: title.trim(), body: body.trim(), date, sort_order: Date.now() })
         .select()
         .single();
       if (!error && data) {
@@ -93,11 +94,39 @@ export default function NotesPage() {
     setNotes(prev => prev.filter(n => n.id !== id));
   };
 
-  // Merge and sort all items by date desc
+  // Reorder a standalone note against the adjacent note sharing the same date.
+  // Normalizes the whole same-date group to sequential order first, so legacy
+  // notes that all share sort_order=0 still reorder correctly on first use.
+  const moveNote = async (id: string, direction: 'up' | 'down') => {
+    const date = notes.find(n => n.id === id)?.date;
+    if (!date) return;
+    const group = [...notes]
+      .filter(n => n.date === date)
+      .sort((a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at));
+    const idx = group.findIndex(n => n.id === id);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= group.length) return;
+    const ids = group.map(n => n.id);
+    [ids[idx], ids[swapIdx]] = [ids[swapIdx], ids[idx]];
+    const updates = ids.map((noteId, i) => ({ id: noteId, sort_order: i }));
+    setNotes(prev => prev.map(n => {
+      const u = updates.find(x => x.id === n.id);
+      return u ? { ...n, sort_order: u.sort_order } : n;
+    }));
+    await Promise.all(updates.map(u => supabase.from('notes').update({ sort_order: u.sort_order }).eq('id', u.id)));
+  };
+
+  // Merge and sort all items by date desc; standalone notes on the same date
+  // keep their manually-set relative order (activity notes stay date-sorted).
   const allItems: NoteItem[] = [
     ...notes.map(n => ({ ...n, _type: 'note' as const })),
     ...activities.map(a => ({ ...a, _type: 'activity' as const })),
-  ].sort((a, b) => b.date.localeCompare(a.date));
+  ].sort((a, b) => {
+    const dateCmp = b.date.localeCompare(a.date);
+    if (dateCmp !== 0) return dateCmp;
+    if (a._type === 'note' && b._type === 'note') return a.sort_order - b.sort_order;
+    return 0;
+  });
 
   const filtered = search
     ? allItems.filter(item =>
@@ -173,6 +202,9 @@ export default function NotesPage() {
         <div className="flex flex-col gap-3">
           {filtered.map(item => {
             if (item._type === 'note') {
+              const sameDate = notes.filter(n => n.date === item.date).sort((a, b) => a.sort_order - b.sort_order);
+              const posInGroup = sameDate.findIndex(n => n.id === item.id);
+              const canReorder = sameDate.length > 1;
               return (
                 <div key={item.id} className="card border-l-2" style={{ borderLeftColor: '#6366F1' }}>
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -183,7 +215,7 @@ export default function NotesPage() {
                     <span className="text-xs text-[#475569] whitespace-nowrap flex-shrink-0">{formatDate(item.date)}</span>
                   </div>
                   <p className="text-sm text-[#94A3B8] leading-relaxed whitespace-pre-line mb-3">{item.body}</p>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => openEdit(item)}
                       className="text-xs text-[#64748B] hover:text-white transition-colors"
@@ -196,6 +228,25 @@ export default function NotesPage() {
                     >
                       Delete
                     </button>
+                    {canReorder && (
+                      <div className="flex items-center gap-1 ml-auto">
+                        <span className="text-[10px] text-[#475569] mr-1">Same day — reorder:</span>
+                        <button
+                          onClick={() => moveNote(item.id, 'up')}
+                          disabled={posInGroup === 0}
+                          className="w-6 h-6 rounded border border-[#334155] text-[#94A3B8] text-xs disabled:opacity-30 hover:border-[#475569] disabled:hover:border-[#334155]"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          onClick={() => moveNote(item.id, 'down')}
+                          disabled={posInGroup === sameDate.length - 1}
+                          className="w-6 h-6 rounded border border-[#334155] text-[#94A3B8] text-xs disabled:opacity-30 hover:border-[#475569] disabled:hover:border-[#334155]"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

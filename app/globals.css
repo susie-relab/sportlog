@@ -154,3 +154,8 @@ select.input {
   .main-content { margin: 0 !important; padding: 0 !important; }
   .card { border-color: #ccc !important; }
 }
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(540deg); opacity: 0.85; }
+}

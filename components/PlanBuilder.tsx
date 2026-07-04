@@ -8,6 +8,7 @@ import {
 } from '@/lib/runPlanGenerator';
 import PlanWeekTable from './PlanWeekTable';
 import PlanDaySheet from './PlanDaySheet';
+import { todayLocalISO } from '@/lib/utils';
 
 const DISTANCES: RunDistance[] = ['5k', '10k', 'half', 'marathon', 'keep_fit', 'speed', 'ultra_50k', 'ultra_100k', 'ultra_100mile', 'custom'];
 const LEVELS: { value: PlanLevel; label: string; desc: string }[] = [
@@ -18,11 +19,12 @@ const LEVELS: { value: PlanLevel; label: string; desc: string }[] = [
 
 interface Props {
   existing?: PlanRecord | null;
+  hasActiveRunPlan?: boolean; // whether the user already has another active run plan
   onSaved: (rec: PlanRecord) => void;
   onCancel: () => void;
 }
 
-export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
+export default function PlanBuilder({ existing, hasActiveRunPlan, onSaved, onCancel }: Props) {
   const { user } = useAuth();
   const [distance, setDistance] = useState<RunDistance>(existing?.distance ?? '5k');
   const [customKm, setCustomKm] = useState(existing?.custom_distance_km ? String(existing.custom_distance_km) : '');
@@ -35,8 +37,9 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
   const [goalM, setGoalM] = useState(existing?.goal_time_seconds ? String(Math.floor((existing.goal_time_seconds % 3600) / 60)) : '');
   const [goalS, setGoalS] = useState(existing?.goal_time_seconds ? String(existing.goal_time_seconds % 60) : '');
   const [startKm, setStartKm] = useState(existing?.start_distance_km ? String(existing.start_distance_km) : '');
-  const todayISO = new Date().toISOString().split('T')[0];
-  const tomorrowISO = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })();
+  const [longRunCap, setLongRunCap] = useState(existing?.long_run_cap_km ? String(existing.long_run_cap_km) : '');
+  const todayISO = todayLocalISO();
+  const tomorrowISO = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
   const [startDate, setStartDate] = useState(existing?.start_date ?? tomorrowISO);
   const [lengthMode, setLengthMode] = useState<'weeks' | 'date'>('weeks');
   const [endDate, setEndDate] = useState('');
@@ -69,6 +72,7 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
       startDistanceKm: startKm ? parseFloat(startKm) : null,
       startDate,
       longRunDay: longRunDay === 'auto' ? null : longRunDay,
+      longRunCapKm: longRunCap ? parseFloat(longRunCap) : null,
     };
   };
 
@@ -106,9 +110,13 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
       train_days: trainDays,
       goal_time_seconds: cfg.goalTimeSeconds,
       start_distance_km: cfg.startDistanceKm,
+      long_run_cap_km: cfg.longRunCapKm,
       start_date: startDate,
       plan_data: preview,
       updated_at: new Date().toISOString(),
+      // Preserve active status when editing; a brand-new run plan auto-activates
+      // only if the user doesn't already have another active run plan.
+      ...(existing ? {} : { active: !hasActiveRunPlan }),
     };
     const q = existing
       ? supabase.from('training_plans').update(payload).eq('id', existing.id).select().single()
@@ -272,8 +280,12 @@ export default function PlanBuilder({ existing, onSaved, onCancel }: Props) {
           </div>
         </div>
         <div>
-          <label className="label">Starting weekly distance <span className="text-[#64748B]">(optional, km)</span></label>
+          <label className="label">Week 1's total distance <span className="text-[#64748B]">(optional, km)</span></label>
           <input type="number" className="input" placeholder="e.g. 20" min="0" value={startKm} onChange={e => setStartKm(e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Long runs never exceed <span className="text-[#64748B]">(optional, km)</span></label>
+          <input type="number" className="input" placeholder="e.g. 25" min="5" value={longRunCap} onChange={e => setLongRunCap(e.target.value)} />
         </div>
       </div>
 

@@ -10,6 +10,7 @@ import PlanWeekTable, { sessionTarget } from './PlanWeekTable';
 import PlanDaySheet from './PlanDaySheet';
 import RunTypeGlossary from './RunTypeGlossary';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { todayLocalISO } from '@/lib/utils';
 
 const PHASE_COLORS: Record<string, string> = { Base: '#3B82F6', Build: '#8B5CF6', Peak: '#F97316', Taper: '#22C55E' };
 
@@ -24,9 +25,10 @@ interface Props {
   onEdit: () => void;
   onDelete: () => void;
   onBack: () => void;
+  onSwitchToThis?: () => void; // run plans only — offered when this plan isn't the active one
 }
 
-export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: Props) {
+export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onSwitchToThis }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState<{ week: number; day: Weekday } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -46,7 +48,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
   const kmDone = realWeeks.reduce((s, w) => s + WEEKDAYS.reduce((k, d) => k + (w.days[d].completed ? (w.days[d].distanceKm || 0) : 0), 0), 0);
   const totalKm = realWeeks.reduce((s, w) => s + w.totalKm, 0);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocalISO();
   const pos = todaysSession(plan, today);
   // Before the plan starts: show the first scheduled week. After it ends: clamp to the last real week.
   const currentWeekNo = pos ? pos.week : (today < plan.start_date ? (data.weeks[0]?.weekNumber ?? 1) : plan.weeks);
@@ -114,6 +116,13 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack }: P
           <button onClick={onEdit} className="btn-secondary text-xs px-3 py-1.5">✎ Edit</button>
         </div>
       </div>
+
+      {isRun && !plan.active && (
+        <div className="card border-yellow-600/40 flex items-center justify-between gap-3">
+          <p className="text-sm text-yellow-300">This plan isn't your active run plan right now.</p>
+          {onSwitchToThis && <button onClick={onSwitchToThis} className="btn-secondary text-xs px-3 py-1.5 flex-shrink-0">↻ Switch to this plan</button>}
+        </div>
+      )}
 
       {/* Countdown / week overview card */}
       <div className="card">

@@ -25,6 +25,17 @@ export function formatSpeedKmh(paceMinKm: number): string {
   return `${speed.toFixed(1)} km/h`;
 }
 
+/** Today's date in the browser's local timezone, as YYYY-MM-DD. Avoids the
+ * UTC off-by-one that `new Date().toISOString()` causes for timezones ahead
+ * of UTC (e.g. NZT), where local "today" can already be UTC "tomorrow". */
+export function todayLocalISO(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-');
   return `${day}/${month}/${year}`;

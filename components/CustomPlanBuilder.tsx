@@ -12,6 +12,7 @@ import {
 } from '@/types';
 import PlanWeekTable from './PlanWeekTable';
 import PlanDaySheet from './PlanDaySheet';
+import { todayLocalISO } from '@/lib/utils';
 
 const SUB_LABELS: Partial<Record<ExerciseType, Record<string, string>>> = {
   sport: SPORT_SUB_LABELS, hiit: GYM_SUB_LABELS, water_snow: WATER_SNOW_SUB_LABELS,
@@ -34,8 +35,8 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
   const [daysPerWeek, setDaysPerWeek] = useState(cfg0?.daysPerWeek ?? existing?.days_per_week ?? 5);
   const [trainDays, setTrainDays] = useState<Weekday[]>(cfg0?.trainDays ?? ['mon', 'tue', 'wed', 'thu', 'fri', 'sat']);
   const [level, setLevel] = useState<PlanLevel>(cfg0?.level ?? existing?.level ?? 'moderate');
-  const todayISO = new Date().toISOString().split('T')[0];
-  const tomorrowISO = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })();
+  const todayISO = todayLocalISO();
+  const tomorrowISO = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
   const [startDate, setStartDate] = useState(cfg0?.startDate ?? existing?.start_date ?? tomorrowISO);
 
   // add-activity form state
@@ -84,7 +85,7 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
       distance: 'custom', custom_distance_km: 0, level, weeks,
       days_per_week: daysPerWeek, days_per_week_min: daysPerWeek,
       train_days: trainDays, goal_time_seconds: null, start_distance_km: null,
-      start_date: startDate, name: name.trim() || 'Custom Plan', plan_data: preview,
+      start_date: startDate, name: name.trim() || 'Sport Plan', active: true, plan_data: preview,
       updated_at: new Date().toISOString(),
     };
     const q = existing
@@ -99,7 +100,7 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-white">{existing ? 'Edit Custom Plan' : 'New Custom Plan'}</h2>
+        <h2 className="text-lg font-bold text-white">{existing ? 'Edit Sport Plan' : 'New Sport Plan'}</h2>
         <button onClick={onCancel} className="text-sm text-[#64748B] hover:text-white">✕ Cancel</button>
       </div>
 
@@ -142,12 +143,18 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
           ))}
         </div>
         {subs && (
-          <div className="grid grid-cols-3 gap-1.5">
-            <button onClick={() => setSelSub('')} className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border transition-all ${!selSub ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>General</button>
-            {Object.entries(subs).map(([k, lbl]) => (
-              <button key={k} onClick={() => setSelSub(k)} className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border transition-all ${selSub === k ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>{lbl}</button>
-            ))}
-          </div>
+          <>
+            <div className="border-t border-[#334155] -mx-5" />
+            <div className="bg-[#0F172A] -mx-5 -mb-3 px-5 pt-3 pb-4 rounded-b-xl">
+              <p className="text-[10px] text-[#64748B] uppercase tracking-wide font-semibold mb-2">Subtype (optional)</p>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button onClick={() => setSelSub('')} className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border transition-all ${!selSub ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>General</button>
+                {Object.entries(subs).map(([k, lbl]) => (
+                  <button key={k} onClick={() => setSelSub(k)} className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border transition-all ${selSub === k ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>{lbl}</button>
+                ))}
+              </div>
+            </div>
+          </>
         )}
         <div className="grid grid-cols-3 gap-2 items-end">
           <div>

@@ -25,14 +25,20 @@ export interface Session {
   title: string;        // display heading, e.g. "Tempo Run"
   exerciseType?: string;// for sport/custom sessions: an ExerciseType key
   subType?: string;     // e.g. 'football', 'strength'
-  distanceKm?: number;  // the session's displayed distance GOAL (mutually exclusive with timeMin)
-  timeMin?: number;     // the session's displayed time GOAL (mutually exclusive with distanceKm)
+  distanceKm?: number;  // the session's displayed TOTAL distance goal (mutually exclusive with timeMin)
+  timeMin?: number;     // the session's displayed TOTAL time goal (mutually exclusive with distanceKm)
   estKm?: number;       // internal-only distance estimate for weekly volume totals (not displayed as a goal)
+  /** Rep notation ("4 x 400 m", "8 x 30 sec") shown INSTEAD of distanceKm/timeMin —
+   *  used by long intervals / sprint reps / hill reps, which show quantity x each-rep,
+   *  not a computed total. */
+  repLabel?: string;
   detail: string;       // short description / structure text
   completed?: boolean;
   completedActivityId?: string | null;
   /** Difficulty relative to the original generated session. */
   variant?: 'easier' | 'harder' | null;
+  /** A filler slot in the lead-in "Week 0" that falls before the plan's actual start date. */
+  beforeStart?: boolean;
 }
 
 export type Phase = 'Base' | 'Build' | 'Peak' | 'Taper';
@@ -113,8 +119,10 @@ export interface PlanRecord {
   train_days: Weekday[];
   goal_time_seconds: number | null;
   start_distance_km: number | null;
+  long_run_cap_km?: number | null;
   start_date: string;
   name?: string | null;       // optional label (esp. sport/custom plans)
+  active: boolean;            // run plans: only one active at a time (switch ends the other). sport/custom: always active.
   plan_data: PlanData;
   created_at: string;
   updated_at?: string;
@@ -132,6 +140,7 @@ export interface PlanConfig {
   startDistanceKm?: number | null; // week-1 total distance baseline
   startDate: string;      // ISO date the plan begins — used to build a lead-in "Week 0" if not a Monday
   longRunDay?: Weekday | 'random' | null; // fixed day for the long run, or 'random' each week (default: auto/weekend)
+  longRunCapKm?: number | null; // user-set ceiling — long runs on this plan never exceed this distance
 }
 
 // ---------- small random helpers ----------
@@ -164,6 +173,8 @@ function longRunMaxFor(cfg: PlanConfig): number {
     if (goal) max = Math.min(max, goal);
   }
   if (cfg.level === 'tough') max *= 1.05;
+  // User-set ceiling always wins, but never below the long-run floor.
+  if (cfg.longRunCapKm && cfg.longRunCapKm > 0) max = Math.min(max, Math.max(MIN_KM_LONG, cfg.longRunCapKm));
   return round(max, 1);
 }
 
@@ -225,11 +236,17 @@ function longRunSchedule(cfg: PlanConfig): number[] {
 const MIN_KM_STANDARD = 2;
 const MIN_KM_LONG = 5;
 
+function minKmForType(type: SessionType): number {
+  if (type === 'long' || type === 'trail') return MIN_KM_LONG;
+  if (type === 'easy' || type === 'recovery' || type === 'tempo' || type === 'progression' || type === 'fartlek') return MIN_KM_STANDARD;
+  return 0; // sprint_reps, hill_reps, long_intervals, rest, crosstrain, sport
+}
+
 // ---------- session builders ----------
 function easyRun(cfg: PlanConfig): Session {
   if (chance(0.5)) {
     const t = pick([20, 25, 30, 35, 40, 45]);
-    return { type: 'easy', title: 'Easy Run', timeMin: t, estKm: round(t / 6.5, 0.5),
+    return { type: 'easy', title: 'Easy Run', timeMin: t, estKm: round(t / 6, 0.5),
       detail: `${t} min at a comfortable, conversational pace.` };
   }
   const km = Math.max(MIN_KM_STANDARD, pick([3, 4, 5, 6, 7]));
@@ -260,19 +277,20 @@ function longRun(km: number, cfg: PlanConfig, isPeak: boolean): Session {
 function tempoRun(cfg: PlanConfig): Session {
   const hard = cfg.level === 'tough';
   if (chance(0.5)) {
-    // distance-based — labelled by the tempo volume (e.g. 2 km)
-    const km = Math.max(MIN_KM_STANDARD, randInt(hard ? 3 : 2, hard ? 7 : 5));
-    if (km >= 4 && chance(0.4)) {
-      const half = round(km / 2, 0.5);
-      return { type: 'tempo', title: 'Tempo Run', distanceKm: km,
+    // distance-based — the displayed total includes the 1km warm-up + 1km cooldown
+    const workKm = Math.max(MIN_KM_STANDARD, randInt(hard ? 3 : 2, hard ? 7 : 5));
+    if (workKm >= 4 && chance(0.4)) {
+      const half = round(workKm / 2, 0.5);
+      return { type: 'tempo', title: 'Tempo Run', distanceKm: workKm + 2,
         detail: `1 km warm-up, 2 x ${half} km at a steady "comfortably hard" pace (short jog between), 1 km cooldown.` };
     }
-    return { type: 'tempo', title: 'Tempo Run', distanceKm: km,
-      detail: `1 km warm-up, ${km} km at a steady "comfortably hard" pace, 1 km cooldown.` };
+    return { type: 'tempo', title: 'Tempo Run', distanceKm: workKm + 2,
+      detail: `1 km warm-up, ${workKm} km at a steady "comfortably hard" pace, 1 km cooldown.` };
   }
-  // time-based — labelled by total time (warm-up + tempo + cooldown)
+  // time-based — total time already includes warm-up + tempo + cooldown
   const min = pick(hard ? [20, 25, 30] : [10, 15, 20, 25]);
-  return { type: 'tempo', title: 'Tempo Run', timeMin: 10 + min + 5,
+  const totalTempoMin = 10 + min + 5;
+  return { type: 'tempo', title: 'Tempo Run', timeMin: totalTempoMin, estKm: round(totalTempoMin / 6, 0.5),
     detail: `10 min warm-up, ${min} min steady at "comfortably hard", 5 min cooldown.` };
 }
 
@@ -281,27 +299,29 @@ function fartlek(cfg: PlanConfig): Session {
   if (roll < 0.2) {
     // mixed blocks with a tempo bridge; tough = more reps + shorter easy floats
     const tough = cfg.level === 'tough';
-    const easy = tough ? '20 sec' : '30 sec';
+    const easySec = tough ? 20 : 30;
     const r1 = randInt(tough ? 5 : 3, tough ? 7 : 5);
     const r2 = randInt(tough ? 4 : 2, tough ? 5 : 4);
-    return { type: 'fartlek', title: 'Fartlek (Mixed)', distanceKm: Math.max(MIN_KM_STANDARD, round(6, 0.5)),
-      detail: `5 min warm-up\n${r1} x [30 sec fast / ${easy} easy]\n2 min tempo\n${r2} x [1 min fast / 1 min easy]\n5 min cooldown` };
+    const totalMin = Math.round(5 + (r1 * (30 + easySec)) / 60 + 2 + r2 * 2 + 5);
+    return { type: 'fartlek', title: 'Fartlek (Mixed)', timeMin: totalMin, estKm: round(totalMin / 6, 0.5),
+      detail: `5 min warm-up\n${r1} x [30 sec fast / ${easySec} sec easy]\n2 min tempo\n${r2} x [1 min fast / 1 min easy]\n5 min cooldown` };
   }
   if (roll < 0.35) {
-    // pyramid fartlek: 1-2-3-4-5-4-3-2-1 min fast with slow floats between
-    return { type: 'fartlek', title: 'Fartlek (Pyramid)', distanceKm: Math.max(MIN_KM_STANDARD, round(6.5, 0.5)),
+    // pyramid fartlek: 1-2-3-4-5-4-3-2-1 min fast with slow floats between — fixed structure, fixed total
+    return { type: 'fartlek', title: 'Fartlek (Pyramid)', timeMin: 51, estKm: round(51 / 6, 0.5),
       detail: '5:00 warm-up, then a pyramid:\n1 min fast / 1 min slow\n2 min fast / 2 min slow\n3 min fast / 2 min slow\n4 min fast / 2 min slow\n5 min fast / 2 min slow\n4 min fast / 2 min slow\n3 min fast / 2 min slow\n2 min fast / 2 min slow\n1 min fast / 1 min slow\n5:00 cooldown.' };
   }
   if (roll < 0.7) {
     const opts: [number, string, number][] = [
       [30, '30 sec', 20], [60, '1 min', 12], [90, '90 sec', 10], [120, '2 min', 8],
     ];
-    const [, label, maxReps] = pick(opts);
+    const [workSec, label, maxReps] = pick(opts);
     const reps = randInt(Math.max(6, Math.round(maxReps * 0.5)), maxReps);
-    return { type: 'fartlek', title: 'Fartlek', distanceKm: Math.max(MIN_KM_STANDARD, round(reps * 0.4 + 2, 0.5)),
-      detail: `5:00 warm-up, then ${reps} x ${label} fast with 1:00 easy recovery between.` };
+    const totalMin = Math.round(5 + (reps * workSec) / 60 + (reps - 1) * 1 + 5);
+    return { type: 'fartlek', title: 'Fartlek', timeMin: totalMin, estKm: round(totalMin / 6, 0.5),
+      detail: `5:00 warm-up, then ${reps} x ${label} fast with 1:00 easy recovery between, 5:00 cooldown.` };
   }
-  // time-based — labelled by time only (no clashing distance goal)
+  // time-based — already the total, no separate warm-up/cooldown segments
   const min = pick([20, 25, 30, 35]);
   return { type: 'fartlek', title: 'Fartlek', timeMin: min, estKm: round(min / 6, 0.5),
     detail: `${min} min steady — at random moments pick a point ahead and surge to it as fast as you can.` };
@@ -313,16 +333,20 @@ function progression(km: number): Session {
     detail: `${km} km steady, increasing your pace each km. Your last km should be your fastest.` };
 }
 
+// Long intervals / sprint reps / hill reps show a rep notation ("4 x 400 m")
+// instead of a computed total — distanceKm/estKm still power the weekly volume total.
 function longIntervals(): Session {
   if (chance(0.35)) {
-    // multi-block session
-    const blocks = pick([
-      ['1 km warm-up', '2 x 2 km', '2 x 600 m', 'walk 1 min between reps', '1 km cooldown'],
-      ['5 min warm-up', '3 x 800 m', '4 x 400 m', '200 m walk between reps', '5 min cooldown'],
-      ['1 km warm-up', '4 x 800 m', '2 x 400 m', 'walk 90 sec between reps', '1 km cooldown'],
-    ]);
+    const templates: { warmup: string; reps: [number, string][]; recovery: string; cooldown: string }[] = [
+      { warmup: '1 km warm-up', reps: [[2, '2 km'], [2, '600 m']], recovery: 'walk 1 min between reps', cooldown: '1 km cooldown' },
+      { warmup: '5 min warm-up', reps: [[3, '800 m'], [4, '400 m']], recovery: '200 m walk between reps', cooldown: '5 min cooldown' },
+      { warmup: '1 km warm-up', reps: [[4, '800 m'], [2, '400 m']], recovery: 'walk 90 sec between reps', cooldown: '1 km cooldown' },
+    ];
+    const t = pick(templates);
     const km = round(randInt(7, 11), 0.5);
-    return { type: 'long_intervals', title: 'Long Intervals', distanceKm: km, detail: blocks.join('\n') };
+    const repLabel = t.reps.map(([n, d]) => `${n} x ${d}`).join(' + ');
+    const detail = [t.warmup, ...t.reps.map(([n, d]) => `${n} x ${d}`), t.recovery, t.cooldown].join('\n');
+    return { type: 'long_intervals', title: 'Long Intervals', estKm: km, repLabel, detail };
   }
   const options: [string, number][] = [['400 m', 10], ['800 m', 8], ['1 km', 7], ['1.5 km', 5]];
   const [dist, maxReps] = pick(options);
@@ -332,7 +356,7 @@ function longIntervals(): Session {
   const recovery = chance(0.5)
     ? 'a jog recovery between'
     : `${pick(['90 sec', '2 min', '2:30', '3 min'])} rest between`;
-  return { type: 'long_intervals', title: 'Long Intervals', distanceKm: km,
+  return { type: 'long_intervals', title: 'Long Intervals', estKm: km, repLabel: `${reps} x ${dist}`,
     detail: `1 km warm-up, ${reps} x ${dist} at ~75% intensity with ${recovery}, 1 km cooldown.` };
 }
 
@@ -344,19 +368,21 @@ function sprintReps(cfg: PlanConfig): Session {
 
   // Multi-block session (mixed distances + sport-specific phase plays).
   if (chance(0.4)) {
+    const n1 = r(3, 5), n2 = r(8, 12), n3 = r(3, 5), n4 = r(3, 5), n5 = r(4, 6), n6 = r(3, 4), n7 = r(2, 3), n8 = r(5, 8);
     const blockPool = [
-      `${r(3, 5)} x [100 m & 200 m] (run every minute — less rest after the 200 m; e.g. 100, 200, 100, 200…)`,
-      `${r(8, 12)} x 50 m (on the 30 seconds)`,
-      `${r(3, 5)} x 80 m (run 20 m & back twice = 80 m; 20 sec rest, or go every 40 sec)`,
-      `${r(3, 5)} x 150 m (30 sec rest, or go every min)`,
-      `${r(4, 6)} x 100 m (full recovery between)`,
-      `${r(3, 4)} x 200 m (walk-back recovery)`,
-      `${r(2, 3)} x 1 min phase plays (mimic your movements and plays in your sport)`,
-      `${r(5, 8)} shuttle runs (5 m & back, 10 m & back, 15 m & back, 20 m & back)`,
+      { short: `${n1} x [100&200m]`, long: `${n1} x [100 m & 200 m] (run every minute — less rest after the 200 m; e.g. 100, 200, 100, 200…)` },
+      { short: `${n2} x 50m`, long: `${n2} x 50 m (on the 30 seconds)` },
+      { short: `${n3} x 80m`, long: `${n3} x 80 m (run 20 m & back twice = 80 m; 20 sec rest, or go every 40 sec)` },
+      { short: `${n4} x 150m`, long: `${n4} x 150 m (30 sec rest, or go every min)` },
+      { short: `${n5} x 100m`, long: `${n5} x 100 m (full recovery between)` },
+      { short: `${n6} x 200m`, long: `${n6} x 200 m (walk-back recovery)` },
+      { short: `${n7} x phase plays`, long: `${n7} x 1 min phase plays (mimic your movements and plays in your sport)` },
+      { short: `${n8} shuttles`, long: `${n8} shuttle runs (5 m & back, 10 m & back, 15 m & back, 20 m & back)` },
     ];
     const blocks = pickN(blockPool, blockCount);
-    return { type: 'sprint_reps', title: 'Sprint Reps', distanceKm: round(blocks.length * 0.9 + 1.5, 0.5),
-      detail: '5 min warm-up\n' + blocks.map((b, i) => `Block ${i + 1}: ${b}`).join('\n') + '\n5 min cooldown' };
+    return { type: 'sprint_reps', title: 'Sprint Reps', estKm: round(blocks.length * 0.9 + 1.5, 0.5),
+      repLabel: blocks.map(b => b.short).join(' + '),
+      detail: '5 min warm-up\n' + blocks.map((b, i) => `Block ${i + 1}: ${b.long}`).join('\n') + '\n5 min cooldown' };
   }
   const pool = [
     'shuttle runs (5 m & back, 10 m & back, 15 m & back, 20 m & back)',
@@ -367,7 +393,7 @@ function sprintReps(cfg: PlanConfig): Session {
   ];
   const types = pickN(pool, randInt(1, 3));
   const reps = randInt(cfg.level === 'tough' ? 10 : 5, cfg.level === 'tough' ? 20 : 14);
-  return { type: 'sprint_reps', title: 'Sprint Reps', distanceKm: round(reps * 0.25 + 1.5, 0.5),
+  return { type: 'sprint_reps', title: 'Sprint Reps', estKm: round(reps * 0.25 + 1.5, 0.5), repLabel: `${reps} reps`,
     detail: `Warm-up, then ${reps} reps: ${types.join(', ')}. Full recovery between reps.` };
 }
 
@@ -378,32 +404,35 @@ function hillReps(cfg: PlanConfig): Session {
     const reps = pick([8, 10, 12]);
     const t = pick(['30 sec', '45 sec']);
     const mid = pick([8, 10, 12]);
-    return { type: 'hill_reps', title: 'Hill Repeats', distanceKm: round(reps * 0.35 * 2 + mid / 6 + 2, 0.5),
+    return { type: 'hill_reps', title: 'Hill Repeats', estKm: round(reps * 0.35 * 2 + mid / 6 + 2, 0.5),
+      repLabel: `${reps} x ${t} hills (x2)`,
       detail: `5 min warm-up\n${reps} x ${t} hills\n${mid} min steady run\n${reps} x ${t} hills\n5 min cooldown` };
   }
   if (kind === 'long') {
     const reps = randInt(2, 3);
     const lo = pick([1, 1.5]); const hi = lo + pick([0.5, 1, 1.5]);
-    return { type: 'hill_reps', title: 'Hill Repeats', distanceKm: round(reps * hi + 2, 0.5),
+    return { type: 'hill_reps', title: 'Hill Repeats', estKm: round(reps * hi + 2, 0.5),
+      repLabel: `${reps} x ${lo}–${hi} km`,
       detail: `${reps} x ${lo}–${hi} km uphill at a strong effort, jog back down to recover.` };
   }
   if (kind === 'short') {
     const reps = randInt(5, 10);
     const lo = pick([100, 200]); const hi = lo + 100;
-    return { type: 'hill_reps', title: 'Hill Repeats', distanceKm: round(reps * (hi / 1000) * 2 + 1.5, 0.5),
+    return { type: 'hill_reps', title: 'Hill Repeats', estKm: round(reps * (hi / 1000) * 2 + 1.5, 0.5),
+      repLabel: `${reps} x ${lo}–${hi} m`,
       detail: `${reps} x ${lo}–${hi} m uphill fast, jog/walk back down to recover.` };
   }
   // long time-based hills with a big warm-up/cooldown, e.g. 3 x 3min
   if (chance(0.3)) {
     const reps = randInt(3, 5);
     const t = pick(['2 min', '3 min', '4 min']);
-    return { type: 'hill_reps', title: 'Hill Repeats', distanceKm: round(reps * 0.6 + 3.5, 0.5),
+    return { type: 'hill_reps', title: 'Hill Repeats', estKm: round(reps * 0.6 + 3.5, 0.5), repLabel: `${reps} x ${t}`,
       detail: `10 min warm-up\n${reps} x ${t} hills at a strong effort, jog back down to recover\n10 min cooldown` };
   }
   const opts = ['30 sec', '45–60 sec', '1 min'];
   const t = pick(opts);
   const reps = t === '30 sec' ? randInt(5, 12) : randInt(5, 8);
-  return { type: 'hill_reps', title: 'Hill Repeats', distanceKm: round(reps * 0.35 + 1.5, 0.5),
+  return { type: 'hill_reps', title: 'Hill Repeats', estKm: round(reps * 0.35 + 1.5, 0.5), repLabel: `${reps} x ${t}`,
     detail: `${reps} x ${t} uphill at a strong effort, jog/walk back down between.` };
 }
 
@@ -533,13 +562,20 @@ function assignWeek(cfg: PlanConfig, weekIdx: number): PlanWeek {
 
   const full = days as Record<Weekday, Session>;
 
-  // ----- scale week-1 total to the requested starting distance -----
+  // ----- scale week 1's total to the user's requested "Week 1's total distance" -----
+  // Time-based sessions contribute a fixed (6 min/km) estimate that is never itself
+  // rescaled or shown — only the true distance-goal sessions flex to hit the target.
   let totalKm = sumKm(full);
   if (weekIdx === 0 && cfg.startDistanceKm && totalKm > 0) {
-    const factor = cfg.startDistanceKm / totalKm;
-    for (const d of WEEKDAYS) {
-      const s = full[d];
-      if (s.distanceKm) { s.distanceKm = round(s.distanceKm * factor, 0.5); }
+    const fixedKm = WEEKDAYS.reduce((s, d) => s + (!full[d].distanceKm ? (full[d].estKm || 0) : 0), 0);
+    const distanceKmSum = WEEKDAYS.reduce((s, d) => s + (full[d].distanceKm || 0), 0);
+    const remaining = cfg.startDistanceKm - fixedKm;
+    if (distanceKmSum > 0 && remaining > 0) {
+      const factor = remaining / distanceKmSum;
+      for (const d of WEEKDAYS) {
+        const s = full[d];
+        if (s.distanceKm) s.distanceKm = Math.max(minKmForType(s.type), round(s.distanceKm * factor, 0.5));
+      }
     }
     totalKm = sumKm(full);
   }
@@ -673,9 +709,12 @@ export function switchDifficulty(session: Session, dir: 'easier' | 'harder' | 'r
   if (next.distanceKm) next.distanceKm = round(next.distanceKm * scale, 0.5);
   if (next.timeMin) next.timeMin = Math.round(next.timeMin * scale);
   if (next.estKm) next.estKm = round(next.estKm * scale, 0.5);
+  if (next.repLabel) {
+    next.repLabel = next.repLabel.replace(/^(\d+)/, m => String(Math.max(1, Math.round(parseInt(m, 10) * scale))));
+  }
   // Hill reps can escalate to a trail run (the hardest option).
   if (session.type === 'hill_reps' && dir === 'harder') {
-    return { ...trailRun(round((session.distanceKm || 6) * 1.2, 0.5)), variant: 'harder' };
+    return { ...trailRun(round((session.distanceKm || session.estKm || 6) * 1.2, 0.5)), variant: 'harder' };
   }
   const tag = dir === 'harder' ? ' (harder)' : ' (easier)';
   next.detail = session.detail + tag;
@@ -745,7 +784,7 @@ function buildLeadInWeek(startDate: string, sessionForLeadIn: () => Session): Pl
   for (let d = startDate; d < anchor; d = addDaysISO(d, 1)) leadInDays.push(weekdayOf(d));
   const days: Partial<Record<Weekday, Session>> = {};
   for (const d of WEEKDAYS) {
-    days[d] = leadInDays.includes(d) ? sessionForLeadIn() : { type: 'rest', title: '—', detail: 'Before your plan starts.', completed: false };
+    days[d] = leadInDays.includes(d) ? sessionForLeadIn() : { type: 'rest', title: '', detail: '', completed: false, beforeStart: true };
   }
   const full = days as Record<Weekday, Session>;
   return { weekNumber: 0, phase: 'Base', totalKm: round(sumKm(full), 0.5), days: full };
