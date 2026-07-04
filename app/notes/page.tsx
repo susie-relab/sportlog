@@ -12,6 +12,7 @@ interface StandaloneNote {
   date: string;
   created_at: string;
   sort_order: number;
+  hidden: boolean;
   _type: 'note';
 }
 
@@ -94,6 +95,29 @@ export default function NotesPage() {
     setNotes(prev => prev.filter(n => n.id !== id));
   };
 
+  // Hide/unhide — keeps the header (name/title) visible, conceals the body text.
+  const toggleHideNote = async (n: StandaloneNote) => {
+    const hidden = !n.hidden;
+    setNotes(prev => prev.map(x => x.id === n.id ? { ...x, hidden } : x));
+    await supabase.from('notes').update({ hidden }).eq('id', n.id);
+  };
+  const toggleHideActivity = async (a: Activity) => {
+    const note_hidden = !a.note_hidden;
+    setActivities(prev => prev.map(x => x.id === a.id ? { ...x, note_hidden } : x));
+    await supabase.from('activities').update({ note_hidden }).eq('id', a.id);
+  };
+
+  // Edit an activity's note text (the note on a logged activity).
+  const [editActId, setEditActId] = useState<string | null>(null);
+  const [editActText, setEditActText] = useState('');
+  const openEditActivity = (a: Activity) => { setEditActId(a.id); setEditActText(a.notes || ''); };
+  const saveActivityNote = async (a: Activity) => {
+    const text = editActText.trim();
+    setActivities(prev => prev.map(x => x.id === a.id ? { ...x, notes: text } : x));
+    setEditActId(null);
+    await supabase.from('activities').update({ notes: text || null }).eq('id', a.id);
+  };
+
   // Reorder a standalone note against the adjacent note sharing the same date.
   // Normalizes the whole same-date group to sequential order first, so legacy
   // notes that all share sort_order=0 still reorder correctly on first use.
@@ -120,7 +144,7 @@ export default function NotesPage() {
   // keep their manually-set relative order (activity notes stay date-sorted).
   const allItems: NoteItem[] = [
     ...notes.map(n => ({ ...n, _type: 'note' as const })),
-    ...activities.map(a => ({ ...a, _type: 'activity' as const })),
+    ...activities.filter(a => (a.notes || '').trim()).map(a => ({ ...a, _type: 'activity' as const })),
   ].sort((a, b) => {
     const dateCmp = b.date.localeCompare(a.date);
     if (dateCmp !== 0) return dateCmp;
@@ -214,13 +238,21 @@ export default function NotesPage() {
                     </div>
                     <span className="text-xs text-[#475569] whitespace-nowrap flex-shrink-0">{formatDate(item.date)}</span>
                   </div>
-                  <p className="text-sm text-[#94A3B8] leading-relaxed whitespace-pre-line mb-3">{item.body}</p>
-                  <div className="flex items-center gap-2">
+                  {item.hidden
+                    ? <p className="text-sm text-[#475569] italic mb-3">🔒 Note hidden</p>
+                    : <p className="text-sm text-[#94A3B8] leading-relaxed whitespace-pre-line mb-3">{item.body}</p>}
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       onClick={() => openEdit(item)}
                       className="text-xs text-[#64748B] hover:text-white transition-colors"
                     >
                       ✏️ Edit
+                    </button>
+                    <button
+                      onClick={() => toggleHideNote(item)}
+                      className="text-xs text-[#64748B] hover:text-white transition-colors"
+                    >
+                      {item.hidden ? '👁 Unhide' : '🙈 Hide'}
                     </button>
                     <button
                       onClick={() => handleDelete(item.id)}
@@ -268,12 +300,28 @@ export default function NotesPage() {
                   </div>
                   <span className="text-xs text-[#475569] whitespace-nowrap flex-shrink-0">{formatDate(item.date)}</span>
                 </div>
-                <p className="text-sm text-[#94A3B8] leading-relaxed whitespace-pre-line">{item.notes}</p>
+                {editActId === item.id ? (
+                  <div className="flex flex-col gap-2 mb-2">
+                    <textarea className="input" rows={3} value={editActText} onChange={e => setEditActText(e.target.value)} style={{ resize: 'vertical' }} />
+                    <div className="flex gap-2">
+                      <button onClick={() => saveActivityNote(item)} className="btn-primary text-xs px-3 py-1.5">Save</button>
+                      <button onClick={() => setEditActId(null)} className="btn-secondary text-xs px-3 py-1.5">Cancel</button>
+                    </div>
+                  </div>
+                ) : item.note_hidden
+                  ? <p className="text-sm text-[#475569] italic">🔒 Note hidden</p>
+                  : <p className="text-sm text-[#94A3B8] leading-relaxed whitespace-pre-line">{item.notes}</p>}
                 <div className="flex gap-3 mt-2 text-xs text-[#475569]">
                   <span>{item.duration_minutes}m</span>
                   {item.distance_km ? <span>{item.distance_km} km</span> : null}
                   {item.pace_min_km ? <span>{Math.floor(item.pace_min_km)}:{String(Math.round((item.pace_min_km % 1) * 60)).padStart(2, '0')}/km</span> : null}
                 </div>
+                {editActId !== item.id && (
+                  <div className="flex items-center gap-3 mt-2">
+                    <button onClick={() => openEditActivity(item)} className="text-xs text-[#64748B] hover:text-white transition-colors">✏️ Edit</button>
+                    <button onClick={() => toggleHideActivity(item)} className="text-xs text-[#64748B] hover:text-white transition-colors">{item.note_hidden ? '👁 Unhide' : '🙈 Hide'}</button>
+                  </div>
+                )}
               </div>
             );
           })}

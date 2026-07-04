@@ -117,6 +117,7 @@ export interface Activity {
   avg_hr?: number;
   is_pb: boolean;
   pb_description?: string;
+  note_hidden?: boolean;
   date: string;
   created_at: string;
 }

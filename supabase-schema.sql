@@ -18,6 +18,7 @@ create table if not exists activities (
   avg_hr integer,
   elevation_gain_m integer,
   sub_type text,
+  note_hidden boolean not null default false,
   is_pb boolean default false,
   pb_description text,
   date date not null,
@@ -81,6 +82,8 @@ create table if not exists notes (
   title text not null,
   body text not null,
   date date not null,
+  sort_order integer not null default 0,
+  hidden boolean not null default false,
   created_at timestamptz default now()
 );
 
@@ -145,6 +148,10 @@ create index if not exists training_plans_user on training_plans(user_id, create
 
 -- Migration: add elevation_gain_m column to activities
 -- alter table activities add column if not exists elevation_gain_m integer;
+
+-- Migration: hide/unhide notes (Notes tab). note_hidden on activities, hidden on notes.
+-- alter table activities add column if not exists note_hidden boolean not null default false;
+-- alter table notes add column if not exists hidden boolean not null default false;
 
 -- Migration: if goals table already exists, run these:
 -- alter table goals add column if not exists activity_type text not null default 'all';
