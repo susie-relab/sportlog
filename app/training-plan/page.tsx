@@ -4,11 +4,13 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { PlanRecord, RUN_DISTANCE_LABELS, WEEKDAYS, isRunSession } from '@/lib/runPlanGenerator';
 import PlanBuilder from '@/components/PlanBuilder';
+import SportPlanBuilder from '@/components/SportPlanBuilder';
 import CustomPlanBuilder from '@/components/CustomPlanBuilder';
 import PlanView from '@/components/PlanView';
 import GoalsPanel from '@/components/GoalsPanel';
 
 type Mode = 'plans' | 'goals';
+type BuildKind = 'run' | 'sport' | 'custom';
 
 function planProgress(p: PlanRecord) {
   const realWeeks = p.plan_data.weeks.filter(w => w.weekNumber > 0);
@@ -55,7 +57,7 @@ export default function PlanPage() {
   const [plans, setPlans] = useState<PlanRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<PlanRecord | null>(null);
-  const [buildKind, setBuildKind] = useState<'run' | 'custom' | null>(null);
+  const [buildKind, setBuildKind] = useState<BuildKind | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [editing, setEditing] = useState<PlanRecord | null>(null);
   const [switchTarget, setSwitchTarget] = useState<PlanRecord | null>(null);
@@ -108,12 +110,12 @@ export default function PlanPage() {
   if (loading) return <div className="text-[#64748B] text-sm">Loading...</div>;
 
   // Building / editing — pick the right builder by kind
-  const activeKind = editing ? (editing.plan_kind === 'run' ? 'run' : 'custom') : buildKind;
+  const activeKind: BuildKind = editing ? (editing.plan_kind as BuildKind) : (buildKind ?? 'run');
   if (buildKind || editing) {
     return (
       <div className="max-w-2xl mx-auto">
-        {activeKind === 'custom'
-          ? <CustomPlanBuilder existing={editing} onSaved={handleSaved} onCancel={cancelBuild} />
+        {activeKind === 'custom' ? <CustomPlanBuilder existing={editing} onSaved={handleSaved} onCancel={cancelBuild} />
+          : activeKind === 'sport' ? <SportPlanBuilder existing={editing} onSaved={handleSaved} onCancel={cancelBuild} />
           : <PlanBuilder existing={editing} hasActiveRunPlan={!!activeRunPlan} onSaved={handleSaved} onCancel={cancelBuild} />}
       </div>
     );
@@ -138,14 +140,18 @@ export default function PlanPage() {
   const chooseCard = (
     <div className="card">
       <p className="text-sm font-semibold text-white mb-3">What kind of plan?</p>
-      <div className="grid grid-cols-2 gap-2">
-        <button onClick={() => { setChoosing(false); setBuildKind('run'); }} className="py-4 rounded-lg border border-[#334155] hover:border-blue-500 text-white text-sm font-semibold transition-colors">
+      <div className="flex flex-col gap-2">
+        <button onClick={() => { setChoosing(false); setBuildKind('run'); }} className="py-3 px-4 rounded-lg border border-[#334155] hover:border-blue-500 text-white text-sm font-semibold transition-colors text-left">
           🏃 Run plan
-          <span className="block text-xs text-[#64748B] font-normal mt-1">5K → ultra, auto-generated</span>
+          <span className="block text-xs text-[#64748B] font-normal mt-0.5">5K → ultra, auto-generated weekly runs</span>
         </button>
-        <button onClick={() => { setChoosing(false); setBuildKind('custom'); }} className="py-4 rounded-lg border border-[#334155] hover:border-blue-500 text-white text-sm font-semibold transition-colors">
-          🎯 Sport Plan
-          <span className="block text-xs text-[#64748B] font-normal mt-1">Customise any sports and activities</span>
+        <button onClick={() => { setChoosing(false); setBuildKind('sport'); }} className="py-3 px-4 rounded-lg border border-[#334155] hover:border-blue-500 text-white text-sm font-semibold transition-colors text-left">
+          🎯 Sport plan
+          <span className="block text-xs text-[#64748B] font-normal mt-0.5">One sport — pick session types (game, training, conditioning…) per day</span>
+        </button>
+        <button onClick={() => { setChoosing(false); setBuildKind('custom'); }} className="py-3 px-4 rounded-lg border border-[#334155] hover:border-blue-500 text-white text-sm font-semibold transition-colors text-left">
+          🔀 Multi-sport plan
+          <span className="block text-xs text-[#64748B] font-normal mt-0.5">Mix any sports & activities with weekly quantities</span>
         </button>
       </div>
       <button onClick={() => setChoosing(false)} className="w-full mt-3 text-xs text-[#64748B] hover:text-white">Cancel</button>
@@ -174,7 +180,7 @@ export default function PlanPage() {
           {plans.length === 0 && !choosing ? (
             <div className="card text-center py-8">
               <p className="text-white font-semibold mb-1">No training plans yet</p>
-              <p className="text-[#64748B] text-sm mb-4">Build an auto-generated run plan, or a Sport Plan customising any sports and activities.</p>
+              <p className="text-[#64748B] text-sm mb-4">Build an auto-generated run plan, a single-sport plan with session types, or a multi-sport mix.</p>
               <button onClick={() => setChoosing(true)} className="btn-primary">+ Create a plan</button>
             </div>
           ) : !choosing ? (

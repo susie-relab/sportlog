@@ -38,11 +38,20 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
   const todayISO = todayLocalISO();
   const tomorrowISO = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
   const [startDate, setStartDate] = useState(cfg0?.startDate ?? existing?.start_date ?? tomorrowISO);
+  const [lengthMode, setLengthMode] = useState<'weeks' | 'date'>('weeks');
+  const [endDate, setEndDate] = useState('');
+  const weeksFromDates = (() => {
+    if (!endDate) return null;
+    const days = Math.round((new Date(endDate + 'T00:00:00').getTime() - new Date(startDate + 'T00:00:00').getTime()) / 86400000);
+    return days > 0 ? Math.max(1, Math.ceil((days + 1) / 7)) : null;
+  })();
+  const effectiveWeeks = lengthMode === 'date' && weeksFromDates ? weeksFromDates : weeks;
 
   // add-activity form state
   const [selType, setSelType] = useState<ExerciseType>('sport');
   const [selSub, setSelSub] = useState<string>('');
-  const [qty, setQty] = useState(1);
+  const [customSport, setCustomSport] = useState('');
+  const [qty, setQty] = useState('1');
   const [durMin, setDurMin] = useState('45');
   const [durMax, setDurMax] = useState('60');
 
@@ -55,20 +64,22 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
 
   const subs = SUB_LABELS[selType];
   const addActivity = () => {
+    const custom = customSport.trim();
     const subLabel = selSub && subs ? subs[selSub] : '';
-    const label = subLabel || EXERCISE_TYPE_LABELS[selType];
+    const label = custom || subLabel || EXERCISE_TYPE_LABELS[selType];
     setActivities(prev => [...prev, {
-      exerciseType: selType, subType: selSub || undefined, label, quantity: qty,
+      exerciseType: selType, subType: selSub || undefined, label, quantity: Math.max(1, parseInt(qty) || 1),
       durationMin: durMin ? parseInt(durMin) : undefined, durationMax: durMax ? parseInt(durMax) : undefined,
     }]);
     setSelSub('');
-    setQty(1);
+    setCustomSport('');
+    setQty('1');
   };
   const removeActivity = (i: number) => setActivities(prev => prev.filter((_, idx) => idx !== i));
 
   const totalPerWeek = activities.reduce((s, a) => s + a.quantity, 0);
 
-  const buildConfig = (): CustomConfig => ({ name: name.trim() || undefined, activities, weeks, daysPerWeek, trainDays, level, startDate });
+  const buildConfig = (): CustomConfig => ({ name: name.trim() || undefined, activities, weeks: effectiveWeeks, daysPerWeek, trainDays, level, startDate });
 
   const handleGenerate = () => {
     if (activities.length === 0) { setError('Add at least one activity.'); return; }
@@ -82,7 +93,7 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
     setSaving(true); setError('');
     const payload = {
       user_id: user.id, plan_kind: 'custom' as const,
-      distance: 'custom', custom_distance_km: 0, level, weeks,
+      distance: 'custom', custom_distance_km: 0, level, weeks: effectiveWeeks,
       days_per_week: daysPerWeek, days_per_week_min: daysPerWeek,
       train_days: trainDays, goal_time_seconds: null, start_distance_km: null,
       start_date: startDate, name: name.trim() || 'Sport Plan', active: true, plan_data: preview,
@@ -145,21 +156,25 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
         {subs && (
           <>
             <div className="border-t border-[#334155] -mx-5" />
-            <div className="bg-[#0F172A] -mx-5 -mb-3 px-5 pt-3 pb-4 rounded-b-xl">
+            <div className="bg-[#0F172A] -mx-5 px-5 pt-3 pb-4">
               <p className="text-[10px] text-[#64748B] uppercase tracking-wide font-semibold mb-2">Subtype (optional)</p>
               <div className="grid grid-cols-3 gap-1.5">
-                <button onClick={() => setSelSub('')} className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border transition-all ${!selSub ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>General</button>
+                <button onClick={() => { setSelSub(''); }} className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border transition-all ${!selSub ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>General</button>
                 {Object.entries(subs).map(([k, lbl]) => (
-                  <button key={k} onClick={() => setSelSub(k)} className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border transition-all ${selSub === k ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>{lbl}</button>
+                  <button key={k} onClick={() => { setSelSub(k); setCustomSport(''); }} className={`py-1.5 px-2 rounded-lg text-[11px] font-medium border transition-all ${selSub === k ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>{lbl}</button>
                 ))}
               </div>
+              <input className="input mt-2 text-sm" placeholder="Or type a custom name…" value={customSport}
+                onChange={e => { setCustomSport(e.target.value); if (e.target.value) setSelSub(''); }} />
             </div>
+            <div className="border-t border-[#334155] -mx-5" />
           </>
         )}
         <div className="grid grid-cols-3 gap-2 items-end">
           <div>
             <span className="text-xs text-[#64748B]">Per week</span>
-            <input type="number" className="input" min="1" max="14" value={qty} onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))} />
+            <input type="number" className="input" min="1" max="14" value={qty}
+              onChange={e => setQty(e.target.value)} onBlur={() => setQty(String(Math.max(1, parseInt(qty) || 1)))} />
           </div>
           <div>
             <span className="text-xs text-[#64748B]">Min mins</span>
@@ -170,19 +185,33 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
             <input type="number" className="input" min="0" value={durMax} onChange={e => setDurMax(e.target.value)} />
           </div>
         </div>
-        <button onClick={addActivity} className="btn-secondary">+ Add {selSub && subs ? subs[selSub] : EXERCISE_TYPE_LABELS[selType]}</button>
+        <button onClick={addActivity} className="btn-secondary">+ Add {customSport.trim() || (selSub && subs ? subs[selSub] : EXERCISE_TYPE_LABELS[selType])}</button>
       </div>
 
-      {/* Weeks + days */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="label">Weeks: <span className="text-white font-bold">{weeks}</span></label>
-          <input type="range" min="1" max="16" value={weeks} onChange={e => setWeeks(parseInt(e.target.value))} className="w-full accent-blue-500" />
+      {/* Length: weeks or end date */}
+      <div>
+        <label className="label">Plan length</label>
+        <div className="grid grid-cols-2 gap-1.5 mb-2">
+          <button onClick={() => setLengthMode('weeks')} className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${lengthMode === 'weeks' ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>By weeks</button>
+          <button onClick={() => setLengthMode('date')} className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${lengthMode === 'date' ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>By end date</button>
         </div>
-        <div>
-          <label className="label">Sessions / week: <span className="text-white font-bold">{daysPerWeek}</span></label>
-          <input type="range" min="1" max="7" value={daysPerWeek} onChange={e => setDaysPerWeek(parseInt(e.target.value))} className="w-full accent-blue-500" />
-        </div>
+        {lengthMode === 'weeks' ? (
+          <div>
+            <span className="text-xs text-[#64748B]">Weeks: <span className="text-white font-bold">{weeks}</span></span>
+            <input type="range" min="1" max="16" value={weeks} onChange={e => setWeeks(parseInt(e.target.value))} className="w-full accent-blue-500" />
+          </div>
+        ) : (
+          <div>
+            <input type="date" className="input" value={endDate} min={startDate} onChange={e => setEndDate(e.target.value)} />
+            {weeksFromDates && <p className="text-xs text-[#64748B] mt-1">= {weeksFromDates} weeks</p>}
+          </div>
+        )}
+      </div>
+
+      {/* Sessions per week */}
+      <div>
+        <label className="label">Sessions / week: <span className="text-white font-bold">{daysPerWeek}</span></label>
+        <input type="range" min="1" max="7" value={daysPerWeek} onChange={e => setDaysPerWeek(parseInt(e.target.value))} className="w-full accent-blue-500" />
       </div>
       {totalPerWeek > daysPerWeek && (
         <p className="text-xs text-[#64748B]">You've added {totalPerWeek} activities but {daysPerWeek} sessions/week — the extras will cycle across weeks.</p>

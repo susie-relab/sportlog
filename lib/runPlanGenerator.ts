@@ -53,7 +53,41 @@ export interface PlanWeek {
 
 export interface PlanData {
   weeks: PlanWeek[];
-  customConfig?: CustomConfig; // stored on custom plans so they can be edited/regenerated
+  customConfig?: CustomConfig; // stored on multi-sport plans so they can be edited/regenerated
+  sportConfig?: SportConfig;   // stored on single-sport plans so they can be edited/regenerated
+}
+
+// ---------- sport plan session types (universal across sports) ----------
+export const SPORT_SESSION_TYPES: { key: string; label: string }[] = [
+  { key: 'game', label: 'Game / Match' },
+  { key: 'training', label: 'Training' },
+  { key: 'skills', label: 'Skills' },
+  { key: 'conditioning', label: 'Conditioning' },
+  { key: 'recovery', label: 'Recovery' },
+  { key: 'solo', label: 'Solo Session' },
+  { key: 'easy', label: 'Easy' },
+  { key: 'crosstrain', label: 'Cross Train' },
+  { key: 'rest', label: 'Rest' },
+];
+export const SPORT_SESSION_LABELS: Record<string, string> = Object.fromEntries(SPORT_SESSION_TYPES.map(t => [t.key, t.label]));
+
+/** One day's session in a single-sport plan (the weekly template repeats each week). */
+export interface SportSession {
+  day: Weekday;
+  sessionType: string;  // a SPORT_SESSION_TYPES key, or a custom label
+  durationMin?: number;
+  durationMax?: number;
+}
+
+export interface SportConfig {
+  name?: string;
+  exerciseType: string;    // ExerciseType key for logging (e.g. 'sport', 'swim')
+  sportSubType?: string;   // optional subtype key ('football', ...)
+  sportLabel: string;      // display name for the sport (subtype label, type label, or custom text)
+  sessions: SportSession[];
+  weeks: number;
+  startDate: string;
+  level: PlanLevel;
 }
 
 /** One selected activity in a custom mix plan. */
@@ -698,6 +732,47 @@ export function generateCustomPlan(cfg: CustomConfig): PlanData {
   if (leadIn) { leadIn.focus = 'Lead-in — a few days before Week 1 begins on Monday.'; weeks.unshift(leadIn); }
 
   return { weeks, customConfig: cfg };
+}
+
+// ---------- single-sport plans (session types on chosen days) ----------
+function sportSessionToSession(s: SportSession, cfg: SportConfig): Session {
+  if (s.sessionType === 'rest') return restDay();
+  if (s.sessionType === 'crosstrain') return crosstrain();
+  const dur = s.durationMin != null && s.durationMax != null
+    ? randInt(s.durationMin, s.durationMax)
+    : (s.durationMin ?? s.durationMax ?? undefined);
+  const stLabel = SPORT_SESSION_LABELS[s.sessionType] ?? s.sessionType;
+  return {
+    type: 'sport', exerciseType: cfg.exerciseType, subType: cfg.sportSubType,
+    title: `${cfg.sportLabel} — ${stLabel}`, timeMin: dur,
+    detail: `${cfg.sportLabel} ${stLabel.toLowerCase()} session${dur ? ` · ${dur} min` : ''}.`,
+  };
+}
+
+/** Build a single-sport plan: the weekly session template repeats each week. */
+export function generateSportPlan(cfg: SportConfig): PlanData {
+  const weeks: PlanWeek[] = [];
+  for (let w = 0; w < cfg.weeks; w++) {
+    const days: Partial<Record<Weekday, Session>> = {};
+    for (const d of WEEKDAYS) {
+      const sess = cfg.sessions.find(s => s.day === d);
+      days[d] = sess ? sportSessionToSession(sess, cfg) : restDay();
+    }
+    weeks.push({ weekNumber: w + 1, phase: 'Build', totalKm: 0, days: days as Record<Weekday, Session> });
+  }
+
+  // final day celebration on the sport's busiest weekday, else a weekend day
+  if (weeks.length) {
+    const last = weeks[weeks.length - 1];
+    const activeDays = cfg.sessions.filter(s => s.sessionType !== 'rest').map(s => s.day);
+    const pbDay = activeDays[activeDays.length - 1] ?? (['sun', 'sat'] as Weekday[]).find(Boolean) ?? 'sun';
+    last.days[pbDay] = { type: 'sport', title: 'Congratulations — completed!', detail: 'You made it — nice work. Time to pick your next plan!', completed: false };
+  }
+
+  const leadIn = buildLeadInWeek(cfg.startDate, () => restDay());
+  if (leadIn) { leadIn.focus = 'Lead-in — a few days before Week 1 begins on Monday.'; weeks.unshift(leadIn); }
+
+  return { weeks, sportConfig: cfg };
 }
 
 // ---------- difficulty switching ----------
