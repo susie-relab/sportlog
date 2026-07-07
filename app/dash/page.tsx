@@ -4,11 +4,12 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
 import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak, todayLocalISO } from '@/lib/utils';
-import { PlanRecord, RUN_DISTANCE_LABELS, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS } from '@/lib/runPlanGenerator';
+import { PlanRecord, Session, Weekday, WEEKDAY_LABELS, RUN_DISTANCE_LABELS, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS } from '@/lib/runPlanGenerator';
 import { sessionColor, sessionTarget } from '@/components/PlanWeekTable';
+import Link from 'next/link';
 
 const planLabel = (p: PlanRecord) => p.plan_kind === 'run' ? RUN_DISTANCE_LABELS[p.distance] : (p.name || 'Custom Plan');
-import Link from 'next/link';
+type DetailSel = { plan: PlanRecord; week: number; day: Weekday; session: Session };
 
 interface Goal {
   period: string;
@@ -45,6 +46,8 @@ export default function DashPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [plans, setPlans] = useState<PlanRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detail, setDetail] = useState<DetailSel | null>(null);
+  const [showWeek, setShowWeek] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -178,13 +181,13 @@ export default function DashPage() {
               return (
                 <div key={plan.id} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[#293548] bg-[#0F172A]">
                   <span className="w-1.5 h-9 rounded-full flex-shrink-0" style={{ background: sessionColor(s) }} />
-                  <div className="flex-1 min-w-0">
+                  <button onClick={() => setDetail({ plan, week: today.week, day: today.day, session: s })} className="flex-1 min-w-0 text-left">
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-semibold truncate ${done ? 'text-[#64748B] line-through' : 'text-white'}`}>{s.title}</span>
                       {done && <span className="text-green-400 text-xs">✓</span>}
                     </div>
-                    <span className="text-xs text-[#64748B]">{planLabel(plan)}{sessionTarget(s) ? ` · ${sessionTarget(s)}` : ''}</span>
-                  </div>
+                    <span className="text-xs text-[#64748B]">{planLabel(plan)}{sessionTarget(s) ? ` · ${sessionTarget(s)}` : ''} · tap for details</span>
+                  </button>
                   {runnable && !done && (
                     <Link href={planSessionHref(s, plan.id, today.week, today.day)}
                       className="btn-primary text-xs px-3 py-1.5 flex-shrink-0">Complete</Link>
@@ -221,6 +224,42 @@ export default function DashPage() {
               <div className="w-full bg-[#0F172A] rounded-full h-1.5 overflow-hidden">
                 <div className="h-1.5 rounded-full bg-green-500 transition-all" style={{ width: `${Math.round((weekAgg.done / weekAgg.total) * 100)}%` }} />
               </div>
+            </div>
+          )}
+
+          {/* This week's plan (expandable) */}
+          {todayPlanItems.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-[#293548]">
+              <button onClick={() => setShowWeek(v => !v)} className="text-xs font-semibold text-[#94A3B8] hover:text-white transition-colors">
+                {showWeek ? '▼' : '▶'} This week&apos;s plan
+              </button>
+              {showWeek && todayPlanItems.map(({ plan, today }) => {
+                const week = plan.plan_data.weeks.find(w => w.weekNumber === today.week);
+                if (!week) return null;
+                return (
+                  <div key={plan.id} className="mt-2">
+                    <p className="text-[10px] text-[#64748B] uppercase tracking-wide mb-1">{planLabel(plan)} · Week {today.week}</p>
+                    <div className="flex flex-col gap-1">
+                      {WEEKDAYS.map(d => {
+                        const s = week.days[d];
+                        if (s.beforeStart) return null;
+                        const muted = s.type === 'rest' || s.type === 'crosstrain';
+                        const isToday = d === today.day;
+                        return (
+                          <button key={d} onClick={() => setDetail({ plan, week: today.week, day: d, session: s })}
+                            className={`flex items-center gap-2 py-1.5 px-2 rounded-lg text-left ${isToday ? 'bg-blue-500/10 border border-blue-500/30' : 'hover:bg-[#0F172A]'}`}>
+                            <span className="text-[10px] font-semibold text-[#64748B] uppercase w-8 flex-shrink-0">{d.slice(0, 3)}</span>
+                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: sessionColor(s) }} />
+                            <span className={`text-xs truncate flex-1 ${muted ? 'text-[#64748B]' : 'text-white'}`}>{s.title}</span>
+                            {sessionTarget(s) && <span className="text-[10px] text-[#64748B] flex-shrink-0">{sessionTarget(s)}</span>}
+                            {s.completed && <span className="text-green-400 text-[10px] flex-shrink-0">✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -371,6 +410,29 @@ export default function DashPage() {
         <div className="card border-dashed border-[#334155] text-center py-6">
           <p className="text-[#64748B] text-sm">No goals set yet.</p>
           <a href="/training-plan" className="text-blue-400 text-sm mt-1 block hover:text-blue-300">Set your training goals →</a>
+        </div>
+      )}
+
+      {/* Planned session detail */}
+      {detail && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDetail(null)} />
+          <div className="relative w-full md:max-w-md bg-[#1E293B] border border-[#334155] rounded-t-2xl md:rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full" style={{ background: sessionColor(detail.session) }} />
+              <span className="text-xs text-[#64748B] uppercase tracking-wide">{planLabel(detail.plan)} · Week {detail.week} · {WEEKDAY_LABELS[detail.day]}</span>
+            </div>
+            <h3 className="text-lg font-bold text-white">{detail.session.title}</h3>
+            {sessionTarget(detail.session) && <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(detail.session) }}>{sessionTarget(detail.session)}</p>}
+            {detail.session.detail && <p className="text-sm text-[#94A3B8] mt-2 whitespace-pre-line leading-relaxed">{detail.session.detail}</p>}
+            <div className="flex flex-col gap-2 mt-4">
+              {isRunSession(detail.session) && !detail.session.completed && (
+                <Link href={planSessionHref(detail.session, detail.plan.id, detail.week, detail.day)} className="btn-primary w-full text-center">✓ Log &amp; Complete</Link>
+              )}
+              <Link href="/training-plan" className="btn-secondary w-full text-center">Open full plan</Link>
+              <button onClick={() => setDetail(null)} className="text-sm text-[#64748B] hover:text-white py-1">Close</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
