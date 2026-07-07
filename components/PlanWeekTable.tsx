@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { PlanData, PlanWeek, Session, SessionType, Weekday, WEEKDAYS, WEEKDAY_LABELS, WEEKDAY_SHORT, isRunSession, sessionCount, sessionParts, MAX_SESSIONS_PER_DAY } from '@/lib/runPlanGenerator';
-import { EXERCISE_TYPE_COLORS, ExerciseType } from '@/types';
+import { EXERCISE_TYPE_COLORS, EXERCISE_TYPE_LABELS, ExerciseType } from '@/types';
 
 export const SESSION_COLORS: Record<SessionType, string> = {
   rest: '#475569',
@@ -44,6 +44,17 @@ export function sessionColor(s: Session): string {
 const PHASE_COLORS: Record<string, string> = {
   Base: '#3B82F6', Build: '#8B5CF6', Peak: '#F97316', Taper: '#22C55E',
 };
+
+/** The exercise-type tag to show next to a session's title, or null if the title already
+ *  says it (e.g. a "Fitness Training" or "Bike" session doesn't need to repeat its own type). */
+export function exerciseTypeTag(s: Session): string | null {
+  if (!s.exerciseType) return null;
+  const label = EXERCISE_TYPE_LABELS[s.exerciseType as ExerciseType];
+  if (!label) return null;
+  const norm = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (norm(s.title).includes(norm(label)) || norm(label).includes(norm(s.title))) return null;
+  return label;
+}
 
 // Each session has either a distance goal, a time goal, or (for long intervals /
 // sprint reps / hill reps) a rep notation — never more than one of these.
@@ -114,6 +125,7 @@ function DayCell({ s, onClick, compact, drag }: {
                 {p.completed && <span className="text-green-400 text-xs ml-auto flex-shrink-0">✓</span>}
                 {p.variant && <span className="text-[9px] uppercase text-[#64748B] flex-shrink-0">{p.variant}</span>}
               </div>
+              {exerciseTypeTag(p) && <div className="text-[10px] text-[#64748B] mt-0.5">{exerciseTypeTag(p)}</div>}
               {target(p) && <div className="text-xs font-bold mt-0.5" style={{ color }}>{target(p)}</div>}
               {!compact && !isCombined && p.detail && !muted && (
                 <div className="text-[10px] text-[#64748B] mt-1 leading-snug line-clamp-2 whitespace-pre-line">{p.detail}</div>

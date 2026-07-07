@@ -6,7 +6,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, subTypeLabel, RUN_TYPE_LABELS } from '@/types';
 import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak, todayLocalISO } from '@/lib/utils';
 import { PlanRecord, PlanData, Session, Weekday, RUN_DISTANCE_LABELS, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS, movePlanSession, addSessionToDay, sessionCount, sessionParts, MAX_SESSIONS_PER_DAY, WEEKDAY_LABELS } from '@/lib/runPlanGenerator';
-import { sessionColor, sessionTarget } from '@/components/PlanWeekTable';
+import { sessionColor, sessionTarget, exerciseTypeTag } from '@/components/PlanWeekTable';
 import PlanDaySheet from '@/components/PlanDaySheet';
 import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -430,6 +430,7 @@ export default function DashPage() {
                                     <div key={i} className={sessionParts(s).length > 1 ? 'rounded-md border border-[#293548] bg-[#0B1220] p-1.5' : ''}>
                                       <span className="w-1.5 h-1.5 rounded-full inline-block mr-1" style={{ background: sessionColor(p) }} />
                                       <span className={`text-xs font-semibold ${muted ? 'text-[#64748B]' : 'text-white'}`}>{p.title}</span>
+                                      {exerciseTypeTag(p) && <span className="text-[10px] text-[#64748B] ml-1">· {exerciseTypeTag(p)}</span>}
                                       {sessionTarget(p) && <div className="text-[10px] text-[#64748B] mt-0.5 inline">{sessionTarget(p)}</div>}
                                       {p.completed && <span className="text-green-400 text-[10px] ml-1">✓</span>}
                                     </div>
@@ -469,7 +470,9 @@ export default function DashPage() {
                                 {parts.map((p, i) => (
                                   <div key={i} className={`flex items-center gap-2 ${parts.length > 1 ? 'rounded-md border border-[#293548] bg-[#0B1220] px-1.5 py-1' : ''}`}>
                                     <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: sessionColor(p) }} />
-                                    <span className={`text-xs truncate flex-1 ${muted ? 'text-[#64748B]' : 'text-white'}`}>{p.title}</span>
+                                    <span className={`text-xs truncate flex-1 ${muted ? 'text-[#64748B]' : 'text-white'}`}>
+                                      {p.title}{exerciseTypeTag(p) && <span className="text-[#64748B]"> · {exerciseTypeTag(p)}</span>}
+                                    </span>
                                     {sessionTarget(p) && <span className="text-[10px] text-[#64748B] flex-shrink-0">{sessionTarget(p)}</span>}
                                     {p.completed && <span className="text-green-400 text-[10px] flex-shrink-0">✓</span>}
                                   </div>

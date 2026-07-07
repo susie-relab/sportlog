@@ -5,7 +5,7 @@ import {
   switchDifficulty, isRunSession, movePlanSession, addSessionToDay, updateSessionDetails, PlanConfig,
   sessionCount, sessionParts, MAX_SESSIONS_PER_DAY,
 } from '@/lib/runPlanGenerator';
-import { sessionColor, sessionTarget } from './PlanWeekTable';
+import { sessionColor, sessionTarget, exerciseTypeTag } from './PlanWeekTable';
 
 interface Props {
   data: PlanData;
@@ -113,6 +113,7 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
                 {sessionParts(sel).map((p, i) => (
                   <div key={i} className="rounded-lg border border-[#334155] bg-[#0F172A] p-3">
                     <h3 className="text-base font-bold text-white">{p.title}</h3>
+                    {exerciseTypeTag(p) && <p className="text-xs text-[#64748B]">{exerciseTypeTag(p)}</p>}
                     {sessionTarget(p) && <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(p) }}>{sessionTarget(p)}</p>}
                     {p.detail && <p className="text-sm text-[#94A3B8] mt-1.5 whitespace-pre-line leading-relaxed">{p.detail}</p>}
                     {p.completed && <span className="text-green-400 text-xs mt-1 inline-block">✓ Completed</span>}
@@ -122,6 +123,7 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
             ) : (
               <>
                 <h3 className="text-lg font-bold text-white">{sel.title}</h3>
+                {exerciseTypeTag(sel) && <p className="text-xs text-[#64748B]">{exerciseTypeTag(sel)}</p>}
                 {sessionTarget(sel) && <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(sel) }}>{sessionTarget(sel)}</p>}
                 {sel.detail && <p className="text-sm text-[#94A3B8] mt-2 whitespace-pre-line leading-relaxed">{sel.detail}</p>}
               </>
