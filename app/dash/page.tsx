@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
-import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
+import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, subTypeLabel } from '@/types';
 import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak, todayLocalISO } from '@/lib/utils';
 import { PlanRecord, PlanData, Session, Weekday, RUN_DISTANCE_LABELS, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS, movePlanSession, addSessionToDay, sessionCount, sessionParts, MAX_SESSIONS_PER_DAY, WEEKDAY_LABELS } from '@/lib/runPlanGenerator';
 import { sessionColor, sessionTarget } from '@/components/PlanWeekTable';
@@ -105,6 +105,7 @@ export default function DashPage() {
   const [streakModal, setStreakModal] = useState<'day' | 'week' | null>(null);
   const [dragFrom, setDragFrom] = useState<{ planId: string; week: number; day: Weekday } | null>(null);
   const [dropChoice, setDropChoice] = useState<{ planId: string; week: number; from: Weekday; to: Weekday } | null>(null);
+  const [hoverType, setHoverType] = useState<ExerciseType | null>(null);
 
   const detailPlan = detail ? plans.find(p => p.id === detail.planId) : undefined;
   const persistPlanData = async (planId: string, newData: PlanData) => {
@@ -200,17 +201,35 @@ export default function DashPage() {
 
   // By type last 14 days
   const byType: Partial<Record<ExerciseType, number>> = {};
+  const subtypeByType: Partial<Record<ExerciseType, Record<string, number>>> = {};
   for (const a of last14) {
     byType[a.exercise_type] = (byType[a.exercise_type] || 0) + 1;
+    if (a.sub_type) {
+      const key = subTypeLabel(a.sub_type);
+      const bucket = subtypeByType[a.exercise_type] || (subtypeByType[a.exercise_type] = {});
+      bucket[key] = (bucket[key] || 0) + 1;
+    }
   }
   const presentTypes14 = Object.keys(byType) as ExerciseType[];
 
   // 14-day stacked-by-type chart: one row per day, one key per activity type present.
+  // Also keep a per-day, per-type subtype breakdown for the tooltip.
+  const day14Details: Record<string, Partial<Record<ExerciseType, Record<string, number>>>> = {};
   const day14Chart = Array.from({ length: 14 }, (_, i) => {
     const date = addDaysLocal(todayLocalISO(), -(13 - i));
     const dayActs = activities.filter(a => a.date === date);
-    const row: Record<string, number | string> = { date: date.slice(5).split('-').reverse().join('/') };
-    for (const a of dayActs) row[a.exercise_type] = ((row[a.exercise_type] as number) || 0) + 1;
+    const label = date.slice(5).split('-').reverse().join('/');
+    const row: Record<string, number | string> = { date: label };
+    const detail: Partial<Record<ExerciseType, Record<string, number>>> = {};
+    for (const a of dayActs) {
+      row[a.exercise_type] = ((row[a.exercise_type] as number) || 0) + 1;
+      const key = a.sub_type ? subTypeLabel(a.sub_type) : null;
+      if (key) {
+        const bucket = detail[a.exercise_type] || (detail[a.exercise_type] = {});
+        bucket[key] = (bucket[key] || 0) + 1;
+      }
+    }
+    day14Details[label] = detail;
     return row;
   });
 
@@ -467,7 +486,30 @@ export default function DashPage() {
             <BarChart data={day14Chart} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <XAxis dataKey="date" tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} axisLine={false} />
               <YAxis allowDecimals={false} tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} axisLine={false} width={24} />
-              <Tooltip contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8, color: '#F1F5F9', fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8, color: '#F1F5F9', fontSize: 12 }}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload || !payload.length) return null;
+                  const detail = day14Details[label as string] || {};
+                  return (
+                    <div style={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8, padding: '8px 10px', fontSize: 12 }}>
+                      <p style={{ color: '#F1F5F9', marginBottom: 4 }}>{label}</p>
+                      {payload.map(p => {
+                        const t = p.dataKey as ExerciseType;
+                        const subs = detail[t];
+                        return (
+                          <div key={t} style={{ marginBottom: 2 }}>
+                            <span style={{ color: p.color }}>{EXERCISE_TYPE_LABELS[t]} : {p.value}</span>
+                            {subs && Object.entries(subs).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
+                              <div key={k} style={{ color: '#94A3B8', marginLeft: 10, fontSize: 11 }}>{k} : {v}</div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                }}
+              />
               {presentTypes14.map(t => (
                 <Bar key={t} dataKey={t} stackId="a" fill={EXERCISE_TYPE_COLORS[t]} name={EXERCISE_TYPE_LABELS[t]} radius={presentTypes14[presentTypes14.length - 1] === t ? [3, 3, 0, 0] : undefined} />
               ))}
@@ -481,13 +523,29 @@ export default function DashPage() {
         <div className="card mb-5">
           <h2 className="text-sm font-semibold text-[#94A3B8] mb-3 uppercase tracking-wide">14-Day Breakdown</h2>
           <div className="flex flex-col gap-2">
-            {(Object.entries(byType) as [ExerciseType, number][]).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
-              <div key={type} className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: EXERCISE_TYPE_COLORS[type] }} />
-                <span className="text-sm text-[#94A3B8] flex-1">{EXERCISE_TYPE_LABELS[type]}</span>
-                <span className="text-sm font-semibold" style={{ color: EXERCISE_TYPE_COLORS[type] }}>{count}</span>
-              </div>
-            ))}
+            {(Object.entries(byType) as [ExerciseType, number][]).sort((a, b) => b[1] - a[1]).map(([type, count]) => {
+              const subs = subtypeByType[type];
+              return (
+                <div key={type} className="relative flex items-center gap-3"
+                  onMouseEnter={() => subs && setHoverType(type)}
+                  onMouseLeave={() => setHoverType(null)}
+                  onClick={() => subs && setHoverType(h => h === type ? null : type)}>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: EXERCISE_TYPE_COLORS[type] }} />
+                  <span className={`text-sm text-[#94A3B8] flex-1 ${subs ? 'cursor-pointer underline decoration-dotted underline-offset-4' : ''}`}>{EXERCISE_TYPE_LABELS[type]}</span>
+                  <span className="text-sm font-semibold" style={{ color: EXERCISE_TYPE_COLORS[type] }}>{count}</span>
+                  {subs && hoverType === type && (
+                    <div className="absolute right-0 top-full mt-1 z-10 bg-[#1E293B] border border-[#334155] rounded-lg p-2.5 text-xs shadow-lg min-w-[10rem]">
+                      {Object.entries(subs).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
+                        <div key={k} className="flex justify-between gap-4 py-0.5">
+                          <span className="text-[#94A3B8]">{k}</span>
+                          <span className="text-white font-semibold">{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
