@@ -33,20 +33,29 @@ function weeklySeries(acts: Activity[], pick: (a: Activity) => number | null | u
 }
 
 /** Count sessions per sub-type (splitting comma-joined multi-select values like gym focus). */
-function subTypeBreakdown(acts: Activity[]): { name: string; count: number }[] {
+function subTypeBreakdown(acts: Activity[]): { name: string; count: number; exerciseType: ExerciseType }[] {
   const counts: Record<string, number> = {};
+  const typeOf: Record<string, ExerciseType> = {};
   for (const a of acts) {
     if (a.exercise_type === 'run') {
-      if (a.run_type) counts[RUN_TYPE_LABELS[a.run_type]] = (counts[RUN_TYPE_LABELS[a.run_type]] || 0) + 1;
+      if (a.run_type) {
+        const label = RUN_TYPE_LABELS[a.run_type];
+        counts[label] = (counts[label] || 0) + 1;
+        typeOf[label] = 'run';
+      }
       continue;
     }
     if (!a.sub_type) continue;
     for (const key of a.sub_type.split(',')) {
       const label = subTypeLabel(key.trim());
-      if (label) counts[label] = (counts[label] || 0) + 1;
+      if (label) {
+        counts[label] = (counts[label] || 0) + 1;
+        typeOf[label] = a.exercise_type;
+      }
     }
   }
-  return Object.entries(counts).sort(([, a], [, b]) => b - a).slice(0, 8).map(([name, count]) => ({ name, count }));
+  return Object.entries(counts).sort(([, a], [, b]) => b - a).slice(0, 8)
+    .map(([name, count]) => ({ name, count, exerciseType: typeOf[name] }));
 }
 
 type Period = '30d' | '3m' | '6m' | '1y' | 'all';
@@ -488,11 +497,24 @@ export default function TotalStatsPage() {
         {subtypeData.length > 0 && (
           <div className="card">
             <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Top Subtypes</p>
-            <ResponsiveContainer width="100%" height={140} key={`${period}-${filterType}`}>
+            <ResponsiveContainer width="100%" height={Math.max(140, subtypeData.length * 32)} key={`${period}-${filterType}`}>
               <BarChart data={subtypeData} layout="vertical" margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
                 <XAxis type="number" allowDecimals={false} tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} axisLine={false} />
-                <YAxis type="category" dataKey="name" tick={{ fill: '#94A3B8', fontSize: 10 }} tickLine={false} axisLine={false} width={90} />
-                <Tooltip contentStyle={TooltipStyle} formatter={(v) => [v, 'Sessions']} />
+                <YAxis type="category" dataKey="name" tick={{ fill: '#94A3B8', fontSize: 10 }} tickLine={false} axisLine={false} width={90} interval={0} />
+                <Tooltip
+                  contentStyle={TooltipStyle}
+                  content={({ active, payload }) => {
+                    if (!active || !payload || !payload.length) return null;
+                    const row = payload[0].payload as { name: string; count: number; exerciseType: ExerciseType };
+                    return (
+                      <div style={{ ...TooltipStyle, padding: '8px 10px' }}>
+                        <p style={{ color: '#F1F5F9', marginBottom: 2 }}>{row.name}</p>
+                        <p style={{ color: EXERCISE_TYPE_COLORS[row.exerciseType] }}>{EXERCISE_TYPE_LABELS[row.exerciseType]}</p>
+                        <p style={{ color: '#A78BFA' }}>Sessions : {row.count}</p>
+                      </div>
+                    );
+                  }}
+                />
                 <Bar dataKey="count" fill="#A78BFA" radius={[0, 3, 3, 0]} />
               </BarChart>
             </ResponsiveContainer>
