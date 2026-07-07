@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
 import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak, todayLocalISO } from '@/lib/utils';
-import { PlanRecord, PlanData, Session, Weekday, RUN_DISTANCE_LABELS, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS } from '@/lib/runPlanGenerator';
+import { PlanRecord, PlanData, Session, Weekday, RUN_DISTANCE_LABELS, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS, movePlanSession, addSessionToDay, sessionCount, MAX_SESSIONS_PER_DAY, WEEKDAY_LABELS } from '@/lib/runPlanGenerator';
 import { sessionColor, sessionTarget } from '@/components/PlanWeekTable';
 import PlanDaySheet from '@/components/PlanDaySheet';
 import Link from 'next/link';
@@ -103,12 +103,17 @@ export default function DashPage() {
   const [detail, setDetail] = useState<DetailSel | null>(null);
   const [showWeek, setShowWeek] = useState(false);
   const [streakModal, setStreakModal] = useState<'day' | 'week' | null>(null);
+  const [dragFrom, setDragFrom] = useState<{ planId: string; week: number; day: Weekday } | null>(null);
+  const [dropChoice, setDropChoice] = useState<{ planId: string; week: number; from: Weekday; to: Weekday } | null>(null);
 
   const detailPlan = detail ? plans.find(p => p.id === detail.planId) : undefined;
-  const persistDetailPlan = async (newData: PlanData) => {
+  const persistPlanData = async (planId: string, newData: PlanData) => {
+    setPlans(prev => prev.map(p => p.id === planId ? { ...p, plan_data: newData } : p));
+    await supabase.from('training_plans').update({ plan_data: newData, updated_at: new Date().toISOString() }).eq('id', planId);
+  };
+  const persistDetailPlan = (newData: PlanData) => {
     if (!detailPlan) return;
-    setPlans(prev => prev.map(p => p.id === detailPlan.id ? { ...p, plan_data: newData } : p));
-    await supabase.from('training_plans').update({ plan_data: newData, updated_at: new Date().toISOString() }).eq('id', detailPlan.id);
+    persistPlanData(detailPlan.id, newData);
   };
 
   useEffect(() => {
@@ -375,10 +380,23 @@ export default function DashPage() {
                             if (s.beforeStart) return <td key={d} />;
                             const muted = s.type === 'rest' || s.type === 'crosstrain';
                             const isToday = d === today.day;
+                            const isDragging = dragFrom?.planId === plan.id && dragFrom?.week === today.week && dragFrom?.day === d;
                             return (
                               <td key={d} className="align-top">
-                                <button onClick={() => setDetail({ planId: plan.id, week: today.week, day: d })}
-                                  className={`w-full text-left rounded-lg p-2 border transition-colors ${isToday ? 'border-blue-500/50 bg-blue-500/10' : 'border-[#293548] bg-[#0F172A] hover:border-[#475569]'}`}>
+                                <button
+                                  onClick={() => setDetail({ planId: plan.id, week: today.week, day: d })}
+                                  draggable
+                                  onDragStart={() => setDragFrom({ planId: plan.id, week: today.week, day: d })}
+                                  onDragOver={e => e.preventDefault()}
+                                  onDrop={e => {
+                                    e.preventDefault();
+                                    if (dragFrom && dragFrom.planId === plan.id && dragFrom.week === today.week && dragFrom.day !== d) {
+                                      if (isRunSession(s)) setDropChoice({ planId: plan.id, week: today.week, from: dragFrom.day, to: d });
+                                      else persistPlanData(plan.id, movePlanSession(plan.plan_data, { week: today.week, day: dragFrom.day }, { week: today.week, day: d }));
+                                    }
+                                    setDragFrom(null);
+                                  }}
+                                  className={`w-full text-left rounded-lg p-2 border transition-colors cursor-grab active:cursor-grabbing ${isToday ? 'border-blue-500/50 bg-blue-500/10' : 'border-[#293548] bg-[#0F172A] hover:border-[#475569]'} ${isDragging ? 'opacity-40' : ''}`}>
                                   <span className="w-1.5 h-1.5 rounded-full inline-block mr-1" style={{ background: sessionColor(s) }} />
                                   <span className={`text-xs font-semibold ${muted ? 'text-[#64748B]' : 'text-white'}`}>{s.title}</span>
                                   {sessionTarget(s) && <div className="text-[10px] text-[#64748B] mt-0.5">{sessionTarget(s)}</div>}
@@ -392,6 +410,7 @@ export default function DashPage() {
                     })}
                   </tbody>
                 </table>
+                <p className="text-[10px] text-[#475569] mt-1">Tip: drag a session onto another day to swap or add it to that day.</p>
               </div>
 
               {/* Mobile list */}
@@ -575,6 +594,36 @@ export default function DashPage() {
           onLogAndComplete={(s) => router.push(planSessionHref(s, detailPlan.id, detail.week, detail.day))}
         />
       )}
+
+      {/* Drag-drop onto an occupied day: swap or add? */}
+      {dropChoice && (() => {
+        const dropPlan = plans.find(p => p.id === dropChoice.planId);
+        const dropWeek = dropPlan?.plan_data.weeks.find(w => w.weekNumber === dropChoice.week);
+        const addWouldExceedMax = dropWeek ? sessionCount(dropWeek.days[dropChoice.from]) + sessionCount(dropWeek.days[dropChoice.to]) > MAX_SESSIONS_PER_DAY : false;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDropChoice(null)} />
+            <div className="relative w-full max-w-xs bg-[#1E293B] border border-[#334155] rounded-2xl p-4">
+              <p className="text-sm text-[#94A3B8] mb-3">{WEEKDAY_LABELS[dropChoice.to]} already has a session — swap it, or add this one alongside it?</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => { if (dropPlan) persistPlanData(dropPlan.id, movePlanSession(dropPlan.plan_data, { week: dropChoice.week, day: dropChoice.from }, { week: dropChoice.week, day: dropChoice.to })); setDropChoice(null); }}
+                  className="py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">
+                  Swap
+                </button>
+                <button
+                  disabled={addWouldExceedMax}
+                  onClick={() => { if (addWouldExceedMax || !dropPlan) return; persistPlanData(dropPlan.id, addSessionToDay(dropPlan.plan_data, { week: dropChoice.week, day: dropChoice.from }, { week: dropChoice.week, day: dropChoice.to })); setDropChoice(null); }}
+                  className={`py-1.5 rounded-lg border text-xs ${addWouldExceedMax ? 'border-[#334155] text-[#475569] cursor-not-allowed opacity-60' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                  Add to that day
+                </button>
+              </div>
+              {addWouldExceedMax && <p className="text-[10px] text-amber-400/80 mt-1.5">That day already has {MAX_SESSIONS_PER_DAY} sessions — the max per day.</p>}
+              <button onClick={() => setDropChoice(null)} className="text-xs text-[#64748B] hover:text-white py-1 mt-2 w-full text-center">Cancel</button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Streak drill-down: when did the current streak start, and where were the gaps */}
       {streakModal && (

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { PlanData, PlanWeek, Session, SessionType, Weekday, WEEKDAYS, WEEKDAY_LABELS, WEEKDAY_SHORT, isRunSession } from '@/lib/runPlanGenerator';
+import { PlanData, PlanWeek, Session, SessionType, Weekday, WEEKDAYS, WEEKDAY_LABELS, WEEKDAY_SHORT, isRunSession, sessionCount, MAX_SESSIONS_PER_DAY } from '@/lib/runPlanGenerator';
 import { EXERCISE_TYPE_COLORS, ExerciseType } from '@/types';
 
 export const SESSION_COLORS: Record<SessionType, string> = {
@@ -71,8 +71,10 @@ interface Props {
   plan: PlanData;
   currentWeek?: number;
   onDayClick?: (weekNumber: number, day: Weekday) => void;
-  /** Enables drag-to-reorder within a week. */
+  /** Enables drag-to-reorder within a week. Swaps the two days' sessions. */
   onMove?: (weekNumber: number, from: Weekday, to: Weekday) => void;
+  /** Combines the dragged session onto the target day instead of swapping (up to MAX_SESSIONS_PER_DAY). */
+  onAdd?: (weekNumber: number, from: Weekday, to: Weekday) => void;
 }
 
 function DayCell({ s, onClick, compact, drag }: {
@@ -126,15 +128,31 @@ function WeekHeader({ w }: { w: PlanWeek }) {
   );
 }
 
-export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove }: Props) {
+export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, onAdd }: Props) {
   const [dragFrom, setDragFrom] = useState<{ week: number; day: Weekday } | null>(null);
+  const [dropChoice, setDropChoice] = useState<{ week: number; from: Weekday; to: Weekday } | null>(null);
   const dragProps = (week: number, day: Weekday) => onMove ? {
     onDragStart: () => setDragFrom({ week, day }),
-    onDrop: () => { if (dragFrom && dragFrom.week === week && dragFrom.day !== day) onMove(week, dragFrom.day, day); setDragFrom(null); },
+    onDrop: () => {
+      if (dragFrom && dragFrom.week === week && dragFrom.day !== day) {
+        const target = plan.weeks.find(w => w.weekNumber === week)?.days[day];
+        if (onAdd && target && isRunSession(target)) {
+          setDropChoice({ week, from: dragFrom.day, to: day });
+        } else {
+          onMove(week, dragFrom.day, day);
+        }
+      }
+      setDragFrom(null);
+    },
     isDragging: dragFrom?.week === week && dragFrom?.day === day,
   } : undefined;
   // any week without distance is treated as a "sessions" plan for the column header
   const anyKm = plan.weeks.some(w => w.totalKm > 0);
+
+  const dropWeek = dropChoice ? plan.weeks.find(w => w.weekNumber === dropChoice.week) : undefined;
+  const addWouldExceedMax = dropChoice && dropWeek
+    ? sessionCount(dropWeek.days[dropChoice.from]) + sessionCount(dropWeek.days[dropChoice.to]) > MAX_SESSIONS_PER_DAY
+    : false;
 
   return (
     <>
@@ -169,8 +187,36 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove }:
             ))}
           </tbody>
         </table>
-        {onMove && <p className="text-[10px] text-[#475569] mt-1">Tip: drag a session onto another day to swap them (same week). Tap a day for cross-week moves.</p>}
+        {onMove && (
+          <p className="text-[10px] text-[#475569] mt-1">
+            Tip: drag a session onto another day{onAdd ? ' to swap or add it to that day' : ' to swap them'} (same week). Tap a day for cross-week moves.
+          </p>
+        )}
       </div>
+
+      {dropChoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDropChoice(null)} />
+          <div className="relative w-full max-w-xs bg-[#1E293B] border border-[#334155] rounded-2xl p-4">
+            <p className="text-sm text-[#94A3B8] mb-3">{WEEKDAY_LABELS[dropChoice.to]} already has a session — swap it, or add this one alongside it?</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { onMove?.(dropChoice.week, dropChoice.from, dropChoice.to); setDropChoice(null); }}
+                className="py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">
+                Swap
+              </button>
+              <button
+                disabled={addWouldExceedMax}
+                onClick={() => { if (addWouldExceedMax) return; onAdd?.(dropChoice.week, dropChoice.from, dropChoice.to); setDropChoice(null); }}
+                className={`py-1.5 rounded-lg border text-xs ${addWouldExceedMax ? 'border-[#334155] text-[#475569] cursor-not-allowed opacity-60' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                Add to that day
+              </button>
+            </div>
+            {addWouldExceedMax && <p className="text-[10px] text-amber-400/80 mt-1.5">That day already has {MAX_SESSIONS_PER_DAY} sessions — the max per day.</p>}
+            <button onClick={() => setDropChoice(null)} className="text-xs text-[#64748B] hover:text-white py-1 mt-2 w-full text-center">Cancel</button>
+          </div>
+        </div>
+      )}
 
       {/* Mobile: stacked week cards */}
       <div className="md:hidden flex flex-col gap-4">

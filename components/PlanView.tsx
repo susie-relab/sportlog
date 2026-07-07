@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import {
   PlanRecord, Session, Weekday, WEEKDAYS, WEEKDAY_LABELS, RUN_DISTANCE_LABELS,
-  isRunSession, PlanConfig, planSessionHref, todaysSession, planEndDateISO, movePlanSession,
+  isRunSession, PlanConfig, planSessionHref, todaysSession, planEndDateISO, movePlanSession, addSessionToDay,
 } from '@/lib/runPlanGenerator';
 import PlanWeekTable, { sessionTarget } from './PlanWeekTable';
 import PlanDaySheet from './PlanDaySheet';
@@ -203,6 +203,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
           currentWeek={currentWeekNo}
           onDayClick={(week, day) => setSelected({ week, day })}
           onMove={(week, from, to) => persist(movePlanSession(data, { week, day: from }, { week, day: to }))}
+          onAdd={(week, from, to) => persist(addSessionToDay(data, { week, day: from }, { week, day: to }))}
         />
       </div>
 

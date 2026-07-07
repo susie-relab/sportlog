@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import {
   generateSportPlan, SportConfig, SportSession, SportPoolItem, SPORT_SESSION_TYPES, PlanLevel,
-  Weekday, WEEKDAYS, WEEKDAY_LABELS, PlanRecord, PlanData, movePlanSession,
+  Weekday, WEEKDAYS, WEEKDAY_LABELS, PlanRecord, PlanData, movePlanSession, addSessionToDay,
 } from '@/lib/runPlanGenerator';
 import {
   ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, EXERCISE_TYPE_ORDER,
@@ -382,7 +382,8 @@ export default function SportPlanBuilder({ existing, onSaved, onCancel }: Props)
         <div>
           <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Preview — click a day to reorder before saving</p>
           <PlanWeekTable plan={preview} onDayClick={(week, day) => setSelected({ week, day })}
-            onMove={(week, from, to) => setPreview(p => p && movePlanSession(p, { week, day: from }, { week, day: to }))} />
+            onMove={(week, from, to) => setPreview(p => p && movePlanSession(p, { week, day: from }, { week, day: to }))}
+            onAdd={(week, from, to) => setPreview(p => p && addSessionToDay(p, { week, day: from }, { week, day: to }))} />
         </div>
       )}
 
