@@ -251,46 +251,39 @@ export default function SportPlanBuilder({ existing, onSaved, onCancel }: Props)
       {assignMode === 'perDay' && (
         <div>
           <label className="label">Weekly sessions <span className="text-[#64748B]">(choose what happens each day)</span></label>
-          {perDur && (
-            <div className="flex items-center gap-2 mb-1 pr-1">
-              <span className="w-20 flex-shrink-0" />
-              <span className="flex-1" />
-              <span className="text-[10px] text-[#64748B] uppercase tracking-wide flex-shrink-0 w-[7.5rem] text-center">Duration range (min)</span>
-            </div>
-          )}
           <div className="flex flex-col gap-2">
             {WEEKDAYS.map(d => {
               const list = daySessions[d] || [];
               return (
                 <div key={d} className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-[#94A3B8] w-20 flex-shrink-0 pt-2">{WEEKDAY_LABELS[d]}</span>
-                  <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-[#94A3B8] w-16 sm:w-20 flex-shrink-0 pt-2">{WEEKDAY_LABELS[d]}</span>
+                  <div className="flex-1 min-w-0 flex flex-col gap-1">
                     {list.map((st, i) => (
-                      <div key={i} className="flex items-center gap-1.5">
-                        <select className="input flex-1 text-sm" value={st}
-                          onChange={e => setDaySessions(prev => {
-                            const next = [...(prev[d] || [])];
-                            if (e.target.value === '') next.splice(i, 1); else next[i] = e.target.value;
-                            return { ...prev, [d]: next };
-                          })}>
-                          <option value="">— Remove —</option>
-                          {allTypes.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
-                        </select>
-                      </div>
+                      <select key={i} className="input w-full text-sm" value={st}
+                        onChange={e => setDaySessions(prev => {
+                          const next = [...(prev[d] || [])];
+                          if (e.target.value === '') next.splice(i, 1); else next[i] = e.target.value;
+                          return { ...prev, [d]: next };
+                        })}>
+                        <option value="">— Remove —</option>
+                        {allTypes.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+                      </select>
                     ))}
-                    <select className="input text-sm text-[#94A3B8]" value=""
+                    <select className="input w-full text-sm text-[#94A3B8]" value=""
                       onChange={e => { if (e.target.value) setDaySessions(prev => ({ ...prev, [d]: [...(prev[d] || []), e.target.value] })); }}>
                       <option value="">{list.length ? '+ Add another session…' : '— Rest / nothing —'}</option>
                       {allTypes.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
                     </select>
+                    {perDur && list.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-[#64748B] flex-shrink-0">Duration</span>
+                        <input type="number" className="input flex-1 min-w-0 px-2 text-sm" placeholder="min" value={perDayDur[d]?.min ?? ''} onChange={e => setPerDayDur(p => ({ ...p, [d]: { ...p[d], min: e.target.value } }))} />
+                        <span className="text-[#64748B] text-xs">to</span>
+                        <input type="number" className="input flex-1 min-w-0 px-2 text-sm" placeholder="max" value={perDayDur[d]?.max ?? ''} onChange={e => setPerDayDur(p => ({ ...p, [d]: { ...p[d], max: e.target.value } }))} />
+                        <span className="text-[10px] text-[#64748B] flex-shrink-0">min</span>
+                      </div>
+                    )}
                   </div>
-                  {perDur && (
-                    <div className="flex items-center gap-1 flex-shrink-0 w-[7.5rem] pt-1">
-                      <input type="number" className="input w-14 px-1.5 text-sm" placeholder="min" value={perDayDur[d]?.min ?? ''} onChange={e => setPerDayDur(p => ({ ...p, [d]: { ...p[d], min: e.target.value } }))} />
-                      <span className="text-[#64748B] text-xs">-</span>
-                      <input type="number" className="input w-14 px-1.5 text-sm" placeholder="max" value={perDayDur[d]?.max ?? ''} onChange={e => setPerDayDur(p => ({ ...p, [d]: { ...p[d], max: e.target.value } }))} />
-                    </div>
-                  )}
                 </div>
               );
             })}
