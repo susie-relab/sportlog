@@ -26,12 +26,12 @@ export const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
 
 export const EXERCISE_TYPE_COLORS: Record<ExerciseType, string> = {
   run: '#3B82F6',
-  sport: '#F97316',
+  sport: '#84CC16',
   hiit: '#EF4444',
   solo_fitness: '#A855F7',
   bike: '#EAB308',
   swim: '#06B6D4',
-  walk: '#84CC16',
+  walk: '#F97316',
   stretch: '#22C55E',
   water_snow: '#0EA5E9',
 };
@@ -69,6 +69,7 @@ export type SwimSubType = 'ocean' | 'pool';
 export type FitnessSubType = 'boxing' | 'jump_rope' | 'dance' | 'skateboard' | 'rock_climbing' | 'trampoline' | 'martial_arts' | 'cleaning';
 export type BikeSubType = 'mtb' | 'commute' | 'road' | 'indoor_spin';
 export type StretchSubType = 'pilates' | 'flexibility' | 'physio';
+export type WalkSubType = 'multi_day';
 
 export const SPORT_SUB_LABELS: Record<SportSubType, string> = {
   football: 'Football', tennis: 'Tennis', netball: 'Netball', volleyball: 'Volleyball',
@@ -97,6 +98,19 @@ export const BIKE_SUB_LABELS: Record<BikeSubType, string> = {
 export const STRETCH_SUB_LABELS: Record<StretchSubType, string> = {
   pilates: 'Pilates', flexibility: 'Flexibility', physio: 'Physio',
 };
+export const WALK_SUB_LABELS: Record<WalkSubType, string> = {
+  multi_day: 'Multi-day',
+};
+
+// All subtype labels in one map + a helper to display a (possibly comma-joined) sub_type value.
+const ALL_SUB_LABELS: Record<string, string> = {
+  ...SPORT_SUB_LABELS, ...GYM_SUB_LABELS, ...WATER_SNOW_SUB_LABELS, ...SWIM_SUB_LABELS,
+  ...FITNESS_SUB_LABELS, ...BIKE_SUB_LABELS, ...STRETCH_SUB_LABELS, ...WALK_SUB_LABELS,
+};
+export function subTypeLabel(subType?: string | null): string {
+  if (!subType) return '';
+  return subType.split(',').map(k => ALL_SUB_LABELS[k.trim()] ?? k.trim()).join(', ');
+}
 
 export interface Activity {
   id: string;

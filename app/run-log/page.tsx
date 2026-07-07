@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, RunType, RUN_TYPE_LABELS, RUN_TYPE_COLORS } from '@/types';
-import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo, getStartOfWeek } from '@/lib/utils';
+import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { activitiesToCsv, downloadCsv } from '@/lib/exportCsv';
@@ -42,10 +42,8 @@ export default function RunLogPage() {
       });
   }, [user]);
 
-  const weekStart = getStartOfWeek().split('T')[0];
-
   const runsByPeriod = runs.filter(r => {
-    if (period === 'week') return r.date >= weekStart;
+    if (period === 'week') return r.date >= daysAgo(7).split('T')[0];
     if (period === '14d') return r.date >= daysAgo(14).split('T')[0];
     if (period === '30d') return r.date >= daysAgo(30).split('T')[0];
     if (period === '3m') return r.date >= daysAgo(91).split('T')[0];
@@ -103,7 +101,7 @@ export default function RunLogPage() {
       {/* Period selector */}
       <div className="flex gap-1.5 flex-wrap mb-3">
         {([
-          ['week', 'This Week'],
+          ['week', '7 Days'],
           ['14d', '14 Days'],
           ['30d', '30 Days'],
           ['month', 'Month'],

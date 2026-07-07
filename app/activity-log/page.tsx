@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import {
   Activity, ExerciseType,
   EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, RUN_TYPE_LABELS,
-  EXERCISE_TYPE_ORDER,
+  EXERCISE_TYPE_ORDER, subTypeLabel,
 } from '@/types';
 import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
@@ -212,6 +212,7 @@ export default function ActivityLogPage() {
                     {a.is_pb && <span className="text-sm">⭐</span>}
                   </div>
                   <div className="flex gap-2 mt-0.5 flex-wrap">
+                    {a.sub_type && <span className="text-xs font-medium text-white">{subTypeLabel(a.sub_type)}</span>}
                     <span className="text-xs" style={{ color }}>{EXERCISE_TYPE_LABELS[a.exercise_type]}</span>
                     {a.run_type && <span className="text-xs text-blue-300">{RUN_TYPE_LABELS[a.run_type]}</span>}
                     <span className="text-xs text-[#64748B]">{formatDate(a.date)}</span>

@@ -801,12 +801,16 @@ export function generateSportPlan(cfg: SportConfig): PlanData {
       weeks.push({ weekNumber: w + 1, phase: 'Build', totalKm: 0, days: days as Record<Weekday, Session> });
     }
   } else {
-    // per-day template repeats each week
+    // per-day template repeats each week (a day may hold multiple sessions)
     for (let w = 0; w < cfg.weeks; w++) {
       const days: Partial<Record<Weekday, Session>> = {};
       for (const d of WEEKDAYS) {
-        const sess = cfg.sessions.find(s => s.day === d);
-        days[d] = sess ? sportSession(sess.sessionType, cfg, sess.durationMin, sess.durationMax) : restDay();
+        const daySess = cfg.sessions.filter(s => s.day === d);
+        if (daySess.length === 0) days[d] = restDay();
+        else {
+          const built = daySess.map(s => sportSession(s.sessionType, cfg, s.durationMin, s.durationMax));
+          days[d] = built.length === 1 ? built[0] : combineSportSessions(built, cfg);
+        }
       }
       weeks.push({ weekNumber: w + 1, phase: 'Build', totalKm: 0, days: days as Record<Weekday, Session> });
     }
@@ -819,8 +823,18 @@ export function generateSportPlan(cfg: SportConfig): PlanData {
     last.days[activeDay] = { type: 'sport', title: 'Congratulations — completed!', detail: 'You made it — nice work. Time to pick your next plan!', completed: false };
   }
 
-  const leadIn = buildLeadInWeek(cfg.startDate, () => restDay());
-  if (leadIn) { leadIn.focus = 'Lead-in — a few days before Week 1 begins on Monday.'; weeks.unshift(leadIn); }
+  // Lead-in Week 0: per-day mode carries its template onto the lead-in days so
+  // a plan starting mid-week already has real sessions; random mode rests.
+  const leadIn = buildLeadInWeek(cfg.startDate, (d) => {
+    if (cfg.assignMode === 'perDay') {
+      const daySess = cfg.sessions.filter(s => s.day === d);
+      if (daySess.length === 0) return restDay();
+      const built = daySess.map(s => sportSession(s.sessionType, cfg, s.durationMin, s.durationMax));
+      return built.length === 1 ? built[0] : combineSportSessions(built, cfg);
+    }
+    return restDay();
+  });
+  if (leadIn) { leadIn.focus = 'Lead-in — your first few days before Week 1 begins on Monday.'; weeks.unshift(leadIn); }
 
   return { weeks, sportConfig: cfg };
 }
@@ -913,14 +927,14 @@ function firstMonday(dateISO: string): string {
  * date and the following Monday, when the real Week 1 begins. Returns null
  * if the plan already starts on a Monday (no lead-in needed).
  */
-function buildLeadInWeek(startDate: string, sessionForLeadIn: () => Session): PlanWeek | null {
+function buildLeadInWeek(startDate: string, sessionForLeadIn: (day: Weekday) => Session): PlanWeek | null {
   const anchor = firstMonday(startDate);
   if (anchor === startDate) return null;
   const leadInDays: Weekday[] = [];
   for (let d = startDate; d < anchor; d = addDaysISO(d, 1)) leadInDays.push(weekdayOf(d));
   const days: Partial<Record<Weekday, Session>> = {};
   for (const d of WEEKDAYS) {
-    days[d] = leadInDays.includes(d) ? sessionForLeadIn() : { type: 'rest', title: '', detail: '', completed: false, beforeStart: true };
+    days[d] = leadInDays.includes(d) ? sessionForLeadIn(d) : { type: 'rest', title: '', detail: '', completed: false, beforeStart: true };
   }
   const full = days as Record<Weekday, Session>;
   return { weekNumber: 0, phase: 'Base', totalKm: round(sumKm(full), 0.5), days: full };

@@ -8,8 +8,8 @@ import {
   EXERCISE_TYPE_LABELS, RUN_TYPE_LABELS,
   EXERCISE_TYPE_COLORS, RUN_TYPE_COLORS,
   EXERCISE_TYPE_ORDER,
-  SportSubType, GymSubType, WaterSnowSubType, SwimSubType, FitnessSubType, BikeSubType, StretchSubType,
-  SPORT_SUB_LABELS, GYM_SUB_LABELS, WATER_SNOW_SUB_LABELS, SWIM_SUB_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS,
+  SportSubType, GymSubType, WaterSnowSubType, SwimSubType, FitnessSubType, BikeSubType, StretchSubType, WalkSubType,
+  SPORT_SUB_LABELS, GYM_SUB_LABELS, WATER_SNOW_SUB_LABELS, SWIM_SUB_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
 } from '@/types';
 import DistancePicker from '@/components/DistancePicker';
 import { useDirtyForm } from '@/components/DirtyFormContext';
@@ -325,6 +325,19 @@ export default function AddPage() {
                 <button key={t} onClick={() => setSubType(subType === t ? '' : t)}
                   className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${subType === t ? 'border-yellow-500 bg-yellow-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
                   {BIKE_SUB_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {exerciseType === 'walk' && (
+          <div>
+            <label className="label">Walk Type <span className="text-[#64748B]">(optional)</span></label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(Object.keys(WALK_SUB_LABELS) as WalkSubType[]).map(t => (
+                <button key={t} onClick={() => setSubType(subType === t ? '' : t)}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${subType === t ? 'border-orange-500 bg-orange-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                  {WALK_SUB_LABELS[t]}
                 </button>
               ))}
             </div>

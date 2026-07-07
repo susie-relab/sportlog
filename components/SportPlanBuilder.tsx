@@ -9,7 +9,7 @@ import {
 import {
   ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, EXERCISE_TYPE_ORDER,
   SPORT_SUB_LABELS, GYM_SUB_LABELS, WATER_SNOW_SUB_LABELS, SWIM_SUB_LABELS,
-  FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS,
+  FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
 } from '@/types';
 import PlanWeekTable from './PlanWeekTable';
 import PlanDaySheet from './PlanDaySheet';
@@ -17,7 +17,7 @@ import { todayLocalISO } from '@/lib/utils';
 
 const SUB_LABELS: Partial<Record<ExerciseType, Record<string, string>>> = {
   sport: SPORT_SUB_LABELS, hiit: GYM_SUB_LABELS, water_snow: WATER_SNOW_SUB_LABELS,
-  swim: SWIM_SUB_LABELS, solo_fitness: FITNESS_SUB_LABELS, bike: BIKE_SUB_LABELS, stretch: STRETCH_SUB_LABELS,
+  swim: SWIM_SUB_LABELS, solo_fitness: FITNESS_SUB_LABELS, bike: BIKE_SUB_LABELS, stretch: STRETCH_SUB_LABELS, walk: WALK_SUB_LABELS,
 };
 const LEVELS: PlanLevel[] = ['relaxed', 'moderate', 'tough'];
 const BASE_TYPES = SPORT_SESSION_TYPES.filter(t => t.key !== 'rest'); // game/training/skills/... /crosstrain
@@ -53,13 +53,13 @@ export default function SportPlanBuilder({ existing, onSaved, onCancel }: Props)
   const [newType, setNewType] = useState('');
   const allTypes = [...BASE_TYPES.map(t => ({ key: t.key, label: t.label })), ...customTypes.map(c => ({ key: c, label: c }))];
 
-  // per-day template
-  const initDays = (): Record<Weekday, string> => {
-    const base = Object.fromEntries(WEEKDAYS.map(d => [d, ''])) as Record<Weekday, string>;
-    cfg0?.sessions.forEach(s => { base[s.day] = s.sessionType; });
+  // per-day template — each day can hold multiple sessions
+  const initDays = (): Record<Weekday, string[]> => {
+    const base = Object.fromEntries(WEEKDAYS.map(d => [d, [] as string[]])) as Record<Weekday, string[]>;
+    cfg0?.sessions.forEach(s => { base[s.day] = [...(base[s.day] || []), s.sessionType]; });
     return base;
   };
-  const [daySessions, setDaySessions] = useState<Record<Weekday, string>>(initDays());
+  const [daySessions, setDaySessions] = useState<Record<Weekday, string[]>>(initDays());
   const [perDayDur, setPerDayDur] = useState<Record<Weekday, { min: string; max: string }>>(() => {
     const base = Object.fromEntries(WEEKDAYS.map(d => [d, { min: '', max: '' }])) as Record<Weekday, { min: string; max: string }>;
     cfg0?.sessions.forEach(s => { base[s.day] = { min: s.durationMin ? String(s.durationMin) : '', max: s.durationMax ? String(s.durationMax) : '' }; });
@@ -111,9 +111,9 @@ export default function SportPlanBuilder({ existing, onSaved, onCancel }: Props)
   };
 
   const buildConfig = (): SportConfig => {
-    const sessions: SportSession[] = WEEKDAYS.filter(d => daySessions[d]).map(d => {
+    const sessions: SportSession[] = WEEKDAYS.flatMap(d => {
       const dur = durForDay(d);
-      return { day: d, sessionType: daySessions[d], durationMin: dur.min, durationMax: dur.max };
+      return (daySessions[d] || []).map(sessionType => ({ day: d, sessionType, durationMin: dur.min, durationMax: dur.max }));
     });
     const pool: SportPoolItem[] = allTypes
       .filter(t => (parseInt(counts[t.key]) || 0) > 0)
@@ -125,7 +125,7 @@ export default function SportPlanBuilder({ existing, onSaved, onCancel }: Props)
   };
 
   const handleGenerate = () => {
-    if (assignMode === 'perDay' && WEEKDAYS.filter(d => daySessions[d] && daySessions[d] !== 'rest').length === 0) { setError('Assign at least one session to a day.'); return; }
+    if (assignMode === 'perDay' && WEEKDAYS.every(d => (daySessions[d] || []).length === 0)) { setError('Assign at least one session to a day.'); return; }
     if (assignMode === 'random' && totalRandom === 0) { setError('Add at least one session to the pool.'); return; }
     if (lengthMode === 'date' && !weeksFromDates) { setError('Pick an end date after the start date.'); return; }
     setError('');
@@ -135,7 +135,7 @@ export default function SportPlanBuilder({ existing, onSaved, onCancel }: Props)
   const handleSave = async () => {
     if (!preview || !user) return;
     setSaving(true); setError('');
-    const daysCount = assignMode === 'random' ? Math.min(7, totalRandom) : WEEKDAYS.filter(d => daySessions[d] && daySessions[d] !== 'rest').length;
+    const daysCount = assignMode === 'random' ? Math.min(7, totalRandom) : WEEKDAYS.filter(d => (daySessions[d] || []).length > 0).length;
     const payload = {
       user_id: user.id, plan_kind: 'sport' as const,
       distance: 'custom', custom_distance_km: 0, level, weeks: effectiveWeeks,
@@ -225,8 +225,8 @@ export default function SportPlanBuilder({ existing, onSaved, onCancel }: Props)
       <div>
         <label className="label">How to schedule</label>
         <div className="grid grid-cols-2 gap-1.5">
-          <button onClick={() => setAssignMode('perDay')} className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${assignMode === 'perDay' ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>Choose each day</button>
-          <button onClick={() => setAssignMode('random')} className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${assignMode === 'random' ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>Pick &amp; randomise days</button>
+          <button onClick={() => setAssignMode('perDay')} className={`py-2 px-2 rounded-lg text-xs font-semibold border transition-all ${assignMode === 'perDay' ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>Choose what happens each day of the week</button>
+          <button onClick={() => setAssignMode('random')} className={`py-2 px-2 rounded-lg text-xs font-semibold border transition-all ${assignMode === 'random' ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>Choose sessions to be scheduled at random</button>
         </div>
       </div>
 
@@ -251,23 +251,49 @@ export default function SportPlanBuilder({ existing, onSaved, onCancel }: Props)
       {assignMode === 'perDay' && (
         <div>
           <label className="label">Weekly sessions <span className="text-[#64748B]">(choose what happens each day)</span></label>
-          <div className="flex flex-col gap-1.5">
-            {WEEKDAYS.map(d => (
-              <div key={d} className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-[#94A3B8] w-20 flex-shrink-0">{WEEKDAY_LABELS[d]}</span>
-                <select className="input flex-1 text-sm" value={daySessions[d]} onChange={e => setDaySessions(prev => ({ ...prev, [d]: e.target.value }))}>
-                  <option value="">— Rest / nothing —</option>
-                  {allTypes.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
-                </select>
-                {perDur && daySessions[d] && daySessions[d] !== 'rest' && daySessions[d] !== 'crosstrain' && (
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <input type="number" className="input w-14 px-1.5 text-sm" placeholder="min" value={perDayDur[d]?.min ?? ''} onChange={e => setPerDayDur(p => ({ ...p, [d]: { ...p[d], min: e.target.value } }))} />
-                    <span className="text-[#64748B] text-xs">-</span>
-                    <input type="number" className="input w-14 px-1.5 text-sm" placeholder="max" value={perDayDur[d]?.max ?? ''} onChange={e => setPerDayDur(p => ({ ...p, [d]: { ...p[d], max: e.target.value } }))} />
+          {perDur && (
+            <div className="flex items-center gap-2 mb-1 pr-1">
+              <span className="w-20 flex-shrink-0" />
+              <span className="flex-1" />
+              <span className="text-[10px] text-[#64748B] uppercase tracking-wide flex-shrink-0 w-[7.5rem] text-center">Duration range (min)</span>
+            </div>
+          )}
+          <div className="flex flex-col gap-2">
+            {WEEKDAYS.map(d => {
+              const list = daySessions[d] || [];
+              return (
+                <div key={d} className="flex items-start gap-2">
+                  <span className="text-xs font-semibold text-[#94A3B8] w-20 flex-shrink-0 pt-2">{WEEKDAY_LABELS[d]}</span>
+                  <div className="flex-1 flex flex-col gap-1">
+                    {list.map((st, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <select className="input flex-1 text-sm" value={st}
+                          onChange={e => setDaySessions(prev => {
+                            const next = [...(prev[d] || [])];
+                            if (e.target.value === '') next.splice(i, 1); else next[i] = e.target.value;
+                            return { ...prev, [d]: next };
+                          })}>
+                          <option value="">— Remove —</option>
+                          {allTypes.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+                        </select>
+                      </div>
+                    ))}
+                    <select className="input text-sm text-[#94A3B8]" value=""
+                      onChange={e => { if (e.target.value) setDaySessions(prev => ({ ...prev, [d]: [...(prev[d] || []), e.target.value] })); }}>
+                      <option value="">{list.length ? '+ Add another session…' : '— Rest / nothing —'}</option>
+                      {allTypes.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+                    </select>
                   </div>
-                )}
-              </div>
-            ))}
+                  {perDur && (
+                    <div className="flex items-center gap-1 flex-shrink-0 w-[7.5rem] pt-1">
+                      <input type="number" className="input w-14 px-1.5 text-sm" placeholder="min" value={perDayDur[d]?.min ?? ''} onChange={e => setPerDayDur(p => ({ ...p, [d]: { ...p[d], min: e.target.value } }))} />
+                      <span className="text-[#64748B] text-xs">-</span>
+                      <input type="number" className="input w-14 px-1.5 text-sm" placeholder="max" value={perDayDur[d]?.max ?? ''} onChange={e => setPerDayDur(p => ({ ...p, [d]: { ...p[d], max: e.target.value } }))} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -275,22 +301,35 @@ export default function SportPlanBuilder({ existing, onSaved, onCancel }: Props)
       {/* Random pool */}
       {assignMode === 'random' && (
         <div>
-          <label className="label">Sessions to include <span className="text-[#64748B]">(how many per week)</span></label>
-          <div className="flex flex-col gap-1.5">
-            {allTypes.map(t => (
-              <div key={t.key} className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-[#94A3B8] flex-1 min-w-0 truncate">{t.label}</span>
-                {perDur && (parseInt(counts[t.key]) || 0) > 0 && (
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <input type="number" className="input w-14 px-1.5 text-sm" placeholder="min" value={perTypeDur[t.key]?.min ?? ''} onChange={e => setPerTypeDur(p => ({ ...p, [t.key]: { ...p[t.key], min: e.target.value } }))} />
-                    <span className="text-[#64748B] text-xs">-</span>
-                    <input type="number" className="input w-14 px-1.5 text-sm" placeholder="max" value={perTypeDur[t.key]?.max ?? ''} onChange={e => setPerTypeDur(p => ({ ...p, [t.key]: { ...p[t.key], max: e.target.value } }))} />
-                  </div>
-                )}
-                <input type="number" className="input w-16 text-sm flex-shrink-0" min="0" placeholder="0" value={counts[t.key] ?? ''}
-                  onChange={e => setCounts(prev => ({ ...prev, [t.key]: e.target.value }))} />
-              </div>
-            ))}
+          <label className="label">Sessions to include <span className="text-[#64748B]">(tap to add, then set how many per week)</span></label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {allTypes.map(t => {
+              const c = parseInt(counts[t.key]) || 0;
+              const on = c > 0;
+              return (
+                <div key={t.key} className={`rounded-lg border p-2 transition-all ${on ? 'border-blue-500 bg-blue-500/15' : 'border-[#334155]'}`}>
+                  <button onClick={() => setCounts(prev => ({ ...prev, [t.key]: on ? '0' : '1' }))}
+                    className="w-full text-left text-xs font-semibold text-white flex items-center justify-between gap-1">
+                    <span className="truncate">{t.label}</span>
+                    {on && <span className="text-[10px] text-blue-300 flex-shrink-0">×{c}/wk</span>}
+                  </button>
+                  {on && (
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <button onClick={() => setCounts(prev => ({ ...prev, [t.key]: String(Math.max(1, c - 1)) }))} className="w-6 h-6 rounded border border-[#334155] text-[#94A3B8] text-xs">−</button>
+                      <span className="text-sm text-white w-5 text-center">{c}</span>
+                      <button onClick={() => setCounts(prev => ({ ...prev, [t.key]: String(c + 1) }))} className="w-6 h-6 rounded border border-[#334155] text-[#94A3B8] text-xs">+</button>
+                      {perDur && (
+                        <div className="flex items-center gap-1 ml-auto">
+                          <input type="number" className="input w-11 px-1 text-xs" placeholder="min" value={perTypeDur[t.key]?.min ?? ''} onChange={e => setPerTypeDur(p => ({ ...p, [t.key]: { ...p[t.key], min: e.target.value } }))} />
+                          <span className="text-[#64748B] text-xs">-</span>
+                          <input type="number" className="input w-11 px-1 text-xs" placeholder="max" value={perTypeDur[t.key]?.max ?? ''} onChange={e => setPerTypeDur(p => ({ ...p, [t.key]: { ...p[t.key], max: e.target.value } }))} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
           {totalRandom > 7 && (
             <div className="mt-3">
