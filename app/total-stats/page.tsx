@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
-import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, subTypeLabel } from '@/types';
+import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, subTypeLabel, RUN_TYPE_LABELS } from '@/types';
 import { formatDuration, formatPaceMinKm } from '@/lib/utils';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
@@ -36,6 +36,10 @@ function weeklySeries(acts: Activity[], pick: (a: Activity) => number | null | u
 function subTypeBreakdown(acts: Activity[]): { name: string; count: number }[] {
   const counts: Record<string, number> = {};
   for (const a of acts) {
+    if (a.exercise_type === 'run') {
+      if (a.run_type) counts[RUN_TYPE_LABELS[a.run_type]] = (counts[RUN_TYPE_LABELS[a.run_type]] || 0) + 1;
+      continue;
+    }
     if (!a.sub_type) continue;
     for (const key of a.sub_type.split(',')) {
       const label = subTypeLabel(key.trim());
