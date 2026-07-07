@@ -823,17 +823,10 @@ export function generateSportPlan(cfg: SportConfig): PlanData {
     last.days[activeDay] = { type: 'sport', title: 'Congratulations — completed!', detail: 'You made it — nice work. Time to pick your next plan!', completed: false };
   }
 
-  // Lead-in Week 0: per-day mode carries its template onto the lead-in days so
-  // a plan starting mid-week already has real sessions; random mode rests.
-  const leadIn = buildLeadInWeek(cfg.startDate, (d) => {
-    if (cfg.assignMode === 'perDay') {
-      const daySess = cfg.sessions.filter(s => s.day === d);
-      if (daySess.length === 0) return restDay();
-      const built = daySess.map(s => sportSession(s.sessionType, cfg, s.durationMin, s.durationMax));
-      return built.length === 1 ? built[0] : combineSportSessions(built, cfg);
-    }
-    return restDay();
-  });
+  // Lead-in Week 0: mirror a normal week onto the lead-in days (both per-day and
+  // random modes), so a plan starting mid-week already shows real sessions.
+  const refDays = weeks[0]?.days;
+  const leadIn = buildLeadInWeek(cfg.startDate, (d) => refDays ? { ...refDays[d], completed: false, completedActivityId: null } : restDay());
   if (leadIn) { leadIn.focus = 'Lead-in — your first few days before Week 1 begins on Monday.'; weeks.unshift(leadIn); }
 
   return { weeks, sportConfig: cfg };
