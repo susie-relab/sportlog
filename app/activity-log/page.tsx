@@ -213,8 +213,8 @@ export default function ActivityLogPage() {
                   </div>
                   <div className="flex gap-2 mt-0.5 flex-wrap">
                     {a.sub_type && <span className="text-xs font-medium text-white">{subTypeLabel(a.sub_type)}</span>}
+                    {a.run_type && <span className="text-xs font-medium text-white">{RUN_TYPE_LABELS[a.run_type]}</span>}
                     <span className="text-xs" style={{ color }}>{EXERCISE_TYPE_LABELS[a.exercise_type]}</span>
-                    {a.run_type && <span className="text-xs text-blue-300">{RUN_TYPE_LABELS[a.run_type]}</span>}
                     <span className="text-xs text-[#64748B]">{formatDate(a.date)}</span>
                   </div>
                 </div>
