@@ -1,15 +1,17 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
 import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak, todayLocalISO } from '@/lib/utils';
-import { PlanRecord, Session, Weekday, WEEKDAY_LABELS, RUN_DISTANCE_LABELS, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS } from '@/lib/runPlanGenerator';
+import { PlanRecord, PlanData, Session, Weekday, RUN_DISTANCE_LABELS, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS } from '@/lib/runPlanGenerator';
 import { sessionColor, sessionTarget } from '@/components/PlanWeekTable';
+import PlanDaySheet from '@/components/PlanDaySheet';
 import Link from 'next/link';
 
 const planLabel = (p: PlanRecord) => p.plan_kind === 'run' ? RUN_DISTANCE_LABELS[p.distance] : (p.name || 'Custom Plan');
-type DetailSel = { plan: PlanRecord; week: number; day: Weekday; session: Session };
+type DetailSel = { planId: string; week: number; day: Weekday };
 
 interface Goal {
   period: string;
@@ -41,6 +43,7 @@ function StatCard({ value, label, color = '#60A5FA' }: { value: string; label: s
 }
 
 export default function DashPage() {
+  const router = useRouter();
   const { user, signOut } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -48,6 +51,13 @@ export default function DashPage() {
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<DetailSel | null>(null);
   const [showWeek, setShowWeek] = useState(false);
+
+  const detailPlan = detail ? plans.find(p => p.id === detail.planId) : undefined;
+  const persistDetailPlan = async (newData: PlanData) => {
+    if (!detailPlan) return;
+    setPlans(prev => prev.map(p => p.id === detailPlan.id ? { ...p, plan_data: newData } : p));
+    await supabase.from('training_plans').update({ plan_data: newData, updated_at: new Date().toISOString() }).eq('id', detailPlan.id);
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -181,7 +191,7 @@ export default function DashPage() {
               return (
                 <div key={plan.id} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[#293548] bg-[#0F172A]">
                   <span className="w-1.5 h-9 rounded-full flex-shrink-0" style={{ background: sessionColor(s) }} />
-                  <button onClick={() => setDetail({ plan, week: today.week, day: today.day, session: s })} className="flex-1 min-w-0 text-left">
+                  <button onClick={() => setDetail({ planId: plan.id, week: today.week, day: today.day })} className="flex-1 min-w-0 text-left">
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-semibold truncate ${done ? 'text-[#64748B] line-through' : 'text-white'}`}>{s.title}</span>
                       {done && <span className="text-green-400 text-xs">✓</span>}
@@ -246,7 +256,7 @@ export default function DashPage() {
                         const muted = s.type === 'rest' || s.type === 'crosstrain';
                         const isToday = d === today.day;
                         return (
-                          <button key={d} onClick={() => setDetail({ plan, week: today.week, day: d, session: s })}
+                          <button key={d} onClick={() => setDetail({ planId: plan.id, week: today.week, day: d })}
                             className={`flex items-center gap-2 py-1.5 px-2 rounded-lg text-left ${isToday ? 'bg-blue-500/10 border border-blue-500/30' : 'hover:bg-[#0F172A]'}`}>
                             <span className="text-[10px] font-semibold text-[#64748B] uppercase w-8 flex-shrink-0">{d.slice(0, 3)}</span>
                             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: sessionColor(s) }} />
@@ -413,27 +423,15 @@ export default function DashPage() {
         </div>
       )}
 
-      {/* Planned session detail */}
-      {detail && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDetail(null)} />
-          <div className="relative w-full md:max-w-md bg-[#1E293B] border border-[#334155] rounded-t-2xl md:rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full" style={{ background: sessionColor(detail.session) }} />
-              <span className="text-xs text-[#64748B] uppercase tracking-wide">{planLabel(detail.plan)} · Week {detail.week} · {WEEKDAY_LABELS[detail.day]}</span>
-            </div>
-            <h3 className="text-lg font-bold text-white">{detail.session.title}</h3>
-            {sessionTarget(detail.session) && <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(detail.session) }}>{sessionTarget(detail.session)}</p>}
-            {detail.session.detail && <p className="text-sm text-[#94A3B8] mt-2 whitespace-pre-line leading-relaxed">{detail.session.detail}</p>}
-            <div className="flex flex-col gap-2 mt-4">
-              {isRunSession(detail.session) && !detail.session.completed && (
-                <Link href={planSessionHref(detail.session, detail.plan.id, detail.week, detail.day)} className="btn-primary w-full text-center">✓ Log &amp; Complete</Link>
-              )}
-              <Link href="/training-plan" className="btn-secondary w-full text-center">Open full plan</Link>
-              <button onClick={() => setDetail(null)} className="text-sm text-[#64748B] hover:text-white py-1">Close</button>
-            </div>
-          </div>
-        </div>
+      {/* Planned session detail — view, edit, complete, or reorder */}
+      {detail && detailPlan && (
+        <PlanDaySheet
+          data={detailPlan.plan_data}
+          selected={{ week: detail.week, day: detail.day }}
+          onSave={persistDetailPlan}
+          onClose={() => setDetail(null)}
+          onLogAndComplete={(s) => router.push(planSessionHref(s, detailPlan.id, detail.week, detail.day))}
+        />
       )}
     </div>
   );

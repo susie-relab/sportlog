@@ -202,6 +202,7 @@ const pickN = <T>(arr: T[], n: number): T[] => {
 };
 const chance = (p: number) => rand() < p;
 const round = (n: number, step = 0.5) => Math.round(n / step) * step;
+const round5min = (n: number) => Math.max(5, Math.round(n / 5) * 5);
 
 // ---------- plan-shape config ----------
 const LONG_RUN_MAX: Record<RunDistance, number> = {
@@ -785,9 +786,10 @@ export function generateRunPlan(cfg: PlanConfig): PlanData {
 
 // ---------- custom / sport mix plans ----------
 function customSessionFrom(act: CustomActivity): Session {
-  const dur = act.durationMin != null && act.durationMax != null
+  const rawDur = act.durationMin != null && act.durationMax != null
     ? randInt(act.durationMin, act.durationMax)
     : (act.durationMin ?? act.durationMax ?? undefined);
+  const dur = rawDur != null ? round5min(rawDur) : undefined;
   const durTxt = dur ? ` (${dur} min)` : '';
   if (act.exerciseType === 'run') {
     return { type: 'easy', exerciseType: 'run', title: act.label, timeMin: dur,
@@ -798,20 +800,28 @@ function customSessionFrom(act: CustomActivity): Session {
 }
 
 /**
- * Build a custom mix plan. Weekly-quantity activities are expanded into a
- * pool of sessions that cycles across the training days (spilling into later
- * weeks if there are more than fit in one). Monthly-quantity activities are
- * scheduled separately on a deterministic 4-week cadence — an activity set to
- * N/month is "due" on N of every 4 weeks (e.g. 1/month => week 1, 5, 9…) — and
- * get first claim on that week's slots, with weekly items filling the rest.
+ * Build a custom mix plan.
+ * - Weekly-quantity activities appear EXACTLY `quantity` times per week —
+ *   never more, even if sessions/week leaves spare capacity (the spare
+ *   capacity becomes rest/crosstrain, not repeats).
+ * - Monthly-quantity activities are staggered across a 4-week cycle by their
+ *   position in the activity list (item i is due on week `i % 4`, plus
+ *   further evenly-spaced weeks for quantity>1), so different monthly items
+ *   land on different weeks instead of piling onto the same one.
+ * - Both the chosen days AND the order sessions are assigned to them are
+ *   shuffled each week, so placement doesn't always start on Monday or
+ *   cluster same-type sessions together, and every available day gets a
+ *   fair chance at a session (not just the first N in weekday order).
  */
 export function generateCustomPlan(cfg: CustomConfig): PlanData {
   const monthly = cfg.activities.filter(a => a.quantityPeriod === 'month');
   const weekly = cfg.activities.filter(a => a.quantityPeriod !== 'month');
 
-  // full weekly pool (one entry per session, respecting quantity)
-  const pool: CustomActivity[] = [];
-  for (const a of weekly) for (let i = 0; i < Math.max(1, a.quantity); i++) pool.push(a);
+  // Weekly pool: one entry per (activity, occurrence). Only cycles across
+  // weeks when a week can't fit the whole pool — never repeats an item
+  // within the SAME week just to use up spare capacity.
+  const weeklyPool: CustomActivity[] = [];
+  for (const a of weekly) for (let i = 0; i < Math.max(1, a.quantity); i++) weeklyPool.push(a);
 
   const perWeek = Math.min(cfg.daysPerWeek, cfg.trainDays.length);
   const available = orderTrainDays(cfg.trainDays);
@@ -819,22 +829,33 @@ export function generateCustomPlan(cfg: CustomConfig): PlanData {
   let cursor = 0; // position in the cycling weekly pool
 
   for (let w = 0; w < cfg.weeks; w++) {
-    // monthly items due this week get first claim on the slots
-    const dueThisWeek = monthly.filter(a => (w % 4) < Math.max(1, a.quantity));
-    const weeklySlots = Math.max(0, perWeek - dueThisWeek.length);
-    const picks: CustomActivity[] = [...dueThisWeek];
-    for (let i = 0; i < weeklySlots && pool.length; i++) {
-      picks.push(pool[cursor % pool.length]);
-      cursor++;
-    }
-    const sessions = picks.slice(0, perWeek).map(customSessionFrom);
+    // Monthly items due this week, staggered by list position so different
+    // items land on different weeks-in-cycle. Shuffle so that if two items
+    // ever collide on the same week, it's not always the same loser.
+    const dueThisWeek = pickN(monthly.filter((a, idx) => {
+      const q = Math.max(1, Math.min(4, a.quantity));
+      const span = Math.floor(4 / q);
+      for (let k = 0; k < q; k++) if ((idx + k * span) % 4 === w % 4) return true;
+      return false;
+    }), monthly.length);
+
+    const weeklySlotsAvailable = Math.max(0, perWeek - dueThisWeek.length);
+    const weeklyTake = Math.min(weeklySlotsAvailable, weeklyPool.length);
+    const weeklyPicks: CustomActivity[] = [];
+    for (let i = 0; i < weeklyTake; i++) { weeklyPicks.push(weeklyPool[cursor % weeklyPool.length]); cursor++; }
+
+    const picks = [...dueThisWeek, ...weeklyPicks].slice(0, perWeek);
+    // Shuffle session order and which days they land on — kills both the
+    // "always Monday first" bias and same-type-sessions-clustering.
+    const sessions = pickN(picks.map(customSessionFrom), picks.length);
+    const chosenDays = pickN(available, available.length).slice(0, perWeek);
 
     const days: Partial<Record<Weekday, Session>> = {};
-    available.slice(0, perWeek).forEach((d, i) => { if (sessions[i]) days[d] = sessions[i]; });
+    chosenDays.forEach((d, i) => { if (sessions[i]) days[d] = sessions[i]; });
 
-    // rest + crosstrain on the rest (exactly 1 rest day)
-    const rest = WEEKDAYS.filter(d => !days[d]);
-    const restChoice = rest[0];
+    // rest + crosstrain on the rest (exactly 1 rest day, randomly placed)
+    const restEligible = WEEKDAYS.filter(d => !days[d]);
+    const restChoice = pick(restEligible);
     for (const d of WEEKDAYS) if (!days[d]) days[d] = d === restChoice ? restDay() : crosstrain();
 
     weeks.push({ weekNumber: w + 1, phase: 'Build', totalKm: 0, days: days as Record<Weekday, Session> });
@@ -861,7 +882,8 @@ export function generateCustomPlan(cfg: CustomConfig): PlanData {
 function sportSession(sessionType: string, cfg: SportConfig, durMin?: number, durMax?: number): Session {
   if (sessionType === 'rest') return restDay();
   if (sessionType === 'crosstrain') return crosstrain();
-  const dur = durMin != null && durMax != null ? randInt(durMin, durMax) : (durMin ?? durMax ?? undefined);
+  const rawDur = durMin != null && durMax != null ? randInt(durMin, durMax) : (durMin ?? durMax ?? undefined);
+  const dur = rawDur != null ? round5min(rawDur) : undefined;
   const stLabel = SPORT_SESSION_LABELS[sessionType] ?? sessionType;
   return {
     type: 'sport', exerciseType: cfg.exerciseType, subType: cfg.sportSubType, sportSessionType: sessionType,
@@ -1113,5 +1135,53 @@ export function movePlanSession(data: PlanData, from: { week: number; day: Weekd
   fromWeek.days[from.day] = tmp;
   fromWeek.totalKm = round(sumKm(fromWeek.days), 0.5);
   toWeek.totalKm = round(sumKm(toWeek.days), 0.5);
+  return { ...data, weeks };
+}
+
+/** Merge multiple sessions into one combined entry — plan-kind agnostic (run/sport/custom). */
+export function combineSessions(list: Session[]): Session {
+  const real = list.filter(s => s.type !== 'rest' && s.type !== 'crosstrain');
+  if (real.length === 0) return list[0];
+  if (real.length === 1) return real[0];
+  const allHaveDistance = real.every(s => s.distanceKm != null);
+  const anyHaveTime = real.some(s => s.timeMin != null);
+  const combined: Session = {
+    type: 'sport',
+    title: real.map(s => s.title).join(' + '),
+    detail: real.map(s => s.detail).filter(Boolean).join('\n\n'),
+    completed: false,
+  };
+  if (allHaveDistance) {
+    combined.distanceKm = round(real.reduce((t, s) => t + (s.distanceKm || 0), 0), 0.5);
+  } else if (anyHaveTime) {
+    combined.timeMin = Math.round(real.reduce((t, s) => t + (s.timeMin ?? (s.estKm ? s.estKm * 6 : 0)), 0));
+  } else {
+    combined.estKm = round(real.reduce((t, s) => t + (s.distanceKm || s.estKm || 0), 0), 0.5);
+  }
+  return combined;
+}
+
+/** Add a session on top of another day's existing session (combined), leaving the source day empty. Pure. */
+export function addSessionToDay(data: PlanData, from: { week: number; day: Weekday }, to: { week: number; day: Weekday }): PlanData {
+  if (from.week === to.week && from.day === to.day) return data;
+  const weeks = data.weeks.map(w => (w.weekNumber === from.week || w.weekNumber === to.week) ? { ...w, days: { ...w.days } } : w);
+  const fromWeek = weeks.find(w => w.weekNumber === from.week);
+  const toWeek = weeks.find(w => w.weekNumber === to.week);
+  if (!fromWeek || !toWeek) return data;
+  const moved = fromWeek.days[from.day];
+  toWeek.days[to.day] = combineSessions([toWeek.days[to.day], moved]);
+  fromWeek.days[from.day] = restDay();
+  fromWeek.totalKm = round(sumKm(fromWeek.days), 0.5);
+  toWeek.totalKm = round(sumKm(toWeek.days), 0.5);
+  return { ...data, weeks };
+}
+
+/** Overwrite a session's editable fields (title/detail/duration/distance) — for custom user edits. Pure. */
+export function updateSessionDetails(data: PlanData, target: { week: number; day: Weekday }, patch: Partial<Pick<Session, 'title' | 'detail' | 'timeMin' | 'distanceKm'>>): PlanData {
+  const weeks = data.weeks.map(w => w.weekNumber !== target.week ? w : {
+    ...w, days: { ...w.days, [target.day]: { ...w.days[target.day], ...patch } },
+  });
+  const week = weeks.find(w => w.weekNumber === target.week);
+  if (week) week.totalKm = round(sumKm(week.days), 0.5);
   return { ...data, weeks };
 }
