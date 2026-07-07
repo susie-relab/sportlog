@@ -847,7 +847,10 @@ export function generateCustomPlan(cfg: CustomConfig): PlanData {
     last.days[pbDay] = { type: 'sport', title: 'Congratulations — completed!', detail: 'You made it — nice work. Time to pick your next plan!', completed: false };
   }
 
-  const leadIn = buildLeadInWeek(cfg.startDate, () => restDay());
+  // Lead-in Week 0 mirrors Week 1's real sessions on the lead-in days (rather
+  // than forcing rest), so a plan starting mid-week isn't blank until Monday.
+  const week1Days = weeks[0]?.days;
+  const leadIn = buildLeadInWeek(cfg.startDate, (d) => week1Days ? { ...week1Days[d], completed: false, completedActivityId: null } : restDay());
   if (leadIn) { leadIn.focus = 'Lead-in — a few days before Week 1 begins on Monday.'; weeks.unshift(leadIn); }
 
   return { weeks, customConfig: cfg };
