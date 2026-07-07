@@ -18,16 +18,19 @@ function activitySubLabel(a: Activity): string | null {
 }
 
 // --- streak drill-down helpers ---
+// Pure UTC-based calendar-date arithmetic — avoids the classic bug where round-tripping
+// through a local-time Date + toISOString() shifts dates backward in timezones ahead of UTC.
 function mondayOf(dateISO: string): string {
-  const d = new Date(dateISO + 'T00:00:00');
-  const day = d.getDay();
-  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
-  return d.toISOString().split('T')[0];
+  const [y, m, d] = dateISO.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const day = dt.getUTCDay();
+  dt.setUTCDate(dt.getUTCDate() - day + (day === 0 ? -6 : 1));
+  return dt.toISOString().split('T')[0];
 }
 function addDaysLocal(dateISO: string, n: number): string {
-  const d = new Date(dateISO + 'T00:00:00');
-  d.setDate(d.getDate() + n);
-  return d.toISOString().split('T')[0];
+  const [y, m, d] = dateISO.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return dt.toISOString().split('T')[0];
 }
 /** Last N days (oldest first), each marked active if any activity happened that day. */
 function buildDayTimeline(dates: string[], count: number) {
@@ -239,10 +242,11 @@ export default function DashPage() {
     return row;
   });
 
-  // Streak drill-down timelines
+  // Streak drill-down timelines — window grows to fit the current streak, plus a
+  // couple of extra slots so a gap before it is visible too, instead of clipping it.
   const allDates = activities.map(a => a.date);
-  const dayTimeline = buildDayTimeline(allDates, 30);
-  const weekTimeline = buildWeekTimeline(allDates, 12);
+  const dayTimeline = buildDayTimeline(allDates, Math.max(30, dayStreak + 2));
+  const weekTimeline = buildWeekTimeline(allDates, Math.max(12, weekStreak + 2));
   const dayStreakStart = currentStreakStart(allDates, 'day');
   const weekStreakStart = currentStreakStart(allDates, 'week');
 
@@ -712,7 +716,7 @@ export default function DashPage() {
                 : (weekStreakStart ? <>Current streak started the week of <strong className="text-white">{fmtNice(weekStreakStart)}</strong> ({weekStreak} week{weekStreak === 1 ? '' : 's'}).</> : 'No active streak — log something this week to start one!')}
             </p>
             <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-2">
-              {streakModal === 'day' ? 'Last 30 days' : 'Last 12 weeks'}
+              {streakModal === 'day' ? `Last ${dayTimeline.length} days` : `Last ${weekTimeline.length} weeks`}
             </p>
             <div className={`grid gap-1 ${streakModal === 'day' ? 'grid-cols-10' : 'grid-cols-12'}`}>
               {(streakModal === 'day' ? dayTimeline : weekTimeline).map(({ date, active }) => (
