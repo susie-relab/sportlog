@@ -40,8 +40,10 @@ export interface Session {
   variant?: 'easier' | 'harder' | null;
   /** A filler slot in the lead-in "Week 0" that falls before the plan's actual start date. */
   beforeStart?: boolean;
-  /** How many original sessions are merged into this slot (undefined/1 = a single session). */
-  count?: number;
+  /** When >1 session has been squished into this day via reordering, the individual original
+   *  sessions are kept here so the UI can render them as separate boxes rather than one merged
+   *  session. Undefined/empty means this slot is a single, un-combined session. */
+  parts?: Session[];
 }
 
 export type Phase = 'Base' | 'Build' | 'Peak' | 'Taper';
@@ -1147,13 +1149,19 @@ export const MAX_SESSIONS_PER_DAY = 3;
 /** How many individual sessions are represented by this day's slot (1 for a normal/rest day). */
 export function sessionCount(s: Session): number {
   if (s.type === 'rest' || s.type === 'crosstrain') return 0;
-  return s.count ?? 1;
+  return s.parts?.length ?? 1;
+}
+
+/** The individual sessions squished into this day's slot, in order — [s] itself if it isn't a combined slot. */
+export function sessionParts(s: Session): Session[] {
+  return s.parts && s.parts.length > 0 ? s.parts : [s];
 }
 
 export function combineSessions(list: Session[]): Session {
   const real = list.filter(s => s.type !== 'rest' && s.type !== 'crosstrain');
   if (real.length === 0) return list[0];
   if (real.length === 1) return real[0];
+  const parts = real.flatMap(sessionParts);
   const allHaveDistance = real.every(s => s.distanceKm != null);
   const anyHaveTime = real.some(s => s.timeMin != null);
   const combined: Session = {
@@ -1161,7 +1169,7 @@ export function combineSessions(list: Session[]): Session {
     title: real.map(s => s.title).join(' + '),
     detail: real.map(s => s.detail).filter(Boolean).join('\n\n'),
     completed: false,
-    count: real.reduce((t, s) => t + (s.count ?? 1), 0),
+    parts,
   };
   if (allHaveDistance) {
     combined.distanceKm = round(real.reduce((t, s) => t + (s.distanceKm || 0), 0), 0.5);

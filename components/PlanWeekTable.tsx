@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { PlanData, PlanWeek, Session, SessionType, Weekday, WEEKDAYS, WEEKDAY_LABELS, WEEKDAY_SHORT, isRunSession, sessionCount, MAX_SESSIONS_PER_DAY } from '@/lib/runPlanGenerator';
+import { PlanData, PlanWeek, Session, SessionType, Weekday, WEEKDAYS, WEEKDAY_LABELS, WEEKDAY_SHORT, isRunSession, sessionCount, sessionParts, MAX_SESSIONS_PER_DAY } from '@/lib/runPlanGenerator';
 import { EXERCISE_TYPE_COLORS, ExerciseType } from '@/types';
 
 export const SESSION_COLORS: Record<SessionType, string> = {
@@ -84,10 +84,11 @@ function DayCell({ s, onClick, compact, drag }: {
   if (s.beforeStart) {
     return <div className={`w-full rounded-lg border border-dashed border-[#1E293B] ${compact ? 'h-8' : 'p-2.5 h-[52px]'}`} />;
   }
-  const color = sessionColor(s);
   const isRest = s.type === 'rest';
   const isCross = s.type === 'crosstrain';
   const muted = isRest || isCross;
+  const parts = sessionParts(s);
+  const isCombined = parts.length > 1;
   return (
     <button
       onClick={onClick}
@@ -95,23 +96,32 @@ function DayCell({ s, onClick, compact, drag }: {
       onDragStart={drag?.onDragStart}
       onDragOver={drag ? (e => e.preventDefault()) : undefined}
       onDrop={drag ? (e => { e.preventDefault(); drag.onDrop(); }) : undefined}
-      className={`w-full text-left rounded-lg p-2.5 border transition-colors ${
+      className={`w-full text-left rounded-lg transition-colors ${
+        isCombined ? 'p-1 flex flex-col gap-1' : 'p-2.5'
+      } border ${
         s.completed ? 'border-green-600/60 bg-green-900/15' : 'border-[#293548] bg-[#0F172A] hover:border-[#475569]'
-      } ${compact ? 'flex items-center gap-2' : ''} ${drag ? 'cursor-grab active:cursor-grabbing' : ''} ${drag?.isDragging ? 'opacity-40' : ''}`}
+      } ${compact && !isCombined ? 'flex items-center gap-2' : ''} ${drag ? 'cursor-grab active:cursor-grabbing' : ''} ${drag?.isDragging ? 'opacity-40' : ''}`}
     >
-      {compact && <span className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ background: color }} />}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          {!compact && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />}
-          <span className={`text-xs font-semibold truncate ${muted ? 'text-[#64748B]' : 'text-white'}`}>{s.title}</span>
-          {s.completed && <span className="text-green-400 text-xs ml-auto flex-shrink-0">✓</span>}
-          {s.variant && <span className="text-[9px] uppercase text-[#64748B] flex-shrink-0">{s.variant}</span>}
-        </div>
-        {target(s) && <div className="text-xs font-bold mt-0.5" style={{ color }}>{target(s)}</div>}
-        {!compact && s.detail && !muted && (
-          <div className="text-[10px] text-[#64748B] mt-1 leading-snug line-clamp-2 whitespace-pre-line">{s.detail}</div>
-        )}
-      </div>
+      {parts.map((p, i) => {
+        const color = sessionColor(p);
+        return (
+          <div key={i} className={isCombined ? `rounded-md border border-[#293548] bg-[#0B1220] p-1.5 ${compact ? 'flex items-center gap-2' : ''}` : (compact ? 'flex items-center gap-2 w-full' : 'w-full')}>
+            {compact && <span className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ background: color }} />}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                {!compact && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />}
+                <span className={`text-xs font-semibold truncate ${muted ? 'text-[#64748B]' : 'text-white'}`}>{p.title}</span>
+                {p.completed && <span className="text-green-400 text-xs ml-auto flex-shrink-0">✓</span>}
+                {p.variant && <span className="text-[9px] uppercase text-[#64748B] flex-shrink-0">{p.variant}</span>}
+              </div>
+              {target(p) && <div className="text-xs font-bold mt-0.5" style={{ color }}>{target(p)}</div>}
+              {!compact && !isCombined && p.detail && !muted && (
+                <div className="text-[10px] text-[#64748B] mt-1 leading-snug line-clamp-2 whitespace-pre-line">{p.detail}</div>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </button>
   );
 }

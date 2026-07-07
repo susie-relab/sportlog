@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
 import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak, todayLocalISO } from '@/lib/utils';
-import { PlanRecord, PlanData, Session, Weekday, RUN_DISTANCE_LABELS, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS, movePlanSession, addSessionToDay, sessionCount, MAX_SESSIONS_PER_DAY, WEEKDAY_LABELS } from '@/lib/runPlanGenerator';
+import { PlanRecord, PlanData, Session, Weekday, RUN_DISTANCE_LABELS, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS, movePlanSession, addSessionToDay, sessionCount, sessionParts, MAX_SESSIONS_PER_DAY, WEEKDAY_LABELS } from '@/lib/runPlanGenerator';
 import { sessionColor, sessionTarget } from '@/components/PlanWeekTable';
 import PlanDaySheet from '@/components/PlanDaySheet';
 import Link from 'next/link';
@@ -396,11 +396,15 @@ export default function DashPage() {
                                     }
                                     setDragFrom(null);
                                   }}
-                                  className={`w-full text-left rounded-lg p-2 border transition-colors cursor-grab active:cursor-grabbing ${isToday ? 'border-blue-500/50 bg-blue-500/10' : 'border-[#293548] bg-[#0F172A] hover:border-[#475569]'} ${isDragging ? 'opacity-40' : ''}`}>
-                                  <span className="w-1.5 h-1.5 rounded-full inline-block mr-1" style={{ background: sessionColor(s) }} />
-                                  <span className={`text-xs font-semibold ${muted ? 'text-[#64748B]' : 'text-white'}`}>{s.title}</span>
-                                  {sessionTarget(s) && <div className="text-[10px] text-[#64748B] mt-0.5">{sessionTarget(s)}</div>}
-                                  {s.completed && <span className="text-green-400 text-[10px] ml-1">✓</span>}
+                                  className={`w-full text-left rounded-lg border transition-colors cursor-grab active:cursor-grabbing ${sessionParts(s).length > 1 ? 'p-1 flex flex-col gap-1' : 'p-2'} ${isToday ? 'border-blue-500/50 bg-blue-500/10' : 'border-[#293548] bg-[#0F172A] hover:border-[#475569]'} ${isDragging ? 'opacity-40' : ''}`}>
+                                  {sessionParts(s).map((p, i) => (
+                                    <div key={i} className={sessionParts(s).length > 1 ? 'rounded-md border border-[#293548] bg-[#0B1220] p-1.5' : ''}>
+                                      <span className="w-1.5 h-1.5 rounded-full inline-block mr-1" style={{ background: sessionColor(p) }} />
+                                      <span className={`text-xs font-semibold ${muted ? 'text-[#64748B]' : 'text-white'}`}>{p.title}</span>
+                                      {sessionTarget(p) && <div className="text-[10px] text-[#64748B] mt-0.5 inline">{sessionTarget(p)}</div>}
+                                      {p.completed && <span className="text-green-400 text-[10px] ml-1">✓</span>}
+                                    </div>
+                                  ))}
                                 </button>
                               </td>
                             );
@@ -427,14 +431,21 @@ export default function DashPage() {
                           if (s.beforeStart) return null;
                           const muted = s.type === 'rest' || s.type === 'crosstrain';
                           const isToday = d === today.day;
+                          const parts = sessionParts(s);
                           return (
                             <button key={d} onClick={() => setDetail({ planId: plan.id, week: today.week, day: d })}
-                              className={`flex items-center gap-2 py-1.5 px-2 rounded-lg text-left ${isToday ? 'bg-blue-500/10 border border-blue-500/30' : 'hover:bg-[#0F172A]'}`}>
-                              <span className="text-[10px] font-semibold text-[#64748B] uppercase w-8 flex-shrink-0">{d.slice(0, 3)}</span>
-                              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: sessionColor(s) }} />
-                              <span className={`text-xs truncate flex-1 ${muted ? 'text-[#64748B]' : 'text-white'}`}>{s.title}</span>
-                              {sessionTarget(s) && <span className="text-[10px] text-[#64748B] flex-shrink-0">{sessionTarget(s)}</span>}
-                              {s.completed && <span className="text-green-400 text-[10px] flex-shrink-0">✓</span>}
+                              className={`flex items-start gap-2 py-1.5 px-2 rounded-lg text-left ${isToday ? 'bg-blue-500/10 border border-blue-500/30' : 'hover:bg-[#0F172A]'}`}>
+                              <span className="text-[10px] font-semibold text-[#64748B] uppercase w-8 flex-shrink-0 pt-0.5">{d.slice(0, 3)}</span>
+                              <div className="flex flex-col gap-1 flex-1 min-w-0">
+                                {parts.map((p, i) => (
+                                  <div key={i} className={`flex items-center gap-2 ${parts.length > 1 ? 'rounded-md border border-[#293548] bg-[#0B1220] px-1.5 py-1' : ''}`}>
+                                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: sessionColor(p) }} />
+                                    <span className={`text-xs truncate flex-1 ${muted ? 'text-[#64748B]' : 'text-white'}`}>{p.title}</span>
+                                    {sessionTarget(p) && <span className="text-[10px] text-[#64748B] flex-shrink-0">{sessionTarget(p)}</span>}
+                                    {p.completed && <span className="text-green-400 text-[10px] flex-shrink-0">✓</span>}
+                                  </div>
+                                ))}
+                              </div>
                             </button>
                           );
                         })}
