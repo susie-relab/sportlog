@@ -581,7 +581,10 @@ function assignWeek(cfg: PlanConfig, weekIdx: number): PlanWeek {
 
   // Remaining sessions spread across the other available days, spacing quality apart.
   const remaining = sessions.filter(s => s !== longSession);
-  const openDays = available.filter(d => d !== longDay);
+  // Shuffle which open day comes first — otherwise the earliest weekday (e.g. Monday)
+  // always gets the first placed session on every regeneration.
+  const nonLongDays = available.filter(d => d !== longDay);
+  const openDays = pickN(nonLongDays, nonLongDays.length);
   // interleave so hard sessions aren't back-to-back: sort remaining hard-first, then place on alternating days
   const hard = remaining.filter(s => ['tempo', 'long_intervals', 'sprint_reps', 'hill_reps', 'fartlek', 'progression'].includes(s.type));
   const easy = remaining.filter(s => !hard.includes(s));
