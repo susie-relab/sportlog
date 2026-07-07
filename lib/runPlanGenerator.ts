@@ -107,7 +107,8 @@ export interface CustomActivity {
   exerciseType: string; // ExerciseType key ('run','sport','swim',...)
   subType?: string;     // optional subtype key ('football','strength',...)
   label: string;        // display name
-  quantity: number;     // sessions per week
+  quantity: number;     // sessions per `quantityPeriod`
+  quantityPeriod?: 'week' | 'month'; // 'month' = per 4-week block (default 'week')
   durationMin?: number; // suggested duration range (minutes)
   durationMax?: number;
 }
@@ -797,28 +798,36 @@ function customSessionFrom(act: CustomActivity): Session {
 }
 
 /**
- * Build a custom mix plan. Expands each activity by its weekly quantity into a
- * pool of sessions, then lays them across the training days. If the pool is
- * larger than the days available, it cycles the leftovers into following weeks.
+ * Build a custom mix plan. Weekly-quantity activities are expanded into a
+ * pool of sessions that cycles across the training days (spilling into later
+ * weeks if there are more than fit in one). Monthly-quantity activities are
+ * scheduled separately on a deterministic 4-week cadence — an activity set to
+ * N/month is "due" on N of every 4 weeks (e.g. 1/month => week 1, 5, 9…) — and
+ * get first claim on that week's slots, with weekly items filling the rest.
  */
 export function generateCustomPlan(cfg: CustomConfig): PlanData {
+  const monthly = cfg.activities.filter(a => a.quantityPeriod === 'month');
+  const weekly = cfg.activities.filter(a => a.quantityPeriod !== 'month');
+
   // full weekly pool (one entry per session, respecting quantity)
   const pool: CustomActivity[] = [];
-  for (const a of cfg.activities) for (let i = 0; i < Math.max(1, a.quantity); i++) pool.push(a);
+  for (const a of weekly) for (let i = 0; i < Math.max(1, a.quantity); i++) pool.push(a);
 
   const perWeek = Math.min(cfg.daysPerWeek, cfg.trainDays.length);
   const available = orderTrainDays(cfg.trainDays);
   const weeks: PlanWeek[] = [];
-  let cursor = 0; // position in the cycling pool
+  let cursor = 0; // position in the cycling weekly pool
 
   for (let w = 0; w < cfg.weeks; w++) {
-    // take the next `perWeek` sessions from the cycling pool
-    const picks: CustomActivity[] = [];
-    for (let i = 0; i < perWeek && pool.length; i++) {
+    // monthly items due this week get first claim on the slots
+    const dueThisWeek = monthly.filter(a => (w % 4) < Math.max(1, a.quantity));
+    const weeklySlots = Math.max(0, perWeek - dueThisWeek.length);
+    const picks: CustomActivity[] = [...dueThisWeek];
+    for (let i = 0; i < weeklySlots && pool.length; i++) {
       picks.push(pool[cursor % pool.length]);
       cursor++;
     }
-    const sessions = picks.map(customSessionFrom);
+    const sessions = picks.slice(0, perWeek).map(customSessionFrom);
 
     const days: Partial<Record<Weekday, Session>> = {};
     available.slice(0, perWeek).forEach((d, i) => { if (sessions[i]) days[d] = sessions[i]; });

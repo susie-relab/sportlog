@@ -52,6 +52,7 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
   const [selSub, setSelSub] = useState<string>('');
   const [customSport, setCustomSport] = useState('');
   const [qty, setQty] = useState('1');
+  const [qtyPeriod, setQtyPeriod] = useState<'week' | 'month'>('week');
   const [durMin, setDurMin] = useState('45');
   const [durMax, setDurMax] = useState('60');
 
@@ -69,15 +70,19 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
     const label = custom || subLabel || EXERCISE_TYPE_LABELS[selType];
     setActivities(prev => [...prev, {
       exerciseType: selType, subType: selSub || undefined, label, quantity: Math.max(1, parseInt(qty) || 1),
+      quantityPeriod: qtyPeriod,
       durationMin: durMin ? parseInt(durMin) : undefined, durationMax: durMax ? parseInt(durMax) : undefined,
     }]);
     setSelSub('');
     setCustomSport('');
     setQty('1');
+    setQtyPeriod('week');
   };
   const removeActivity = (i: number) => setActivities(prev => prev.filter((_, idx) => idx !== i));
 
-  const totalPerWeek = activities.reduce((s, a) => s + a.quantity, 0);
+  // Monthly items count as a weekly-equivalent fraction for the "does it fit
+  // your sessions/week" hint (they land on ~1 of every 4 weeks per unit).
+  const totalPerWeek = activities.reduce((s, a) => s + (a.quantityPeriod === 'month' ? a.quantity / 4 : a.quantity), 0);
 
   const buildConfig = (): CustomConfig => ({ name: name.trim() || undefined, activities, weeks: effectiveWeeks, daysPerWeek, trainDays, level, startDate });
 
@@ -124,7 +129,7 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
 
       {/* Added activities */}
       <div>
-        <label className="label">Weekly activities {totalPerWeek > 0 && <span className="text-[#64748B]">({totalPerWeek}/week)</span>}</label>
+        <label className="label">Weekly activities {totalPerWeek > 0 && <span className="text-[#64748B]">(~{Math.round(totalPerWeek * 10) / 10}/week)</span>}</label>
         {activities.length === 0 ? (
           <p className="text-sm text-[#475569]">None yet — add activities below.</p>
         ) : (
@@ -132,7 +137,7 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
             {activities.map((a, i) => (
               <div key={i} className="flex items-center gap-2 py-2 px-3 rounded-lg border border-[#293548] bg-[#0F172A]">
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: EXERCISE_TYPE_COLORS[a.exerciseType as ExerciseType] || '#3B82F6' }} />
-                <span className="text-sm text-white flex-1 min-w-0 truncate">{a.quantity}× {a.label}</span>
+                <span className="text-sm text-white flex-1 min-w-0 truncate">{a.quantity}×/{a.quantityPeriod === 'month' ? 'mo' : 'wk'} {a.label}</span>
                 {a.durationMin && <span className="text-xs text-[#64748B]">{a.durationMin}{a.durationMax && a.durationMax !== a.durationMin ? `–${a.durationMax}` : ''} min</span>}
                 <button onClick={() => removeActivity(i)} className="text-[#64748B] hover:text-red-400 text-sm flex-shrink-0">✕</button>
               </div>
@@ -170,10 +175,19 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
             <div className="border-t border-[#334155] -mx-5" />
           </>
         )}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-[#64748B]">Quantity</span>
+            <div className="flex rounded-lg border border-[#334155] overflow-hidden text-[10px]">
+              <button onClick={() => setQtyPeriod('week')} className={`px-2 py-1 font-semibold ${qtyPeriod === 'week' ? 'bg-blue-600 text-white' : 'text-[#94A3B8]'}`}>Per week</button>
+              <button onClick={() => setQtyPeriod('month')} className={`px-2 py-1 font-semibold ${qtyPeriod === 'month' ? 'bg-blue-600 text-white' : 'text-[#94A3B8]'}`}>Per month (4 wks)</button>
+            </div>
+          </div>
+        </div>
         <div className="grid grid-cols-3 gap-2 items-end">
           <div>
-            <span className="text-xs text-[#64748B]">Per week</span>
-            <input type="number" className="input" min="1" max="14" value={qty}
+            <span className="text-xs text-[#64748B]">{qtyPeriod === 'month' ? 'Per month' : 'Per week'}</span>
+            <input type="number" className="input" min="1" max={qtyPeriod === 'month' ? 4 : 14} value={qty}
               onChange={e => setQty(e.target.value)} onBlur={() => setQty(String(Math.max(1, parseInt(qty) || 1)))} />
           </div>
           <div>
@@ -214,7 +228,7 @@ export default function CustomPlanBuilder({ existing, onSaved, onCancel }: Props
         <input type="range" min="1" max="7" value={daysPerWeek} onChange={e => setDaysPerWeek(parseInt(e.target.value))} className="w-full accent-blue-500" />
       </div>
       {totalPerWeek > daysPerWeek && (
-        <p className="text-xs text-[#64748B]">You've added {totalPerWeek} activities but {daysPerWeek} sessions/week — the extras will cycle across weeks.</p>
+        <p className="text-xs text-[#64748B]">You've added ~{Math.round(totalPerWeek * 10) / 10}/week worth of activities but {daysPerWeek} sessions/week — the extras will cycle across weeks.</p>
       )}
 
       {/* Level */}
