@@ -451,7 +451,7 @@ export default function TotalStatsPage() {
         {subtypeData.length > 0 && (
           <div className="card">
             <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Top Subtypes</p>
-            <ResponsiveContainer width="100%" height={140}>
+            <ResponsiveContainer width="100%" height={140} key={`${period}-${filterType}`}>
               <BarChart data={subtypeData} layout="vertical" margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
                 <XAxis type="number" allowDecimals={false} tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} axisLine={false} />
                 <YAxis type="category" dataKey="name" tick={{ fill: '#94A3B8', fontSize: 10 }} tickLine={false} axisLine={false} width={90} />
