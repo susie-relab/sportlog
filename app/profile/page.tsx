@@ -1,66 +1,66 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
-import FeedbackForm from '@/components/FeedbackForm';
+import Avatar from '@/components/Avatar';
+import { uploadImages, deleteImage } from '@/lib/images';
 
 export default function ProfilePage() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [username, setUsername] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
-  const [streakReminder, setStreakReminder] = useState(true);
-  const [reminderHour, setReminderHour] = useState(17);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const flash = (text: string, ok: boolean) => {
     setMsg({ text, ok });
     setTimeout(() => setMsg(null), 4000);
   };
 
+  useEffect(() => {
+    if (user?.user_metadata?.username) setUsername(user.user_metadata.username);
+    setAvatarUrl(user?.user_metadata?.avatar_url ?? null);
+  }, [user]);
+
   const handleUpdateUsername = async () => {
     if (!username.trim()) return;
     setSaving(true);
-    const { error } = await supabase.auth.updateUser({ data: { username: username.trim() } });
+    const { error } = await supabase.auth.updateUser({ data: { ...user?.user_metadata, username: username.trim() } });
     setSaving(false);
-    flash(error ? error.message : 'Username updated!', !error);
+    flash(error ? error.message : 'Display name updated!', !error);
   };
 
-  const handleUpdateEmail = async () => {
-    if (!newEmail.trim()) return;
-    setSaving(true);
-    const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
-    setSaving(false);
-    flash(error ? error.message : 'Confirmation sent to new email address.', !error);
-    if (!error) setNewEmail('');
+  const handlePickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploading(true);
+    try {
+      const [url] = await uploadImages(user.id, [file]);
+      const prev = avatarUrl;
+      const { error } = await supabase.auth.updateUser({ data: { ...user.user_metadata, avatar_url: url } });
+      if (error) throw error;
+      setAvatarUrl(url);
+      if (prev) deleteImage(prev); // clean up the old one
+      flash('Photo updated!', true);
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Upload failed', false);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
   };
 
-  const handleUpdatePassword = async () => {
-    if (!newPassword) return;
-    if (newPassword !== confirmPassword) return flash('Passwords do not match.', false);
-    if (newPassword.length < 8) return flash('Password must be at least 8 characters.', false);
-    setSaving(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setSaving(false);
-    flash(error ? error.message : 'Password updated!', !error);
-    if (!error) { setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }
+  const removeAvatar = async () => {
+    if (!user) return;
+    const prev = avatarUrl;
+    setAvatarUrl(null);
+    await supabase.auth.updateUser({ data: { ...user.user_metadata, avatar_url: null } });
+    if (prev) deleteImage(prev);
+    flash('Reverted to default panda 🐼', true);
   };
-
-  const saveStreakPrefs = async (reminder: boolean, hour: number) => {
-    setSaving(true);
-    const { error } = await supabase.auth.updateUser({ data: { ...user?.user_metadata, streak_reminder: reminder, streak_reminder_hour: hour } });
-    setSaving(false);
-    flash(error ? error.message : 'Preferences saved!', !error);
-  };
-
-  useEffect(() => {
-    if (user?.user_metadata?.username) setUsername(user.user_metadata.username);
-    if (user?.user_metadata?.streak_reminder !== undefined) setStreakReminder(user.user_metadata.streak_reminder);
-    if (user?.user_metadata?.streak_reminder_hour !== undefined) setReminderHour(user.user_metadata.streak_reminder_hour);
-  }, [user]);
 
   return (
     <div className="max-w-lg lg:max-w-2xl mx-auto">
@@ -73,140 +73,31 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-2">Account</p>
+      {/* Avatar */}
+      <div className="card mb-4 flex items-center gap-4">
+        <Avatar url={avatarUrl} size={72} />
+        <div className="flex flex-col gap-2">
+          <button onClick={() => fileRef.current?.click()} disabled={uploading} className="btn-primary text-sm px-4 py-2 disabled:opacity-60">
+            {uploading ? 'Uploading…' : avatarUrl ? 'Change photo' : 'Upload photo'}
+          </button>
+          {avatarUrl && (
+            <button onClick={removeAvatar} className="text-xs text-[#64748B] hover:text-white transition-colors">Use default panda</button>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePickAvatar} />
+        </div>
+      </div>
 
-      {/* Username */}
-      <div className="card mb-4">
+      {/* Display name */}
+      <div className="card mb-6">
         <h2 className="text-sm font-semibold text-white mb-3">Display Name</h2>
-        <input
-          className="input mb-3"
-          placeholder="Enter a username"
-          value={username}
-          onChange={e => setUsername(e.target.value)}
-        />
-        <button onClick={handleUpdateUsername} disabled={saving} className="btn-primary w-full">
-          Save Username
-        </button>
+        <input className="input mb-3" placeholder="Enter a username" value={username} onChange={e => setUsername(e.target.value)} />
+        <button onClick={handleUpdateUsername} disabled={saving} className="btn-primary w-full">Save Display Name</button>
       </div>
 
-      {/* Change email */}
-      <div className="card mb-4">
-        <h2 className="text-sm font-semibold text-white mb-3">Change Email</h2>
-        <p className="text-xs text-[#64748B] mb-3">Current: {user?.email}</p>
-        <input
-          type="email"
-          className="input mb-3"
-          placeholder="New email address"
-          value={newEmail}
-          onChange={e => setNewEmail(e.target.value)}
-        />
-        <button onClick={handleUpdateEmail} disabled={saving || !newEmail} className="btn-primary w-full">
-          Update Email
-        </button>
-      </div>
-
-      {/* Change password */}
-      <div className="card mb-6">
-        <h2 className="text-sm font-semibold text-white mb-3">Change Password</h2>
-        <div className="flex flex-col gap-3">
-          <input
-            type="password"
-            className="input"
-            placeholder="New password (min 8 chars)"
-            value={newPassword}
-            onChange={e => setNewPassword(e.target.value)}
-          />
-          <input
-            type="password"
-            className="input"
-            placeholder="Confirm new password"
-            value={confirmPassword}
-            onChange={e => setConfirmPassword(e.target.value)}
-          />
-          <button onClick={handleUpdatePassword} disabled={saving || !newPassword} className="btn-primary w-full">
-            Update Password
-          </button>
-        </div>
-      </div>
-
-      {/* Connections */}
-      <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-2 mt-6">Connections</p>
-      <div className="card mb-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <span>🔗</span> Strava
-            </h2>
-            <p className="text-xs text-[#64748B] mt-1">Auto-sync your Garmin &amp; other activities via Strava.</p>
-          </div>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-[#64748B] border border-[#334155] rounded-full px-2 py-1 flex-shrink-0">Coming soon</span>
-        </div>
-      </div>
-
-      {/* Preferences */}
-      <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-2">Preferences</p>
-      <div className="card mb-6 flex flex-col gap-4">
-        {/* Evening streak reminder */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-white">Evening streak reminder</h2>
-            <p className="text-xs text-[#64748B] mt-0.5">Nudge me to log if my streak is at risk.</p>
-          </div>
-          <button
-            onClick={() => { const v = !streakReminder; setStreakReminder(v); saveStreakPrefs(v, reminderHour); }}
-            role="switch" aria-checked={streakReminder}
-            className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${streakReminder ? 'bg-blue-600' : 'bg-[#334155]'}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${streakReminder ? 'translate-x-5' : ''}`} />
-          </button>
-        </div>
-        {streakReminder && (
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm text-[#94A3B8]">Remind me after</span>
-            <select
-              className="input w-auto text-sm"
-              value={reminderHour}
-              onChange={e => { const h = parseInt(e.target.value); setReminderHour(h); saveStreakPrefs(streakReminder, h); }}
-            >
-              {[15, 16, 17, 18, 19, 20, 21].map(h => (
-                <option key={h} value={h}>{h > 12 ? `${h - 12}pm` : `${h}am`}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className="border-t border-[#334155] pt-3 flex flex-col gap-2.5">
-          {[
-            { label: 'Units', desc: 'Kilometres or miles' },
-            { label: 'Week start day', desc: 'Currently Monday' },
-            { label: 'Light theme', desc: 'Dark or light appearance' },
-          ].map(o => (
-            <div key={o.label} className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm text-[#94A3B8]">{o.label}</p>
-                <p className="text-xs text-[#64748B]">{o.desc}</p>
-              </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-[#64748B] border border-[#334155] rounded-full px-2 py-1 flex-shrink-0">Coming soon</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Support / feedback */}
-      <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-2">Support</p>
-      <div className="card mb-6">
-        <h2 className="text-sm font-semibold text-white mb-1">Feedback &amp; feature requests</h2>
-        <p className="text-xs text-[#64748B] mb-3">Spotted a bug or have an idea? Send it straight to the developer.</p>
-        <FeedbackForm defaultEmail={user?.email ?? undefined} />
-      </div>
-
-      {/* Sign out */}
-      <button
-        onClick={signOut}
-        className="w-full py-3 rounded-lg border border-red-800/50 text-red-400 text-sm font-medium hover:bg-red-900/20 transition-colors"
-      >
-        Sign Out
-      </button>
+      <Link href="/settings" className="flex items-center justify-between card hover:border-[#475569] transition-colors">
+        <span className="text-sm font-semibold text-white">⚙ Settings</span>
+        <span className="text-[#64748B]">›</span>
+      </Link>
     </div>
   );
 }

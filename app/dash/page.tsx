@@ -9,6 +9,7 @@ import { PlanRecord, PlanData, Session, Weekday, runPlanDisplayName, todaysSessi
 import { sessionColor, sessionTarget, exerciseTypeTag } from '@/components/PlanWeekTable';
 import PlanDaySheet from '@/components/PlanDaySheet';
 import Link from 'next/link';
+import Avatar from '@/components/Avatar';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 /** The subtype label for any activity — sub_type for most types, run_type for runs. */
@@ -104,7 +105,7 @@ function StatCard({ value, label, color = '#60A5FA' }: { value: string; label: s
 
 export default function DashPage() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [plans, setPlans] = useState<PlanRecord[]>([]);
@@ -275,15 +276,12 @@ export default function DashPage() {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <Link href="/import" className="btn-secondary text-xs px-3 py-1.5">↑ Import</Link>
-          <Link href="/profile" className="w-8 h-8 rounded-full bg-[#1E293B] border border-[#334155] flex items-center justify-center text-[#94A3B8] hover:border-[#475569] hover:text-white transition-colors text-sm">
+          <Link href="/settings" aria-label="Settings" className="w-9 h-9 rounded-full bg-[#1E293B] border border-[#334155] flex items-center justify-center text-[#94A3B8] hover:border-[#475569] hover:text-white transition-colors text-base">
             ⚙
           </Link>
-          <button
-            onClick={signOut}
-            className="text-xs text-[#64748B] hover:text-white transition-colors px-2 py-1.5 rounded-lg border border-[#334155] hover:border-[#475569]"
-          >
-            Sign out
-          </button>
+          <Link href="/profile" aria-label="Profile" className="w-9 h-9 rounded-full border border-[#334155] hover:border-[#475569] transition-colors overflow-hidden flex items-center justify-center">
+            <Avatar url={user?.user_metadata?.avatar_url} size={34} />
+          </Link>
         </div>
       </div>
 
