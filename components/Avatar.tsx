@@ -2,7 +2,7 @@
 export default function Avatar({ url, size = 32 }: { url?: string | null; size?: number }) {
   return (
     <span
-      className="inline-block rounded-full overflow-hidden bg-[#EAF2FF] flex-shrink-0"
+      className="inline-block rounded-full overflow-hidden bg-[#3B82F6] flex-shrink-0"
       style={{ width: size, height: size }}
     >
       {url ? (
@@ -19,32 +19,30 @@ function PandaFace() {
   return (
     <svg viewBox="0 0 100 100" className="w-full h-full" aria-hidden>
       {/* ears */}
-      <circle cx="26" cy="24" r="15" fill="#3B82F6" />
-      <circle cx="74" cy="24" r="15" fill="#3B82F6" />
-      <circle cx="26" cy="24" r="7" fill="#60A5FA" />
-      <circle cx="74" cy="24" r="7" fill="#60A5FA" />
+      <circle cx="25" cy="22" r="15" fill="#1E293B" />
+      <circle cx="75" cy="22" r="15" fill="#1E293B" />
       {/* face */}
-      <circle cx="50" cy="55" r="39" fill="#F8FBFF" />
+      <circle cx="50" cy="56" r="38" fill="#FCFCFD" />
       {/* rosy cheeks */}
-      <circle cx="27" cy="66" r="6" fill="#FBB6CE" opacity="0.75" />
-      <circle cx="73" cy="66" r="6" fill="#FBB6CE" opacity="0.75" />
+      <circle cx="25" cy="68" r="7" fill="#FBB6CE" opacity="0.8" />
+      <circle cx="75" cy="68" r="7" fill="#FBB6CE" opacity="0.8" />
       {/* eye patches (big, cute) */}
-      <ellipse cx="36" cy="52" rx="13" ry="15" fill="#3B82F6" transform="rotate(-12 36 52)" />
-      <ellipse cx="64" cy="52" rx="13" ry="15" fill="#3B82F6" transform="rotate(12 64 52)" />
+      <ellipse cx="34" cy="52" rx="15" ry="18" fill="#1E293B" transform="rotate(-10 34 52)" />
+      <ellipse cx="66" cy="52" rx="15" ry="18" fill="#1E293B" transform="rotate(10 66 52)" />
       {/* big eyes */}
-      <circle cx="37" cy="53" r="8.5" fill="#fff" />
-      <circle cx="63" cy="53" r="8.5" fill="#fff" />
-      <circle cx="38" cy="54" r="5.5" fill="#0F172A" />
-      <circle cx="62" cy="54" r="5.5" fill="#0F172A" />
+      <circle cx="35" cy="53" r="10" fill="#fff" />
+      <circle cx="65" cy="53" r="10" fill="#fff" />
+      <circle cx="36" cy="55" r="6" fill="#1E293B" />
+      <circle cx="64" cy="55" r="6" fill="#1E293B" />
       {/* sparkle highlights */}
-      <circle cx="40.3" cy="51.3" r="2.2" fill="#fff" />
-      <circle cx="64.3" cy="51.3" r="2.2" fill="#fff" />
-      <circle cx="36" cy="56" r="1" fill="#fff" opacity="0.8" />
-      <circle cx="60" cy="56" r="1" fill="#fff" opacity="0.8" />
+      <circle cx="39" cy="51" r="2.6" fill="#fff" />
+      <circle cx="67" cy="51" r="2.6" fill="#fff" />
+      <circle cx="34" cy="58" r="1.1" fill="#fff" opacity="0.85" />
+      <circle cx="62" cy="58" r="1.1" fill="#fff" opacity="0.85" />
       {/* nose */}
-      <ellipse cx="50" cy="66" rx="3.6" ry="2.6" fill="#0F172A" />
-      {/* big smile */}
-      <path d="M40 71 Q50 80 60 71" stroke="#0F172A" strokeWidth="2.2" fill="none" strokeLinecap="round" />
+      <ellipse cx="50" cy="68" rx="4" ry="3" fill="#1E293B" />
+      {/* smile */}
+      <path d="M42 74 Q50 80 58 74" stroke="#1E293B" strokeWidth="2.4" fill="none" strokeLinecap="round" />
     </svg>
   );
 }
