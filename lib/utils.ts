@@ -67,18 +67,39 @@ export function daysAgo(n: number): string {
   return d.toISOString();
 }
 
+/** Add N days to a local YYYY-MM-DD date, staying in local calendar dates (matches how
+ *  activity dates are stored). Avoids UTC round-trip bugs that shift the day in timezones
+ *  ahead of UTC (e.g. NZ), which made streaks reset mid-afternoon. */
+function addDaysLocalISO(dateISO: string, n: number): string {
+  const [y, m, d] = dateISO.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + n);
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+/** Monday-start week key for a local YYYY-MM-DD date. */
+function localWeekKey(dateISO: string): string {
+  const [y, m, d] = dateISO.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const day = dt.getDay();
+  dt.setDate(dt.getDate() - day + (day === 0 ? -6 : 1));
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
 export function calcDayStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
   const unique = [...new Set(dates)].sort((a, b) => b.localeCompare(a));
-  const today = new Date().toISOString().split('T')[0];
-  const yesterday = daysAgo(1).split('T')[0];
+  const today = todayLocalISO();
+  const yesterday = addDaysLocalISO(today, -1);
   if (unique[0] !== today && unique[0] !== yesterday) return 0;
   let streak = 1;
   for (let i = 1; i < unique.length; i++) {
-    const prev = new Date(unique[i - 1]);
-    const curr = new Date(unique[i]);
-    const diff = (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24);
-    if (Math.round(diff) === 1) streak++;
+    if (addDaysLocalISO(unique[i - 1], -1) === unique[i]) streak++;
     else break;
   }
   return streak;
@@ -86,24 +107,13 @@ export function calcDayStreak(dates: string[]): number {
 
 export function calcWeekStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
-  const getWeekKey = (d: string) => {
-    const date = new Date(d);
-    const day = date.getDay();
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-    const mon = new Date(date);
-    mon.setDate(diff);
-    return mon.toISOString().split('T')[0];
-  };
-  const weeks = [...new Set(dates.map(getWeekKey))].sort((a, b) => b.localeCompare(a));
-  const thisWeek = getWeekKey(new Date().toISOString().split('T')[0]);
-  const lastWeek = getWeekKey(daysAgo(7).split('T')[0]);
+  const weeks = [...new Set(dates.map(localWeekKey))].sort((a, b) => b.localeCompare(a));
+  const thisWeek = localWeekKey(todayLocalISO());
+  const lastWeek = addDaysLocalISO(thisWeek, -7);
   if (weeks[0] !== thisWeek && weeks[0] !== lastWeek) return 0;
   let streak = 1;
   for (let i = 1; i < weeks.length; i++) {
-    const prev = new Date(weeks[i - 1]);
-    const curr = new Date(weeks[i]);
-    const diff = (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24);
-    if (Math.round(diff) === 7) streak++;
+    if (addDaysLocalISO(weeks[i - 1], -7) === weeks[i]) streak++;
     else break;
   }
   return streak;

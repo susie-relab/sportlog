@@ -175,6 +175,11 @@ export default function DashPage() {
   const dayStreak = calcDayStreak(activities.map(a => a.date));
   const weekStreak = calcWeekStreak(activities.map(a => a.date));
 
+  // Evening nudge: after 5pm, if there's a streak to protect but nothing logged today yet.
+  const loggedToday = activities.some(a => a.date === todayLocalISO());
+  const isEvening = new Date().getHours() >= 17;
+  const showStreakNudge = isEvening && !loggedToday && dayStreak > 0;
+
   // 14-day summaries
   const total14 = last14.length;
   const runs14 = last14.filter(a => a.exercise_type === 'run');
@@ -348,6 +353,17 @@ export default function DashPage() {
       </div>
 
       <div>
+      {/* Evening reminder to protect the current day streak */}
+      {showStreakNudge && (
+        <Link href="/add" className="flex items-center gap-3 mb-5 p-3 rounded-xl border border-orange-500/40 hover:border-orange-500/70 transition-colors" style={{ background: 'rgba(249,115,22,0.1)' }}>
+          <span className="text-2xl flex-shrink-0">🔥</span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-orange-300">Don&apos;t lose your streak — log exercise today!</p>
+            <p className="text-xs text-orange-400/70 mt-0.5">You&apos;re on a {dayStreak}-day streak. Tap to log an activity.</p>
+          </div>
+        </Link>
+      )}
+
       {/* Streaks — tap to see when the streak started/broke */}
       <div className="grid grid-cols-2 gap-3 mb-5">
         <button onClick={() => setStreakModal('day')} className="card text-center border-orange-500/30 hover:border-orange-500/60 transition-colors" style={{ background: 'rgba(249,115,22,0.08)' }}>
