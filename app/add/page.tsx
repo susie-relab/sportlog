@@ -12,6 +12,7 @@ import {
   SPORT_SUB_LABELS, GYM_SUB_LABELS, WATER_SNOW_SUB_LABELS, SWIM_SUB_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
 } from '@/types';
 import DistancePicker from '@/components/DistancePicker';
+import ImageUploader from '@/components/ImageUploader';
 import { useDirtyForm } from '@/components/DirtyFormContext';
 import { sessionParts, combineSessions } from '@/lib/runPlanGenerator';
 import ConfettiBurst from '@/components/ConfettiBurst';
@@ -36,6 +37,7 @@ export default function AddPage() {
   const [effort, setEffort] = useState<number | null>(null);
   const [distance, setDistance] = useState('');
   const [notes, setNotes] = useState('');
+  const [images, setImages] = useState<string[]>([]);
   const [intensityMins, setIntensityMins] = useState('');
   const [paceMin, setPaceMin] = useState('');
   const [paceSec, setPaceSec] = useState('');
@@ -72,7 +74,7 @@ export default function AddPage() {
     if (planId && week && day) setPlanLink({ planId, week: parseInt(week), day, part: part != null ? parseInt(part) : undefined });
   }, []);
 
-  const isDirty = !!(name || exerciseType || hours || mins || secs || distance || notes || effort);
+  const isDirty = !!(name || exerciseType || hours || mins || secs || distance || notes || effort || images.length);
 
   useEffect(() => {
     setDirty(isDirty);
@@ -127,6 +129,7 @@ export default function AddPage() {
       elevation_gain_m: elevationGain ? parseInt(elevationGain) : null,
       is_pb: isPb,
       pb_description: isPb ? pbDesc : null,
+      image_urls: images.length ? images : null,
       date,
     }).select('id').single();
 
@@ -160,6 +163,7 @@ export default function AddPage() {
       setEffort(null); setDistance(''); setNotes(''); setIntensityMins('');
       setPaceMin(''); setPaceSec(''); setMaxPaceMin(''); setMaxPaceSec('');
       setMaxHr(''); setAvgHr(''); setElevationGain(''); setIsPb(false); setPbDesc('');
+      setImages([]);
       setDate(todayLocalISO());
       setTimeout(() => setSuccess(false), 3000);
       // form is clean after save
@@ -504,6 +508,9 @@ export default function AddPage() {
             style={{ resize: 'vertical' }}
           />
         </div>
+
+        {/* Photos */}
+        {user && <ImageUploader userId={user.id} value={images} onChange={setImages} />}
 
         {/* PB */}
         <div>

@@ -135,6 +135,7 @@ export interface Activity {
   is_pb: boolean;
   pb_description?: string;
   note_hidden?: boolean;
+  image_urls?: string[] | null;
   date: string;
   created_at: string;
 }

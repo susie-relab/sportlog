@@ -9,6 +9,7 @@ import {
 } from '@/types';
 import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
+import ImageGallery from '@/components/ImageGallery';
 import { activitiesToCsv, downloadCsv } from '@/lib/exportCsv';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -263,6 +264,12 @@ export default function ActivityLogPage() {
                     {a.is_pb && a.pb_description && (
                       <div className="col-span-2">
                         <span className="text-xs text-yellow-500 font-medium">⭐ PB: {a.pb_description}</span>
+                      </div>
+                    )}
+                    {a.image_urls && a.image_urls.length > 0 && (
+                      <div className="col-span-2 mt-1" onClick={e => e.stopPropagation()}>
+                        <span className="text-xs text-[#64748B] font-medium">Photos</span>
+                        <div className="mt-1"><ImageGallery urls={a.image_urls} /></div>
                       </div>
                     )}
                   </div>

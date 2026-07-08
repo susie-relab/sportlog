@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
 import { formatDate, todayLocalISO, openDatePicker } from '@/lib/utils';
+import ImageUploader from '@/components/ImageUploader';
+import ImageGallery from '@/components/ImageGallery';
 
 interface StandaloneNote {
   id: string;
@@ -13,6 +15,7 @@ interface StandaloneNote {
   created_at: string;
   sort_order: number;
   hidden: boolean;
+  image_urls?: string[] | null;
   _type: 'note';
 }
 
@@ -35,6 +38,7 @@ export default function NotesPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [date, setDate] = useState(todayLocalISO());
+  const [images, setImages] = useState<string[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -54,6 +58,7 @@ export default function NotesPage() {
     setTitle('');
     setBody('');
     setDate(todayLocalISO());
+    setImages([]);
     setShowForm(true);
   };
 
@@ -62,15 +67,17 @@ export default function NotesPage() {
     setTitle(n.title);
     setBody(n.body);
     setDate(n.date);
+    setImages(n.image_urls ?? []);
     setShowForm(true);
   };
 
   const handleSave = async () => {
     if (!title.trim() || !body.trim() || !user) return;
     setSaving(true);
+    const image_urls = images.length ? images : null;
     if (editingNote) {
       const { data, error } = await supabase.from('notes')
-        .update({ title: title.trim(), body: body.trim(), date })
+        .update({ title: title.trim(), body: body.trim(), date, image_urls })
         .eq('id', editingNote.id)
         .select()
         .single();
@@ -79,7 +86,7 @@ export default function NotesPage() {
       }
     } else {
       const { data, error } = await supabase.from('notes')
-        .insert({ user_id: user.id, title: title.trim(), body: body.trim(), date, sort_order: Date.now() })
+        .insert({ user_id: user.id, title: title.trim(), body: body.trim(), date, image_urls, sort_order: Date.now() })
         .select()
         .single();
       if (!error && data) {
@@ -195,6 +202,7 @@ export default function NotesPage() {
               onChange={e => setBody(e.target.value)}
               style={{ resize: 'vertical' }}
             />
+            {user && <ImageUploader userId={user.id} value={images} onChange={setImages} />}
             <div className="flex gap-2">
               <button
                 onClick={handleSave}
@@ -241,7 +249,10 @@ export default function NotesPage() {
                   </div>
                   {item.hidden
                     ? <p className="text-sm text-[#475569] italic mb-3">🔒 Note hidden</p>
-                    : <p className="text-sm text-[#94A3B8] leading-relaxed whitespace-pre-line mb-3">{item.body}</p>}
+                    : <>
+                        <p className="text-sm text-[#94A3B8] leading-relaxed whitespace-pre-line mb-3">{item.body}</p>
+                        {item.image_urls && item.image_urls.length > 0 && <div className="mb-3"><ImageGallery urls={item.image_urls} /></div>}
+                      </>}
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
                       onClick={() => openEdit(item)}
@@ -311,7 +322,10 @@ export default function NotesPage() {
                   </div>
                 ) : item.note_hidden
                   ? <p className="text-sm text-[#475569] italic">🔒 Note hidden</p>
-                  : <p className="text-sm text-[#94A3B8] leading-relaxed whitespace-pre-line">{item.notes}</p>}
+                  : <>
+                      <p className="text-sm text-[#94A3B8] leading-relaxed whitespace-pre-line">{item.notes}</p>
+                      {item.image_urls && item.image_urls.length > 0 && <div className="mt-2"><ImageGallery urls={item.image_urls} /></div>}
+                    </>}
                 <div className="flex gap-3 mt-2 text-xs text-[#475569]">
                   <span>{item.duration_minutes}m</span>
                   {item.distance_km ? <span>{item.distance_km} km</span> : null}

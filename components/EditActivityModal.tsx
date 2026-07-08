@@ -10,6 +10,7 @@ import {
   SPORT_SUB_LABELS, GYM_SUB_LABELS, WATER_SNOW_SUB_LABELS, SWIM_SUB_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
 } from '@/types';
 import DistancePicker from './DistancePicker';
+import ImageUploader from './ImageUploader';
 import { openDatePicker } from '@/lib/utils';
 
 const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy'];
@@ -46,6 +47,7 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
   const [elevationGain, setElevationGain] = useState(activity.elevation_gain_m ? String(activity.elevation_gain_m) : '');
   const [isPb, setIsPb] = useState(activity.is_pb);
   const [pbDesc, setPbDesc] = useState(activity.pb_description || '');
+  const [images, setImages] = useState<string[]>(activity.image_urls ?? []);
   const [date, setDate] = useState(activity.date);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -94,6 +96,7 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
         elevation_gain_m: elevationGain ? parseInt(elevationGain) : null,
         is_pb: isPb,
         pb_description: isPb ? pbDesc : null,
+        image_urls: images.length ? images : null,
         date,
       })
       .eq('id', activity.id)
@@ -379,6 +382,9 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
             <label className="label">Notes (optional)</label>
             <textarea className="input" rows={3} value={notes} onChange={e => setNotes(e.target.value)} style={{ resize: 'vertical' }} />
           </div>
+
+          {/* Photos */}
+          <ImageUploader userId={activity.user_id} value={images} onChange={setImages} />
 
           {/* PB */}
           <div>
