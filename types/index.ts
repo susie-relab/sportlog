@@ -36,7 +36,7 @@ export const EXERCISE_TYPE_COLORS: Record<ExerciseType, string> = {
   water_snow: '#0EA5E9',
 };
 
-export type RunType = 'long' | 'easy' | 'tempo' | 'fartlek' | 'speed_intervals' | 'hill_reps' | 'trail' | 'long_intervals';
+export type RunType = 'long' | 'easy' | 'tempo' | 'fartlek' | 'speed_intervals' | 'hill_reps' | 'trail' | 'long_intervals' | 'push_buggy';
 
 export const RUN_TYPE_LABELS: Record<RunType, string> = {
   long: 'Long',
@@ -47,6 +47,7 @@ export const RUN_TYPE_LABELS: Record<RunType, string> = {
   hill_reps: 'Hill Reps',
   trail: 'Trail',
   long_intervals: 'Long Intervals',
+  push_buggy: 'Push Buggy',
 };
 
 export const RUN_TYPE_COLORS: Record<RunType, string> = {
@@ -58,6 +59,7 @@ export const RUN_TYPE_COLORS: Record<RunType, string> = {
   hill_reps: '#2563EB',
   trail: '#BFDBFE',
   long_intervals: '#1E3A8A',
+  push_buggy: '#7DD3FC',
 };
 
 // --- Subtypes (all optional) ---

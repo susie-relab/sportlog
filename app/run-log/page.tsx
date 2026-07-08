@@ -75,7 +75,7 @@ export default function RunLogPage() {
     if (r.run_type) runTypeCounts[r.run_type] = (runTypeCounts[r.run_type] || 0) + 1;
   }
 
-  const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals'];
+  const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy'];
 
   // Years derived from actual run data, most recent first
   const years = [...new Set(runs.map(r => new Date(r.date).getFullYear()))].sort((a, b) => b - a);

@@ -298,14 +298,16 @@ export default function SportPlanBuilder({ existing, onSaved, onCancel }: Props)
               const c = parseInt(counts[t.key]) || 0;
               const on = c > 0;
               return (
-                <div key={t.key} className={`rounded-lg border p-2 transition-all ${on ? 'border-blue-500 bg-blue-500/15' : 'border-[#334155]'}`}>
-                  <button onClick={() => setCounts(prev => ({ ...prev, [t.key]: on ? '0' : '1' }))}
-                    className="w-full text-left text-xs font-semibold text-white flex items-center justify-between gap-1">
+                <div key={t.key} role="button" tabIndex={0}
+                  onClick={() => setCounts(prev => ({ ...prev, [t.key]: on ? '0' : '1' }))}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCounts(prev => ({ ...prev, [t.key]: on ? '0' : '1' })); } }}
+                  className={`rounded-lg border p-2 transition-all cursor-pointer ${on ? 'border-blue-500 bg-blue-500/15' : 'border-[#334155] hover:border-[#475569]'}`}>
+                  <div className="w-full text-left text-xs font-semibold text-white flex items-center justify-between gap-1">
                     <span className="truncate">{t.label}</span>
                     {on && <span className="text-[10px] text-blue-300 flex-shrink-0">×{c}/wk</span>}
-                  </button>
+                  </div>
                   {on && (
-                    <div className="flex items-center gap-1.5 mt-2">
+                    <div className="flex items-center gap-1.5 mt-2" onClick={e => e.stopPropagation()}>
                       <button onClick={() => setCounts(prev => ({ ...prev, [t.key]: String(Math.max(1, c - 1)) }))} className="w-6 h-6 rounded border border-[#334155] text-[#94A3B8] text-xs">−</button>
                       <span className="text-sm text-white w-5 text-center">{c}</span>
                       <button onClick={() => setCounts(prev => ({ ...prev, [t.key]: String(c + 1) }))} className="w-6 h-6 rounded border border-[#334155] text-[#94A3B8] text-xs">+</button>

@@ -17,7 +17,7 @@ import { sessionParts, combineSessions } from '@/lib/runPlanGenerator';
 import ConfettiBurst from '@/components/ConfettiBurst';
 import { todayLocalISO, openDatePicker } from '@/lib/utils';
 
-const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals'];
+const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy'];
 
 function ColorDot({ color }: { color: string }) {
   return <span className="inline-block w-2.5 h-2.5 rounded-full mr-2" style={{ background: color }} />;
