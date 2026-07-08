@@ -13,6 +13,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const flash = (text: string, ok: boolean) => {
@@ -31,6 +33,17 @@ export default function ProfilePage() {
     const { error } = await supabase.auth.updateUser({ data: { ...user?.user_metadata, username: username.trim() } });
     setSaving(false);
     flash(error ? error.message : 'Display name updated!', !error);
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword) return;
+    if (newPassword !== confirmPassword) return flash('Passwords do not match.', false);
+    if (newPassword.length < 8) return flash('Password must be at least 8 characters.', false);
+    setSaving(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setSaving(false);
+    flash(error ? error.message : 'Password updated!', !error);
+    if (!error) { setNewPassword(''); setConfirmPassword(''); }
   };
 
   const handlePickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,6 +105,16 @@ export default function ProfilePage() {
         <h2 className="text-sm font-semibold text-white mb-3">Display Name</h2>
         <input className="input mb-3" placeholder="Enter a username" value={username} onChange={e => setUsername(e.target.value)} />
         <button onClick={handleUpdateUsername} disabled={saving} className="btn-primary w-full">Save Display Name</button>
+      </div>
+
+      {/* Change password */}
+      <div className="card mb-6">
+        <h2 className="text-sm font-semibold text-white mb-3">Change Password</h2>
+        <div className="flex flex-col gap-3">
+          <input type="password" className="input" placeholder="New password (min 8 chars)" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+          <input type="password" className="input" placeholder="Confirm new password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+          <button onClick={handleUpdatePassword} disabled={saving || !newPassword} className="btn-primary w-full">Update Password</button>
+        </div>
       </div>
 
       <Link href="/settings" className="flex items-center justify-between card hover:border-[#475569] transition-colors">

@@ -7,8 +7,6 @@ import FeedbackForm from '@/components/FeedbackForm';
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const [newEmail, setNewEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [streakReminder, setStreakReminder] = useState(true);
@@ -26,17 +24,6 @@ export default function SettingsPage() {
     setSaving(false);
     flash(error ? error.message : 'Confirmation sent to new email address.', !error);
     if (!error) setNewEmail('');
-  };
-
-  const handleUpdatePassword = async () => {
-    if (!newPassword) return;
-    if (newPassword !== confirmPassword) return flash('Passwords do not match.', false);
-    if (newPassword.length < 8) return flash('Password must be at least 8 characters.', false);
-    setSaving(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setSaving(false);
-    flash(error ? error.message : 'Password updated!', !error);
-    if (!error) { setNewPassword(''); setConfirmPassword(''); }
   };
 
   const saveStreakPrefs = async (reminder: boolean, hour: number) => {
@@ -69,15 +56,6 @@ export default function SettingsPage() {
         <p className="text-xs text-[#64748B] mb-3">Current: {user?.email}</p>
         <input type="email" className="input mb-3" placeholder="New email address" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
         <button onClick={handleUpdateEmail} disabled={saving || !newEmail} className="btn-primary w-full">Update Email</button>
-      </div>
-
-      <div className="card mb-6">
-        <h2 className="text-sm font-semibold text-white mb-3">Change Password</h2>
-        <div className="flex flex-col gap-3">
-          <input type="password" className="input" placeholder="New password (min 8 chars)" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-          <input type="password" className="input" placeholder="Confirm new password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
-          <button onClick={handleUpdatePassword} disabled={saving || !newPassword} className="btn-primary w-full">Update Password</button>
-        </div>
       </div>
 
       {/* Connections */}
