@@ -65,6 +65,22 @@ export default function ActivityLogPage() {
     return matchSearch && matchType;
   });
 
+  // Reordering same-date activities: swap created_at (the field the list is sorted by within a date)
+  // between two neighbours, then re-sort. No schema change needed.
+  const moveActivity = async (a: Activity, dir: 'up' | 'down') => {
+    const i = filtered.findIndex(x => x.id === a.id);
+    const b = filtered[dir === 'up' ? i - 1 : i + 1];
+    if (!b || b.date !== a.date) return;
+    const swapped = activities.map(x =>
+      x.id === a.id ? { ...x, created_at: b.created_at } : x.id === b.id ? { ...x, created_at: a.created_at } : x
+    ).sort((x, y) => (x.date === y.date ? y.created_at.localeCompare(x.created_at) : y.date.localeCompare(x.date)));
+    setActivities(swapped);
+    await Promise.all([
+      supabase.from('activities').update({ created_at: b.created_at }).eq('id', a.id),
+      supabase.from('activities').update({ created_at: a.created_at }).eq('id', b.id),
+    ]);
+  };
+
   const TYPES = EXERCISE_TYPE_ORDER;
 
   // Chart data
@@ -211,13 +227,31 @@ export default function ActivityLogPage() {
       <div className="flex flex-col gap-2">
         {filtered.length === 0 ? (
           <div className="card text-[#64748B] text-sm">No activities found.</div>
-        ) : filtered.map(a => {
+        ) : filtered.map((a, i) => {
           const color = EXERCISE_TYPE_COLORS[a.exercise_type];
           const isOpen = expanded === a.id;
+          const canMoveUp = i > 0 && filtered[i - 1].date === a.date;
+          const canMoveDown = i < filtered.length - 1 && filtered[i + 1].date === a.date;
           return (
             <div key={a.id} className="card cursor-pointer" onClick={() => setExpanded(isOpen ? null : a.id)}>
               <div className="flex items-center gap-3">
                 <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: color }} />
+                {(canMoveUp || canMoveDown) && (
+                  <div className="flex flex-col flex-shrink-0" onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => moveActivity(a, 'up')}
+                      disabled={!canMoveUp}
+                      className="text-[#64748B] hover:text-white disabled:opacity-20 disabled:hover:text-[#64748B] leading-none text-xs px-0.5"
+                      aria-label="Move up"
+                    >▲</button>
+                    <button
+                      onClick={() => moveActivity(a, 'down')}
+                      disabled={!canMoveDown}
+                      className="text-[#64748B] hover:text-white disabled:opacity-20 disabled:hover:text-[#64748B] leading-none text-xs px-0.5"
+                      aria-label="Move down"
+                    >▼</button>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-white truncate">{a.name}</span>
