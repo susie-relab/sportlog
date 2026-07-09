@@ -87,7 +87,10 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-lg lg:max-w-2xl mx-auto">
-      <h1 className="text-xl font-bold text-white mb-1">Profile</h1>
+      <div className="flex items-start justify-between mb-1">
+        <h1 className="text-xl font-bold text-white">Profile</h1>
+        <Link href="/dash" aria-label="Close" className="text-[#64748B] hover:text-white text-xl leading-none">✕</Link>
+      </div>
       <p className="text-sm text-[#64748B] mb-5">{user?.email}</p>
 
       {msg && (

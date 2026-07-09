@@ -9,7 +9,7 @@ import { PB_SHARE_ICON } from '@/lib/shareIcons';
 import { DISTANCE_PB_KM, DISTANCE_LABELS } from '@/lib/pbDetect';
 
 const EXERCISE_TYPES: ExerciseType[] = ['run', 'walk', 'sport', 'hiit', 'stretch', 'bike', 'swim', 'solo_fitness'];
-const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy'];
+const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy', 'treadmill'];
 
 interface ManualPB {
   id: string;

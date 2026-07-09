@@ -20,7 +20,7 @@ import PbCelebrationModal from '@/components/PbCelebrationModal';
 import { detectAutoPBs } from '@/lib/pbDetect';
 import { todayLocalISO, openDatePicker } from '@/lib/utils';
 
-const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy'];
+const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy', 'treadmill'];
 
 function ColorDot({ color }: { color: string }) {
   return <span className="inline-block w-2.5 h-2.5 rounded-full mr-2" style={{ background: color }} />;
@@ -92,7 +92,10 @@ export default function AddPage() {
   }, [isDirty]);
 
   const durationSeconds = (parseInt(hours || '0') * 3600) + (parseInt(mins || '0') * 60) + parseInt(secs || '0');
-  const durationMinutes = Math.round(durationSeconds / 60);
+  // Only whole minutes are stored — floor (not round) so entering seconds never bumps
+  // the saved duration up to the next minute (e.g. 45:30 stays 45m, not rounds to 46m).
+  // Sub-minute entries (e.g. 45s alone) still save as 1m rather than being floored to 0.
+  const durationMinutes = durationSeconds > 0 ? Math.max(1, Math.floor(durationSeconds / 60)) : 0;
 
   const paceToDecimal = (m: string, s: string) => {
     if (!m && !s) return undefined;

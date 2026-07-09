@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
 import FeedbackForm from '@/components/FeedbackForm';
 
@@ -7,7 +8,10 @@ export default function HelpPage() {
 
   return (
     <div className="max-w-lg lg:max-w-2xl mx-auto">
-      <h1 className="text-xl font-bold text-white mb-1">Help</h1>
+      <div className="flex items-start justify-between mb-1">
+        <h1 className="text-xl font-bold text-white">Help</h1>
+        <Link href="/dash" aria-label="Close" className="text-[#64748B] hover:text-white text-xl leading-none">✕</Link>
+      </div>
       <p className="text-sm text-[#64748B] mb-5">Feedback, feature requests, and bug reports</p>
 
       <div className="card">
