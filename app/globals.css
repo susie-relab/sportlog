@@ -207,6 +207,10 @@ select.input {
   .card { border-color: #ccc !important; }
   .plan-print-only { display: block !important; color: #000; }
   .plan-print-table th, .plan-print-table td { color: #000; }
+  /* Repeat the Mon–Sun header on every printed page, and never split a
+     week's row across a page break. */
+  .plan-print-table thead { display: table-header-group; }
+  .plan-print-table tr { page-break-inside: avoid; break-inside: avoid; }
 }
 
 @keyframes confetti-fall {
