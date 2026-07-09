@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, RunType, RUN_TYPE_LABELS, RUN_TYPE_COLORS } from '@/types';
-import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo, todayLocalISO, localWeekKey } from '@/lib/utils';
+import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
 import ShareCard, { ShareStat } from '@/components/ShareCard';
+import ShareRangeMenu from '@/components/ShareRangeMenu';
 import { WEEK_SHARE_ICON } from '@/lib/shareIcons';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { activitiesToCsv, downloadCsv } from '@/lib/exportCsv';
@@ -29,8 +30,6 @@ export default function RunLogPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [chartMetric, setChartMetric] = useState<ChartMetric>('distance');
   const [showChart, setShowChart] = useState(false);
-  const [sharingWeek, setSharingWeek] = useState(false);
-  const [sharingMonth, setSharingMonth] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -45,25 +44,6 @@ export default function RunLogPage() {
         setLoading(false);
       });
   }, [user]);
-
-  // Calendar-week (respects the Week start day preference) stats for the share card.
-  const weekStartPref = user?.user_metadata?.week_start_day === 'sunday' ? 'sunday' : 'monday';
-  const thisWeekStart = localWeekKey(todayLocalISO(), weekStartPref);
-  const thisWeekRuns = runs.filter(r => r.date >= thisWeekStart);
-  const weekDist = thisWeekRuns.reduce((s, r) => s + (r.distance_km || 0), 0);
-  const weekMins = thisWeekRuns.reduce((s, r) => s + r.duration_minutes, 0);
-  const weekPaces = thisWeekRuns.filter(r => r.pace_min_km).map(r => r.pace_min_km!);
-  const weekAvgPace = weekPaces.length ? weekPaces.reduce((s, p) => s + p, 0) / weekPaces.length : null;
-  const weekLongest = Math.max(0, ...thisWeekRuns.map(r => r.distance_km || 0));
-
-  // This calendar month, for the monthly share.
-  const thisMonthStart = todayLocalISO().slice(0, 7) + '-01';
-  const thisMonthRuns = runs.filter(r => r.date >= thisMonthStart);
-  const monthDist = thisMonthRuns.reduce((s, r) => s + (r.distance_km || 0), 0);
-  const monthMins = thisMonthRuns.reduce((s, r) => s + r.duration_minutes, 0);
-  const monthPaces = thisMonthRuns.filter(r => r.pace_min_km).map(r => r.pace_min_km!);
-  const monthAvgPace = monthPaces.length ? monthPaces.reduce((s, p) => s + p, 0) / monthPaces.length : null;
-  const monthLongest = Math.max(0, ...thisMonthRuns.map(r => r.distance_km || 0));
 
   const runsByPeriod = runs.filter(r => {
     if (period === 'week') return r.date >= daysAgo(7).split('T')[0];
@@ -110,8 +90,7 @@ export default function RunLogPage() {
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <h1 className="text-xl font-bold text-white">Run Log</h1>
         <div className="flex gap-2">
-          <button onClick={() => setSharingWeek(true)} className="btn-secondary text-sm flex items-center gap-1.5">↗ Share Week</button>
-          <button onClick={() => setSharingMonth(true)} className="btn-secondary text-sm flex items-center gap-1.5">↗ Share Month</button>
+          <ShareRangeMenu activities={runs} icon={WEEK_SHARE_ICON} accentColor="#3B82F6" nounSingular="Run" nounPlural="Runs" showPace defaultScopeKey="run_share" />
           <button
             onClick={() => {
               const csv = activitiesToCsv(runs);
@@ -120,7 +99,7 @@ export default function RunLogPage() {
             disabled={runs.length === 0}
             className="btn-secondary text-sm flex items-center gap-1.5"
           >
-            ↓ Export all runs
+            ↓ Export
           </button>
         </div>
       </div>
@@ -395,42 +374,6 @@ export default function RunLogPage() {
             setRuns(prev => prev.filter(r => r.id !== id));
             setEditing(null);
           }}
-        />
-      )}
-      {sharingWeek && (
-        <ShareCard
-          badge="Week in Review"
-          title=""
-          icon={WEEK_SHARE_ICON}
-          availableStats={[
-            { label: 'Distance', value: `${weekDist.toFixed(1)} km` },
-            { label: 'Runs', value: String(thisWeekRuns.length) },
-            { label: 'Time', value: formatDuration(weekMins) },
-            weekAvgPace ? { label: 'Avg Pace', value: formatPaceMinKm(weekAvgPace) } : null,
-            weekLongest > 0 ? { label: 'Longest Run', value: `${weekLongest.toFixed(1)} km` } : null,
-          ].filter(Boolean) as ShareStat[]}
-          dateLabel={`Week of ${thisWeekStart.split('-').reverse().join('/')}`}
-          accentColor="#3B82F6"
-          defaultScopes={[{ key: 'run_week', label: 'Weekly Run Share' }]}
-          onClose={() => setSharingWeek(false)}
-        />
-      )}
-      {sharingMonth && (
-        <ShareCard
-          badge="Month in Review"
-          title=""
-          icon={WEEK_SHARE_ICON}
-          availableStats={[
-            { label: 'Distance', value: `${monthDist.toFixed(1)} km` },
-            { label: 'Runs', value: String(thisMonthRuns.length) },
-            { label: 'Time', value: formatDuration(monthMins) },
-            monthAvgPace ? { label: 'Avg Pace', value: formatPaceMinKm(monthAvgPace) } : null,
-            monthLongest > 0 ? { label: 'Longest Run', value: `${monthLongest.toFixed(1)} km` } : null,
-          ].filter(Boolean) as ShareStat[]}
-          dateLabel={new Date(thisMonthStart).toLocaleDateString('en-NZ', { month: 'long', year: 'numeric' })}
-          accentColor="#8B5CF6"
-          defaultScopes={[{ key: 'run_month', label: 'Monthly Run Share' }]}
-          onClose={() => setSharingMonth(false)}
         />
       )}
     </div>
