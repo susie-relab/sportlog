@@ -7,16 +7,27 @@ import {
   isRunSession, PlanConfig, planSessionHref, todaysSession, planEndDateISO, movePlanSession, addSessionToDay,
 } from '@/lib/runPlanGenerator';
 import PlanWeekTable, { sessionTarget } from './PlanWeekTable';
+import PlanPrintTable from './PlanPrintTable';
 import PlanDaySheet from './PlanDaySheet';
 import RunTypeGlossary from './RunTypeGlossary';
+import ShareCard, { ShareStat } from './ShareCard';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { todayLocalISO } from '@/lib/utils';
+import { Target, TrendingUp } from 'lucide-react';
 
 const PHASE_COLORS: Record<string, string> = { Base: '#3B82F6', Build: '#8B5CF6', Peak: '#F97316', Taper: '#22C55E' };
+const LEVEL_LABELS: Record<string, string> = { relaxed: 'Relaxed', moderate: 'Moderate', tough: 'Tough' };
 
 function fmtNiceDate(dateStr: string): string {
   const [y, m, d] = dateStr.split('-');
   return `${d}/${m}/${y}`;
+}
+
+function fmtGoalTime(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
 }
 
 interface Props {
@@ -35,6 +46,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
   const [confirmDel, setConfirmDel] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [viewAll, setViewAll] = useState(false);
+  const [sharingKind, setSharingKind] = useState<'plan' | 'progress' | null>(null);
 
   const data = plan.plan_data;
   const isRun = plan.plan_kind === 'run';
@@ -60,6 +72,20 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
   const currentWeek = data.weeks.find(w => w.weekNumber === currentWeekNo) ?? data.weeks[0];
   const cwRuns = currentWeek ? WEEKDAYS.filter(d => isRunSession(currentWeek.days[d])) : [];
   const cwDone = currentWeek ? cwRuns.filter(d => currentWeek.days[d].completed).length : 0;
+
+  // Print/share summary info
+  const runsPerWeekText = plan.days_per_week_min && plan.days_per_week_min !== plan.days_per_week
+    ? `${plan.days_per_week_min}-${plan.days_per_week} ${isRun ? 'runs' : 'sessions'}/week`
+    : `${plan.days_per_week} ${isRun ? 'runs' : 'sessions'}/week`;
+  const levelText = LEVEL_LABELS[plan.level] || plan.level;
+  const week1Km = data.weeks.find(w => w.weekNumber === 1)?.totalKm;
+  const longestLongRunKm = isRun
+    ? Math.max(0, ...data.weeks.flatMap(w => WEEKDAYS.map(d => w.days[d]).filter(s => s.type === 'long').map(s => s.distanceKm || 0)))
+    : 0;
+  const last2WeekNums = [currentWeekNo - 1, currentWeekNo].filter(n => n >= 0);
+  const last2Weeks = data.weeks.filter(w => last2WeekNums.includes(w.weekNumber));
+  const last2Total = last2Weeks.reduce((s, w) => s + WEEKDAYS.filter(d => isRunSession(w.days[d])).length, 0);
+  const last2Done = last2Weeks.reduce((s, w) => s + WEEKDAYS.filter(d => w.days[d].completed).length, 0);
 
   const cfg: PlanConfig = {
     distance: plan.distance, customDistanceKm: plan.custom_distance_km || undefined,
@@ -110,31 +136,8 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handlePrint = () => {
-    // Print always shows the full plan, regardless of the This week / Full plan toggle.
-    const wasFull = viewAll;
-    setViewAll(true);
-    setTimeout(() => {
-      window.print();
-      setViewAll(wasFull);
-    }, 50);
-  };
+  const handlePrint = () => window.print();
 
-  const sharePlan = async () => {
-    const title = `${planTitle} Training Plan`;
-    const text = planText();
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({ title, text });
-        return;
-      } catch {
-        // user cancelled or share failed — fall through to email
-      }
-    }
-    const subject = encodeURIComponent(title);
-    const body = encodeURIComponent(text);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
-  };
 
   const isRace = isRun && plan.distance !== 'keep_fit' && plan.distance !== 'speed';
 
@@ -142,12 +145,31 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-2 plan-no-print">
         <button onClick={onBack} className="text-sm text-[#64748B] hover:text-white">← All plans</button>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button onClick={copyPlan} className="btn-secondary text-xs px-3 py-1.5">{copied ? '✓ Copied' : '⧉ Copy'}</button>
           <button onClick={handlePrint} className="btn-secondary text-xs px-3 py-1.5">🖨 Print / PDF</button>
-          <button onClick={sharePlan} className="btn-secondary text-xs px-3 py-1.5">↗ Share</button>
+          <button onClick={() => setSharingKind('plan')} className="btn-secondary text-xs px-3 py-1.5">↗ Share Plan</button>
+          <button onClick={() => setSharingKind('progress')} className="btn-secondary text-xs px-3 py-1.5">↗ Share Progress</button>
           <button onClick={onEdit} className="btn-secondary text-xs px-3 py-1.5">✎ Edit</button>
         </div>
+      </div>
+
+      {/* Print-only compact summary + table — hidden on screen, shown only in the PDF/print output */}
+      <div className="plan-print-only">
+        <h1 style={{ fontSize: 18, fontWeight: 800, marginBottom: 2 }}>{planTitle}</h1>
+        <p style={{ fontSize: 11, color: '#444', marginBottom: 6 }}>
+          {plan.weeks} weeks · {runsPerWeekText} · {levelText}
+        </p>
+        {(plan.goal_time_seconds || week1Km || longestLongRunKm > 0) && (
+          <p style={{ fontSize: 11, color: '#444', marginBottom: 10 }}>
+            {plan.goal_time_seconds ? `Goal time: ${fmtGoalTime(plan.goal_time_seconds)}` : ''}
+            {plan.goal_time_seconds && (week1Km || longestLongRunKm > 0) ? ' · ' : ''}
+            {week1Km ? `Week 1 distance: ${week1Km} km` : ''}
+            {week1Km && longestLongRunKm > 0 ? ' · ' : ''}
+            {longestLongRunKm > 0 ? `Longest long run: ${longestLongRunKm} km` : ''}
+          </p>
+        )}
+        <PlanPrintTable plan={data} />
       </div>
 
       {isRun && !plan.active && (
@@ -158,7 +180,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
       )}
 
       {/* Countdown / week overview card */}
-      <div className="card">
+      <div className="card plan-no-print">
         <h1 className="text-2xl font-extrabold text-white" style={{ fontFamily: 'var(--font-display)' }}>
           {weeksToGo} {weeksToGo === 1 ? 'Week' : 'Weeks'} to Go
         </h1>
@@ -177,7 +199,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
       </div>
 
       {/* Big progress card */}
-      <div className="card">
+      <div className="card plan-no-print">
         <div className="text-3xl font-extrabold" style={{ fontFamily: 'var(--font-display)', color: '#5B7A76' }}>
           {runsCompleted} {noun}{runsCompleted === 1 ? '' : 'S'} COMPLETED
         </div>
@@ -228,7 +250,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
       </div>
 
       {/* Week table */}
-      <div className="plan-print-full">
+      <div className="plan-no-print">
         <PlanWeekTable
           plan={viewAll ? data : { weeks: data.weeks.filter(w => w.weekNumber === currentWeekNo) }}
           currentWeek={currentWeekNo}
@@ -273,6 +295,41 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
           onLogAndComplete={logSession}
           onSave={persist}
           onClose={() => setSelected(null)}
+        />
+      )}
+
+      {sharingKind === 'plan' && (
+        <ShareCard
+          badge={planTitle}
+          title=""
+          icon={Target}
+          availableStats={[
+            { label: 'Weeks', value: String(plan.weeks) },
+            { label: isRun ? 'Runs/Week' : 'Sessions/Week', value: runsPerWeekText.split(' ')[0] },
+            { label: 'Level', value: levelText },
+            week1Km ? { label: 'Week 1 Distance', value: `${week1Km} km` } : null,
+            plan.goal_time_seconds ? { label: 'Goal Time', value: fmtGoalTime(plan.goal_time_seconds) } : null,
+            longestLongRunKm > 0 ? { label: 'Longest Long Run', value: `${longestLongRunKm} km` } : null,
+          ].filter(Boolean) as ShareStat[]}
+          dateLabel={isRace ? `Goal day ${fmtNiceDate(goalDate)}` : `Starts ${fmtNiceDate(plan.start_date)}`}
+          accentColor="#3B82F6"
+          onClose={() => setSharingKind(null)}
+        />
+      )}
+      {sharingKind === 'progress' && (
+        <ShareCard
+          badge="Plan Progress"
+          title={planTitle}
+          icon={TrendingUp}
+          availableStats={[
+            { label: 'Weeks to Go', value: String(weeksToGo) },
+            { label: isRun ? 'Runs Completed' : 'Sessions Completed', value: `${runsCompleted}/${totalRuns}` },
+            { label: 'Last 2 Weeks', value: `${last2Done}/${last2Total}` },
+            isRun ? { label: 'km Done', value: `${kmDone.toFixed(0)} km` } : { label: 'Total Time', value: totalMin > 0 ? fmtHrs(totalMin) : '—' },
+          ] as ShareStat[]}
+          dateLabel={isRace ? `Goal day ${fmtNiceDate(goalDate)}` : `Week ${currentWeekNo} of ${plan.weeks}`}
+          accentColor="#22C55E"
+          onClose={() => setSharingKind(null)}
         />
       )}
     </div>

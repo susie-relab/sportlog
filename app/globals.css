@@ -147,12 +147,16 @@ select.input {
   }
 }
 
-/* Print: clean plan layout — hide app chrome + interactive controls */
+/* Print: clean, compact plan layout — hide app chrome + interactive controls,
+   and show the dedicated print-only summary/table instead of the on-screen views. */
+.plan-print-only { display: none; }
 @media print {
   nav, .plan-no-print { display: none !important; }
-  body { background: #fff !important; color: #000 !important; }
+  body { background: #fff !important; color: #000 !important; font-size: 11px; }
   .main-content { margin: 0 !important; padding: 0 !important; }
   .card { border-color: #ccc !important; }
+  .plan-print-only { display: block !important; color: #000; }
+  .plan-print-table th, .plan-print-table td { color: #000; }
 }
 
 @keyframes confetti-fall {
