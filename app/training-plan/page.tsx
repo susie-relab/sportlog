@@ -14,9 +14,9 @@ type Mode = 'plans' | 'goals';
 type BuildKind = 'run' | 'sport' | 'custom';
 
 function planProgress(p: PlanRecord) {
-  const realWeeks = p.plan_data.weeks.filter(w => w.weekNumber > 0);
-  const runs = realWeeks.reduce((s, w) => s + WEEKDAYS.filter(d => isRunSession(w.days[d])).length, 0);
-  const done = realWeeks.reduce((s, w) => s + WEEKDAYS.filter(d => w.days[d].completed).length, 0);
+  // Includes Week 0 (lead-in) — a completed lead-in session still counts toward the total.
+  const runs = p.plan_data.weeks.reduce((s, w) => s + WEEKDAYS.filter(d => isRunSession(w.days[d])).length, 0);
+  const done = p.plan_data.weeks.reduce((s, w) => s + WEEKDAYS.filter(d => w.days[d].completed).length, 0);
   return { runs, done };
 }
 

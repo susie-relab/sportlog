@@ -56,12 +56,13 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
     ? runPlanDisplayName(plan.distance, plan.custom_distance_km)
     : (plan.name || 'Custom Plan');
   const noun = isRun ? 'RUN' : 'SESSION';
-  const realWeeks = data.weeks.filter(w => w.weekNumber > 0);
-  const totalRuns = realWeeks.reduce((s, w) => s + WEEKDAYS.filter(d => isRunSession(w.days[d])).length, 0);
-  const runsCompleted = realWeeks.reduce((s, w) => s + WEEKDAYS.filter(d => w.days[d].completed).length, 0);
-  const kmDone = realWeeks.reduce((s, w) => s + WEEKDAYS.reduce((k, d) => k + (w.days[d].completed ? (w.days[d].distanceKm || 0) : 0), 0), 0);
-  const totalKm = realWeeks.reduce((s, w) => s + w.totalKm, 0);
-  const totalMin = realWeeks.reduce((s, w) => s + WEEKDAYS.reduce((m, d) => m + (isRunSession(w.days[d]) ? (w.days[d].timeMin || 0) : 0), 0), 0);
+  const realWeeks = data.weeks.filter(w => w.weekNumber > 0); // excludes lead-in Week 0 — used for the phase-coloured weekly volume chart only
+  // Plan totals include Week 0 — a completed lead-in session still counts toward the plan's totals.
+  const totalRuns = data.weeks.reduce((s, w) => s + WEEKDAYS.filter(d => isRunSession(w.days[d])).length, 0);
+  const runsCompleted = data.weeks.reduce((s, w) => s + WEEKDAYS.filter(d => w.days[d].completed).length, 0);
+  const kmDone = data.weeks.reduce((s, w) => s + WEEKDAYS.reduce((k, d) => k + (w.days[d].completed ? (w.days[d].distanceKm || 0) : 0), 0), 0);
+  const totalKm = data.weeks.reduce((s, w) => s + w.totalKm, 0);
+  const totalMin = data.weeks.reduce((s, w) => s + WEEKDAYS.reduce((m, d) => m + (isRunSession(w.days[d]) ? (w.days[d].timeMin || 0) : 0), 0), 0);
   const fmtHrs = (min: number) => { const h = Math.floor(min / 60); const m = min % 60; return h > 0 ? `${h}h${m ? ` ${m}m` : ''}` : `${m}m`; };
 
   const today = todayLocalISO();
