@@ -309,7 +309,7 @@ export default function DashPage() {
                     <span className="text-xs text-[#64748B]">{planLabel(plan)}{sessionTarget(s) ? ` · ${sessionTarget(s)}` : ''} · tap for details</span>
                   </button>
                   {runnable && !done && (
-                    <Link href={planSessionHref(s, plan.id, today.week, today.day)}
+                    <Link href={planSessionHref(s, plan.id, today.week, today.day, undefined, true)}
                       className="btn-primary text-xs px-3 py-1.5 flex-shrink-0">Complete</Link>
                   )}
                 </div>
@@ -327,7 +327,7 @@ export default function DashPage() {
                   <span className="text-sm font-semibold text-white truncate block">{nextRun.next.session.title}</span>
                   <span className="text-xs text-[#64748B]">{planLabel(nextRun.plan)}{sessionTarget(nextRun.next.session) ? ` · ${sessionTarget(nextRun.next.session)}` : ''}</span>
                 </div>
-                <Link href={planSessionHref(nextRun.next.session, nextRun.plan.id, nextRun.next.week, nextRun.next.day)}
+                <Link href={planSessionHref(nextRun.next.session, nextRun.plan.id, nextRun.next.week, nextRun.next.day, undefined, true)}
                   className="btn-secondary text-xs px-3 py-1.5 flex-shrink-0">Log</Link>
               </div>
             )}
@@ -688,7 +688,7 @@ export default function DashPage() {
           selected={{ week: detail.week, day: detail.day }}
           onSave={persistDetailPlan}
           onClose={() => setDetail(null)}
-          onLogAndComplete={(s, partIndex) => router.push(planSessionHref(s, detailPlan.id, detail.week, detail.day, partIndex))}
+          onLogAndComplete={(s, partIndex) => router.push(planSessionHref(s, detailPlan.id, detail.week, detail.day, partIndex, true))}
         />
       )}
 

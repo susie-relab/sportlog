@@ -38,16 +38,18 @@ interface Props {
   onDelete: () => void;
   onBack: () => void;
   onSwitchToThis?: () => void; // run plans only — offered when this plan isn't the active one
+  autoCelebrate?: boolean; // open the completion celebration on mount (arrived here right after finishing the final session)
 }
 
-export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onSwitchToThis }: Props) {
+export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onSwitchToThis, autoCelebrate }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState<{ week: number; day: Weekday } | null>(null);
   const [copied, setCopied] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [viewAll, setViewAll] = useState(false);
-  const [sharingKind, setSharingKind] = useState<'progress' | 'completed' | null>(null);
+  const [sharingKind, setSharingKind] = useState<'progress' | 'completed' | null>(autoCelebrate ? 'completed' : null);
+  const [showCongrats, setShowCongrats] = useState(!!autoCelebrate);
   const [sharingPlanBook, setSharingPlanBook] = useState(false);
 
   const data = plan.plan_data;
@@ -352,7 +354,15 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
           ].filter(Boolean) as ShareStat[]}
           dateLabel={isRace ? `Goal day ${fmtNiceDate(goalDate)}` : `Completed`}
           accentColor="#EAB308"
-          onClose={() => setSharingKind(null)}
+          onClose={() => { setSharingKind(null); if (showCongrats) setShowCongrats(false); }}
+          footer={showCongrats ? (
+            <button
+              onClick={() => { setSharingKind(null); setShowCongrats(false); setConfirmRestart(true); }}
+              className="w-full py-2 rounded-lg bg-blue-900/40 border border-blue-700 text-blue-300 text-sm font-medium"
+            >
+              ↻ Start this plan again
+            </button>
+          ) : undefined}
         />
       )}
     </div>

@@ -14,7 +14,7 @@ import {
 import DistancePicker from '@/components/DistancePicker';
 import ImageUploader from '@/components/ImageUploader';
 import { useDirtyForm } from '@/components/DirtyFormContext';
-import { sessionParts, combineSessions } from '@/lib/runPlanGenerator';
+import { sessionParts, combineSessions, WEEKDAYS, isRunSession } from '@/lib/runPlanGenerator';
 import ConfettiBurst from '@/components/ConfettiBurst';
 import PbCelebrationModal from '@/components/PbCelebrationModal';
 import { detectAutoPBs } from '@/lib/pbDetect';
@@ -60,6 +60,8 @@ export default function AddPage() {
   const { setDirty, showWarning, setShowWarning, pendingHref } = useDirtyForm();
   const router = useRouter();
   const [planLink, setPlanLink] = useState<{ planId: string; week: number; day: string; part?: number } | null>(null);
+  const [fromDash, setFromDash] = useState(false);
+  const [planCompleted, setPlanCompleted] = useState<{ planId: string; totalRuns: number; totalKm: number; totalMin: number } | null>(null);
 
   // Prefill from query params (e.g. clicking a session in a training plan)
   useEffect(() => {
@@ -75,6 +77,7 @@ export default function AddPage() {
     const planId = params.get('planId'), week = params.get('week'), day = params.get('day');
     const part = params.get('part');
     if (planId && week && day) setPlanLink({ planId, week: parseInt(week), day, part: part != null ? parseInt(part) : undefined });
+    if (params.get('from') === 'dash') setFromDash(true);
   }, []);
 
   const isDirty = !!(name || exerciseType || hours || mins || secs || distance || notes || effort || images.length);
@@ -169,6 +172,15 @@ export default function AddPage() {
           const newParts = parts.map((p, i) => i === idx ? { ...p, completed: true, completedActivityId: inserted?.id ?? null } : p);
           wk.days[planLink.day] = newParts.length === 1 ? newParts[0] : combineSessions(newParts);
           await supabase.from('training_plans').update({ plan_data: pd, updated_at: new Date().toISOString() }).eq('id', planLink.planId);
+
+          // Was that the plan's final remaining session? Surface a completion celebration.
+          const totalRuns = pd.weeks.reduce((s: number, w: typeof wk) => s + WEEKDAYS.filter(d => isRunSession(w.days[d])).length, 0);
+          const runsCompleted = pd.weeks.reduce((s: number, w: typeof wk) => s + WEEKDAYS.filter(d => w.days[d].completed).length, 0);
+          if (totalRuns > 0 && runsCompleted >= totalRuns) {
+            const totalKm = pd.weeks.reduce((s: number, w: typeof wk) => s + WEEKDAYS.reduce((k: number, d) => k + (isRunSession(w.days[d]) ? (w.days[d].distanceKm || 0) : 0), 0), 0);
+            const totalMin = pd.weeks.reduce((s: number, w: typeof wk) => s + WEEKDAYS.reduce((m: number, d) => m + (isRunSession(w.days[d]) ? (w.days[d].timeMin || 0) : 0), 0), 0);
+            setPlanCompleted({ planId: planLink.planId, totalRuns, totalKm, totalMin });
+          }
         }
       }
       setPlanLink(null);
@@ -192,6 +204,13 @@ export default function AddPage() {
       setDate(todayLocalISO());
       setTimeout(() => setSuccess(false), 3000);
       // form is clean after save
+
+      // Give the confetti/PB-celebration a moment to play before navigating away.
+      if (planCompleted) {
+        setTimeout(() => router.push(`/training-plan?plan=${planCompleted.planId}&celebrate=1`), 1800);
+      } else if (fromDash) {
+        setTimeout(() => router.push('/dash'), 1800);
+      }
     }
   };
 

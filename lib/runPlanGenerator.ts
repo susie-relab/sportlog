@@ -1027,8 +1027,9 @@ export function sessionRunType(type: SessionType): string | null {
 }
 
 /** Build the /add prefill href for logging a plan session. */
-export function planSessionHref(s: Session, planId: string, week: number, day: Weekday, partIndex?: number): string {
+export function planSessionHref(s: Session, planId: string, week: number, day: Weekday, partIndex?: number, fromDash?: boolean): string {
   const p = new URLSearchParams();
+  if (fromDash) p.set('from', 'dash');
   p.set('title', s.title);
   const exType = s.type === 'sport' && s.exerciseType ? s.exerciseType : 'run';
   p.set('type', exType);

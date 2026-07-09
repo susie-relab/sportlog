@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, type ReactNode } from 'react';
 import { toPng } from 'html-to-image';
 import type { LucideIcon } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -32,12 +32,14 @@ interface Props {
   /** Where "Save as default" can write the current stat selection, most-specific first. */
   defaultScopes?: ShareDefaultScope[];
   onClose: () => void;
+  /** Extra action rendered below the Share/Download buttons, e.g. "Start this plan again". */
+  footer?: ReactNode;
 }
 
 const CARD_W = 1080;
 const CARD_H = 1920;
 
-export default function ShareCard({ badge, subtitle, title, icon: Icon, routePoints, availableStats, dateLabel, accentColor, defaultScopes, onClose }: Props) {
+export default function ShareCard({ badge, subtitle, title, icon: Icon, routePoints, availableStats, dateLabel, accentColor, defaultScopes, onClose, footer }: Props) {
   const { user } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
   const previewWrapRef = useRef<HTMLDivElement>(null);
@@ -305,6 +307,7 @@ export default function ShareCard({ badge, subtitle, title, icon: Icon, routePoi
           </button>
           <button onClick={handleDownload} disabled={busy !== 'idle'} className="btn-secondary px-4">⬇</button>
         </div>
+        {footer && <div className="mt-3">{footer}</div>}
       </div>
     </div>
   );

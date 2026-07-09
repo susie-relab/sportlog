@@ -87,12 +87,24 @@ export default function PlanPage() {
   const [editing, setEditing] = useState<PlanRecord | null>(null);
   const [pendingAction, setPendingAction] = useState<{ kind: 'switch' | 'deactivate' | 'activate' | 'delete'; plan: PlanRecord } | null>(null);
 
+  const [celebrate, setCelebrate] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     supabase.from('training_plans').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       .then(({ data }) => {
-        setPlans((data as PlanRecord[]) || []);
+        const list = (data as PlanRecord[]) || [];
+        setPlans(list);
         setLoading(false);
+        const params = new URLSearchParams(window.location.search);
+        const planId = params.get('plan');
+        if (planId) {
+          const match = list.find(p => p.id === planId);
+          if (match) {
+            setSelected(match);
+            if (params.get('celebrate') === '1') setCelebrate(true);
+          }
+        }
       });
   }, [user]);
 
@@ -194,6 +206,7 @@ export default function PlanPage() {
           onDelete={() => handleDelete(selected.id)}
           onBack={() => setSelected(null)}
           onSwitchToThis={selected.plan_kind === 'run' ? () => setPendingAction({ kind: 'switch', plan: selected }) : undefined}
+          autoCelebrate={celebrate}
         />
       </div>
     );
