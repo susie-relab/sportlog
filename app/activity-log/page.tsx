@@ -10,6 +10,7 @@ import {
 import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
 import ImageGallery from '@/components/ImageGallery';
+import ShareCard, { ShareStat } from '@/components/ShareCard';
 import { activitiesToCsv, downloadCsv } from '@/lib/exportCsv';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -21,6 +22,7 @@ export default function ActivityLogPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Activity | null>(null);
+  const [sharing, setSharing] = useState<Activity | null>(null);
   const [filterType, setFilterType] = useState<ExerciseType | ''>('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [chartWindow, setChartWindow] = useState<ChartWindow>('30d');
@@ -228,12 +230,20 @@ export default function ActivityLogPage() {
 
               {isOpen && (
                 <div className="mt-3 pt-3 border-t border-[#334155]">
-                  <button
-                    onClick={e => { e.stopPropagation(); setEditing(a); }}
-                    className="mb-3 px-3 py-1.5 rounded-lg bg-blue-600/20 border border-blue-600/40 text-blue-400 text-xs font-medium hover:bg-blue-600/30 transition-colors"
-                  >
-                    ✏️ Edit activity
-                  </button>
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={e => { e.stopPropagation(); setEditing(a); }}
+                      className="px-3 py-1.5 rounded-lg bg-blue-600/20 border border-blue-600/40 text-blue-400 text-xs font-medium hover:bg-blue-600/30 transition-colors"
+                    >
+                      ✏️ Edit activity
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setSharing(a); }}
+                      className="px-3 py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-xs font-medium hover:border-[#475569] hover:text-white transition-colors"
+                    >
+                      ↗ Share
+                    </button>
+                  </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                     <Detail label="Duration" value={formatDuration(a.duration_minutes)} />
                     <Detail label="Effort" value={`${a.effort}/10`} />
@@ -292,6 +302,23 @@ export default function ActivityLogPage() {
             setActivities(prev => prev.filter(a => a.id !== id));
             setEditing(null);
           }}
+        />
+      )}
+
+      {sharing && (
+        <ShareCard
+          kind="activity"
+          badge={EXERCISE_TYPE_LABELS[sharing.exercise_type]}
+          title={sharing.name}
+          stats={[
+            sharing.distance_km ? { label: 'Distance', value: `${sharing.distance_km} km` } : null,
+            { label: 'Duration', value: formatDuration(sharing.duration_minutes) },
+            sharing.pace_min_km ? { label: 'Pace', value: formatPaceMinKm(sharing.pace_min_km) } : null,
+            sharing.avg_hr ? { label: 'Avg HR', value: `${sharing.avg_hr} bpm` } : null,
+          ].filter(Boolean) as ShareStat[]}
+          dateLabel={formatDate(sharing.date)}
+          accentColor={EXERCISE_TYPE_COLORS[sharing.exercise_type]}
+          onClose={() => setSharing(null)}
         />
       )}
     </div>
