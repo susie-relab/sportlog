@@ -10,15 +10,17 @@ export default function SettingsPage() {
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [streakReminder, setStreakReminder] = useState(true);
   const [reminderHour, setReminderHour] = useState(17);
+  const [weekStartDay, setWeekStartDay] = useState<'monday' | 'sunday'>('monday');
+  const [lightTheme, setLightTheme] = useState(false);
 
   const flash = (text: string, ok: boolean) => {
     setMsg({ text, ok });
     setTimeout(() => setMsg(null), 4000);
   };
 
-  const saveStreakPrefs = async (reminder: boolean, hour: number) => {
+  const savePrefs = async (patch: Record<string, unknown>) => {
     setSaving(true);
-    const { error } = await supabase.auth.updateUser({ data: { ...user?.user_metadata, streak_reminder: reminder, streak_reminder_hour: hour } });
+    const { error } = await supabase.auth.updateUser({ data: { ...user?.user_metadata, ...patch } });
     setSaving(false);
     flash(error ? error.message : 'Preferences saved!', !error);
   };
@@ -26,6 +28,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (user?.user_metadata?.streak_reminder !== undefined) setStreakReminder(user.user_metadata.streak_reminder);
     if (user?.user_metadata?.streak_reminder_hour !== undefined) setReminderHour(user.user_metadata.streak_reminder_hour);
+    if (user?.user_metadata?.week_start_day === 'sunday') setWeekStartDay('sunday');
+    setLightTheme(user?.user_metadata?.theme === 'light');
   }, [user]);
 
   return (
@@ -70,7 +74,7 @@ export default function SettingsPage() {
             <p className="text-xs text-[#64748B] mt-0.5">Nudge me to log if my streak is at risk.</p>
           </div>
           <button
-            onClick={() => { const v = !streakReminder; setStreakReminder(v); saveStreakPrefs(v, reminderHour); }}
+            onClick={() => { const v = !streakReminder; setStreakReminder(v); savePrefs({ streak_reminder: v, streak_reminder_hour: reminderHour }); }}
             role="switch" aria-checked={streakReminder}
             className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${streakReminder ? 'bg-blue-600' : 'bg-[#334155]'}`}
           >
@@ -80,25 +84,39 @@ export default function SettingsPage() {
         {streakReminder && (
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm text-[#94A3B8]">Remind me after</span>
-            <select className="input w-auto text-sm" value={reminderHour} onChange={e => { const h = parseInt(e.target.value); setReminderHour(h); saveStreakPrefs(streakReminder, h); }}>
+            <select className="input w-auto text-sm" value={reminderHour} onChange={e => { const h = parseInt(e.target.value); setReminderHour(h); savePrefs({ streak_reminder: streakReminder, streak_reminder_hour: h }); }}>
               {[15, 16, 17, 18, 19, 20, 21].map(h => <option key={h} value={h}>{h > 12 ? `${h - 12}pm` : `${h}am`}</option>)}
             </select>
           </div>
         )}
-        <div className="border-t border-[#334155] pt-3 flex flex-col gap-2.5">
-          {[
-            { label: 'Units', desc: 'Kilometres or miles' },
-            { label: 'Week start day', desc: 'Currently Monday' },
-            { label: 'Light theme', desc: 'Dark or light appearance' },
-          ].map(o => (
-            <div key={o.label} className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm text-[#94A3B8]">{o.label}</p>
-                <p className="text-xs text-[#64748B]">{o.desc}</p>
-              </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-[#64748B] border border-[#334155] rounded-full px-2 py-1 flex-shrink-0">Coming soon</span>
-            </div>
-          ))}
+
+        <div className="border-t border-[#334155] pt-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-white font-semibold">Week start day</p>
+            <p className="text-xs text-[#64748B]">Used for weekly goals, streaks, and &quot;this week&quot; stats.</p>
+          </div>
+          <select
+            className="input w-auto text-sm"
+            value={weekStartDay}
+            onChange={e => { const v = e.target.value as 'monday' | 'sunday'; setWeekStartDay(v); savePrefs({ week_start_day: v }); }}
+          >
+            <option value="monday">Monday</option>
+            <option value="sunday">Sunday</option>
+          </select>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-white font-semibold">Light theme</p>
+            <p className="text-xs text-[#64748B]">Switch the app to a light appearance.</p>
+          </div>
+          <button
+            onClick={() => { const v = !lightTheme; setLightTheme(v); savePrefs({ theme: v ? 'light' : 'dark' }); }}
+            role="switch" aria-checked={lightTheme}
+            className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${lightTheme ? 'bg-blue-600' : 'bg-[#334155]'}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${lightTheme ? 'translate-x-5' : ''}`} />
+          </button>
         </div>
       </div>
 

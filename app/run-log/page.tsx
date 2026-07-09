@@ -19,7 +19,7 @@ export default function RunLogPage() {
   const [runs, setRuns] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Activity | null>(null);
-  const [period, setPeriod] = useState<Period>('week');
+  const [period, setPeriod] = useState<Period>('14d');
   const [filterRunType, setFilterRunType] = useState<RunType | ''>('');
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);

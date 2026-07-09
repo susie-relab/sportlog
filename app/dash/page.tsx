@@ -23,11 +23,13 @@ function activitySubLabel(a: Activity): string | null {
 // --- streak drill-down helpers ---
 // Pure UTC-based calendar-date arithmetic — avoids the classic bug where round-tripping
 // through a local-time Date + toISOString() shifts dates backward in timezones ahead of UTC.
-function mondayOf(dateISO: string): string {
+type WeekStart = 'monday' | 'sunday';
+function mondayOf(dateISO: string, startDay: WeekStart = 'monday'): string {
   const [y, m, d] = dateISO.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
   const day = dt.getUTCDay();
-  dt.setUTCDate(dt.getUTCDate() - day + (day === 0 ? -6 : 1));
+  const diff = startDay === 'sunday' ? -day : (day === 0 ? -6 : 1 - day);
+  dt.setUTCDate(dt.getUTCDate() + diff);
   return dt.toISOString().split('T')[0];
 }
 function addDaysLocal(dateISO: string, n: number): string {
@@ -44,18 +46,18 @@ function buildDayTimeline(dates: string[], count: number) {
     return { date, active: set.has(date) };
   });
 }
-/** Last N Monday-start weeks (oldest first), each marked active if any activity fell in it. */
-function buildWeekTimeline(dates: string[], count: number) {
-  const activeWeeks = new Set(dates.map(mondayOf));
-  const thisWeek = mondayOf(todayLocalISO());
+/** Last N week-start weeks (oldest first), each marked active if any activity fell in it. */
+function buildWeekTimeline(dates: string[], count: number, startDay: WeekStart = 'monday') {
+  const activeWeeks = new Set(dates.map(d => mondayOf(d, startDay)));
+  const thisWeek = mondayOf(todayLocalISO(), startDay);
   return Array.from({ length: count }, (_, i) => {
     const weekStart = addDaysLocal(thisWeek, -(count - 1 - i) * 7);
     return { date: weekStart, active: activeWeeks.has(weekStart) };
   });
 }
 /** The date/week the current active streak began (walking backward from today until a gap). */
-function currentStreakStart(dates: string[], unit: 'day' | 'week'): string | null {
-  const keyOf = unit === 'day' ? (d: string) => d : mondayOf;
+function currentStreakStart(dates: string[], unit: 'day' | 'week', startDay: WeekStart = 'monday'): string | null {
+  const keyOf = unit === 'day' ? (d: string) => d : (d: string) => mondayOf(d, startDay);
   const set = new Set(dates.map(keyOf));
   const step = unit === 'day' ? -1 : -7;
   let cur = keyOf(todayLocalISO());
@@ -176,8 +178,9 @@ export default function DashPage() {
   const last14 = activities.filter(a => a.date >= now14);
 
   // Streaks
+  const weekStartPref: WeekStart = user?.user_metadata?.week_start_day === 'sunday' ? 'sunday' : 'monday';
   const dayStreak = calcDayStreak(activities.map(a => a.date));
-  const weekStreak = calcWeekStreak(activities.map(a => a.date));
+  const weekStreak = calcWeekStreak(activities.map(a => a.date), weekStartPref);
 
   // Evening nudge: after the user's reminder hour, if there's a streak to protect but nothing logged today.
   const reminderOn = user?.user_metadata?.streak_reminder !== false; // default on
@@ -202,7 +205,7 @@ export default function DashPage() {
 
   // This week
   const todayStr = todayLocalISO();
-  const weekStart = mondayOf(todayStr);
+  const weekStart = mondayOf(todayStr, weekStartPref);
   const thisWeek = activities.filter(a => a.date >= weekStart);
   const weekRuns = thisWeek.filter(a => a.exercise_type === 'run').length;
   const weekDist = thisWeek.reduce((s, a) => s + (a.distance_km || 0), 0);
@@ -258,9 +261,9 @@ export default function DashPage() {
   // couple of extra slots so a gap before it is visible too, instead of clipping it.
   const allDates = activities.map(a => a.date);
   const dayTimeline = buildDayTimeline(allDates, Math.max(30, dayStreak + 2));
-  const weekTimeline = buildWeekTimeline(allDates, Math.max(12, weekStreak + 2));
+  const weekTimeline = buildWeekTimeline(allDates, Math.max(12, weekStreak + 2), weekStartPref);
   const dayStreakStart = currentStreakStart(allDates, 'day');
-  const weekStreakStart = currentStreakStart(allDates, 'week');
+  const weekStreakStart = currentStreakStart(allDates, 'week', weekStartPref);
 
   const greeting = () => {
     const h = new Date().getHours();

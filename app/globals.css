@@ -147,6 +147,33 @@ select.input {
   }
 }
 
+/* Light theme — flips the core dark surfaces (page/card backgrounds, borders,
+   white text) to light equivalents. Applied when <html data-theme="light">.
+   Muted gray text tones (#64748B/#94A3B8/#475569) are left as-is — they read
+   fine on both light and dark backgrounds, so there's no need to remap them. */
+[data-theme="light"] body { background: #F8FAFC; color: #0F172A; }
+[data-theme="light"] .card,
+[data-theme="light"] .stat-card,
+[data-theme="light"] .bg-\[\#1E293B\] { background: #FFFFFF !important; }
+[data-theme="light"] .bg-\[\#0F172A\],
+[data-theme="light"] .input { background: #F1F5F9 !important; }
+[data-theme="light"] .bg-\[\#0B1220\],
+[data-theme="light"] .bg-\[\#141d2e\],
+[data-theme="light"] .bg-\[\#293548\] { background: #EEF2F6 !important; }
+[data-theme="light"] .card,
+[data-theme="light"] .stat-card,
+[data-theme="light"] .input,
+[data-theme="light"] .btn-secondary,
+[data-theme="light"] .border-\[\#334155\],
+[data-theme="light"] .border-\[\#475569\],
+[data-theme="light"] .border-\[\#293548\],
+[data-theme="light"] .border-\[\#1E293B\] { border-color: #E2E8F0 !important; }
+[data-theme="light"] .btn-secondary { background: #F1F5F9; color: #0F172A; }
+[data-theme="light"] .btn-secondary:hover { background: #E2E8F0; }
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-\[\#F1F5F9\] { color: #0F172A !important; }
+[data-theme="light"] .input::placeholder { color: #94A3B8; }
+
 /* Print: clean, compact plan layout — hide app chrome + interactive controls,
    and show the dedicated print-only summary/table instead of the on-screen views. */
 .plan-print-only { display: none; }

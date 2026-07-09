@@ -79,12 +79,15 @@ function addDaysLocalISO(dateISO: string, n: number): string {
   return `${yy}-${mm}-${dd}`;
 }
 
-/** Monday-start week key for a local YYYY-MM-DD date. */
-function localWeekKey(dateISO: string): string {
+export type WeekStart = 'monday' | 'sunday';
+
+/** Week-start key (Monday or Sunday, per `startDay`) for a local YYYY-MM-DD date. */
+function localWeekKey(dateISO: string, startDay: WeekStart = 'monday'): string {
   const [y, m, d] = dateISO.split('-').map(Number);
   const dt = new Date(y, m - 1, d);
   const day = dt.getDay();
-  dt.setDate(dt.getDate() - day + (day === 0 ? -6 : 1));
+  const diff = startDay === 'sunday' ? -day : (day === 0 ? -6 : 1 - day);
+  dt.setDate(dt.getDate() + diff);
   const yy = dt.getFullYear();
   const mm = String(dt.getMonth() + 1).padStart(2, '0');
   const dd = String(dt.getDate()).padStart(2, '0');
@@ -105,10 +108,10 @@ export function calcDayStreak(dates: string[]): number {
   return streak;
 }
 
-export function calcWeekStreak(dates: string[]): number {
+export function calcWeekStreak(dates: string[], startDay: WeekStart = 'monday'): number {
   if (dates.length === 0) return 0;
-  const weeks = [...new Set(dates.map(localWeekKey))].sort((a, b) => b.localeCompare(a));
-  const thisWeek = localWeekKey(todayLocalISO());
+  const weeks = [...new Set(dates.map(d => localWeekKey(d, startDay)))].sort((a, b) => b.localeCompare(a));
+  const thisWeek = localWeekKey(todayLocalISO(), startDay);
   const lastWeek = addDaysLocalISO(thisWeek, -7);
   if (weeks[0] !== thisWeek && weeks[0] !== lastWeek) return 0;
   let streak = 1;
