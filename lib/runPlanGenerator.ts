@@ -1192,7 +1192,7 @@ export function combineSessions(list: Session[]): Session {
     type: 'sport',
     title: real.map(s => s.title).join(' + '),
     detail: real.map(s => s.detail).filter(Boolean).join('\n\n'),
-    completed: false,
+    completed: real.every(s => s.completed), // tick the combined day once every part has been logged
     parts,
   };
   if (allHaveDistance) {
