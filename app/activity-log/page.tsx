@@ -190,15 +190,15 @@ export default function ActivityLogPage() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-col gap-2 mb-4 sm:flex-row">
+      <div className="flex gap-2 mb-4 flex-wrap">
         <input
-          className="input flex-1"
+          className="input flex-1 min-w-[120px]"
           placeholder="Search activities..."
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
         <select
-          className="input sm:w-auto"
+          className="input w-auto"
           value={filterType}
           onChange={e => setFilterType(e.target.value as ExerciseType | '')}
         >
