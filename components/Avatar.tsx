@@ -1,4 +1,4 @@
-/** Circular avatar — shows the user's uploaded photo, or a default blue panda. */
+/** Circular avatar — shows the user's uploaded photo, or a default panda. */
 export default function Avatar({ url, size = 32 }: { url?: string | null; size?: number }) {
   return (
     <span
@@ -19,24 +19,19 @@ function PandaFace() {
   return (
     <svg viewBox="0 0 100 100" className="w-full h-full" aria-hidden>
       {/* ears */}
-      <circle cx="26" cy="24" r="16" fill="#3B82F6" />
-      <circle cx="74" cy="24" r="16" fill="#3B82F6" />
+      <circle cx="25" cy="28" r="14" fill="#1E293B" />
+      <circle cx="75" cy="28" r="14" fill="#1E293B" />
       {/* face */}
-      <circle cx="50" cy="56" r="36" fill="#3B82F6" />
-      {/* eye patches */}
-      <ellipse cx="35" cy="54" rx="14" ry="17" fill="#1D4ED8" />
-      <ellipse cx="65" cy="54" rx="14" ry="17" fill="#1D4ED8" />
-      {/* big eyes */}
-      <circle cx="35" cy="55" r="10" fill="#fff" />
-      <circle cx="65" cy="55" r="10" fill="#fff" />
-      <circle cx="36" cy="57" r="5.5" fill="#0F172A" />
-      <circle cx="66" cy="57" r="5.5" fill="#0F172A" />
-      <circle cx="39" cy="52" r="2.2" fill="#fff" />
-      <circle cx="69" cy="52" r="2.2" fill="#fff" />
+      <ellipse cx="50" cy="56" rx="37" ry="32" fill="#7DD3FC" />
+      {/* eyes */}
+      <circle cx="35" cy="53" r="13.5" fill="#1E293B" />
+      <circle cx="65" cy="53" r="13.5" fill="#1E293B" />
+      <circle cx="39" cy="53" r="1.3" fill="#fff" />
+      <circle cx="61" cy="53" r="1.3" fill="#fff" />
       {/* nose */}
-      <ellipse cx="50" cy="70" rx="4" ry="3" fill="#1D4ED8" />
-      {/* big smile */}
-      <path d="M38 76 Q50 88 62 76" stroke="#1D4ED8" strokeWidth="3" fill="none" strokeLinecap="round" />
+      <path d="M50,64 Q52,64 53,67 Q54,70 50,70 Q46,70 47,67 Q48,64 50,64 Z" fill="#1E293B" />
+      {/* nose-to-mouth line + smile */}
+      <path d="M50,70 L50,76 M43,73 Q50,79 57,73" stroke="#1E293B" strokeWidth="1.1" fill="none" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
