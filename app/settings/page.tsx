@@ -12,6 +12,8 @@ export default function SettingsPage() {
   const [reminderHour, setReminderHour] = useState(17);
   const [weekStartDay, setWeekStartDay] = useState<'monday' | 'sunday'>('monday');
   const [lightTheme, setLightTheme] = useState(false);
+  const [weeklyRecapEmail, setWeeklyRecapEmail] = useState(false);
+  const [monthlyRecapEmail, setMonthlyRecapEmail] = useState(false);
 
   const flash = (text: string, ok: boolean) => {
     setMsg({ text, ok });
@@ -30,6 +32,8 @@ export default function SettingsPage() {
     if (user?.user_metadata?.streak_reminder_hour !== undefined) setReminderHour(user.user_metadata.streak_reminder_hour);
     if (user?.user_metadata?.week_start_day === 'sunday') setWeekStartDay('sunday');
     setLightTheme(user?.user_metadata?.theme === 'light');
+    if (user?.user_metadata?.weekly_recap_email !== undefined) setWeeklyRecapEmail(user.user_metadata.weekly_recap_email);
+    if (user?.user_metadata?.monthly_recap_email !== undefined) setMonthlyRecapEmail(user.user_metadata.monthly_recap_email);
   }, [user]);
 
   return (
@@ -106,6 +110,34 @@ export default function SettingsPage() {
             <option value="monday">Monday</option>
             <option value="sunday">Sunday</option>
           </select>
+        </div>
+
+        <div className="border-t border-[#334155] pt-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-white font-semibold">Weekly recap email</p>
+            <p className="text-xs text-[#64748B]">Get last week's summary emailed every Monday.</p>
+          </div>
+          <button
+            onClick={() => { const v = !weeklyRecapEmail; setWeeklyRecapEmail(v); savePrefs({ weekly_recap_email: v }); }}
+            role="switch" aria-checked={weeklyRecapEmail}
+            className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${weeklyRecapEmail ? 'bg-blue-600' : 'bg-[#334155]'}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${weeklyRecapEmail ? 'translate-x-5' : ''}`} />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-white font-semibold">Monthly recap email</p>
+            <p className="text-xs text-[#64748B]">Get last month's summary emailed on the 1st.</p>
+          </div>
+          <button
+            onClick={() => { const v = !monthlyRecapEmail; setMonthlyRecapEmail(v); savePrefs({ monthly_recap_email: v }); }}
+            role="switch" aria-checked={monthlyRecapEmail}
+            className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${monthlyRecapEmail ? 'bg-blue-600' : 'bg-[#334155]'}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${monthlyRecapEmail ? 'translate-x-5' : ''}`} />
+          </button>
         </div>
 
         <div className="flex items-center justify-between gap-3">

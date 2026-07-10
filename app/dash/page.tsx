@@ -11,6 +11,7 @@ import PlanDaySheet from '@/components/PlanDaySheet';
 import Link from 'next/link';
 import Avatar from '@/components/Avatar';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import RecapCard from '@/components/RecapCard';
 
 /** The subtype label for any activity — sub_type for most types, run_type for runs. */
 function activitySubLabel(a: Activity): string | null {
@@ -283,6 +284,8 @@ export default function DashPage() {
           </Link>
         </div>
       </div>
+
+      <RecapCard activities={activities} plans={plans} weekStartDay={weekStartPref} todayISO={todayISO} />
 
       {/* Desktop: plan + streaks/14-day side by side instead of one long column */}
       <div className="lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start">

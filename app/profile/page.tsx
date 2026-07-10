@@ -10,6 +10,7 @@ import { uploadImages, deleteImage } from '@/lib/images';
 export default function ProfilePage() {
   const { user } = useAuth();
   const [username, setUsername] = useState('');
+  const [age, setAge] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -26,15 +27,17 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user?.user_metadata?.username) setUsername(user.user_metadata.username);
+    if (user?.user_metadata?.age) setAge(String(user.user_metadata.age));
     setAvatarUrl(user?.user_metadata?.avatar_url ?? null);
   }, [user]);
 
   const handleUpdateUsername = async () => {
     if (!username.trim()) return;
     setSaving(true);
-    const { error } = await supabase.auth.updateUser({ data: { ...user?.user_metadata, username: username.trim() } });
+    const ageNum = age.trim() ? parseInt(age) : null;
+    const { error } = await supabase.auth.updateUser({ data: { ...user?.user_metadata, username: username.trim(), age: ageNum } });
     setSaving(false);
-    flash(error ? error.message : 'Display name updated!', !error);
+    flash(error ? error.message : 'Profile updated!', !error);
   };
 
   const handleUpdatePassword = async () => {
@@ -110,11 +113,13 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Display name */}
+      {/* Display name + age */}
       <div className="card mb-6">
         <h2 className="text-sm font-semibold text-white mb-3">Display Name</h2>
         <input className="input mb-3" placeholder="Enter a username" value={username} onChange={e => setUsername(e.target.value)} />
-        <button onClick={handleUpdateUsername} disabled={saving} className="btn-primary w-full">Save Display Name</button>
+        <h2 className="text-sm font-semibold text-white mb-3">Age <span className="text-[#64748B] font-normal">(optional)</span></h2>
+        <input type="number" min="0" max="120" className="input mb-3" placeholder="Enter your age" value={age} onChange={e => setAge(e.target.value)} />
+        <button onClick={handleUpdateUsername} disabled={saving} className="btn-primary w-full">Save Profile</button>
       </div>
 
       {/* Change email */}
