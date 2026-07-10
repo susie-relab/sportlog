@@ -36,6 +36,11 @@ export interface Session {
   detail: string;       // short description / structure text
   completed?: boolean;
   completedActivityId?: string | null;
+  /** The actual logged distance/time, captured at completion time so the UI can show
+   *  "4.2km completed (3km)" instead of just the original plan target. */
+  completedDistanceKm?: number | null;
+  completedTimeMin?: number | null;
+  completedEffort?: number | null;
   /** Difficulty relative to the original generated session. */
   variant?: 'easier' | 'harder' | null;
   /** A filler slot in the lead-in "Week 0" that falls before the plan's actual start date. */
@@ -1217,7 +1222,9 @@ export function revertCompletedActivity(data: PlanData, activityId: string): { d
       const parts = sessionParts(s);
       if (!parts.some(p => p.completedActivityId === activityId)) continue;
       changed = true;
-      const newParts = parts.map(p => p.completedActivityId === activityId ? { ...p, completed: false, completedActivityId: null } : p);
+      const newParts = parts.map(p => p.completedActivityId === activityId
+        ? { ...p, completed: false, completedActivityId: null, completedDistanceKm: null, completedTimeMin: null, completedEffort: null }
+        : p);
       days[d] = newParts.length === 1 ? newParts[0] : combineSessions(newParts);
     }
     return { ...w, days };

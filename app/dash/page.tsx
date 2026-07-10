@@ -12,6 +12,7 @@ import Link from 'next/link';
 import Avatar from '@/components/Avatar';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import RecapCard from '@/components/RecapCard';
+import LastWeekSummaryCard from '@/components/LastWeekSummaryCard';
 
 /** The subtype label for any activity — sub_type for most types, run_type for runs. */
 function activitySubLabel(a: Activity): string | null {
@@ -394,6 +395,8 @@ export default function DashPage() {
         <StatCard value={String(intensity14)} label="Intensity Mins" color="#06B6D4" />
         <StatCard value={String(total14 > 0 ? Math.round(dist14 / total14 * 10) / 10 : 0)} label="Avg km/session" color="#A78BFA" />
       </div>
+
+      <LastWeekSummaryCard activities={activities} plans={plans} weekStartDay={weekStartPref} todayISO={todayISO} />
 
       </div>
       </div>

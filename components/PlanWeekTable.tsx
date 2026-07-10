@@ -81,6 +81,14 @@ export function exerciseTypeTag(s: Session): string | null {
 // Each session has either a distance goal, a time goal, or (for long intervals /
 // sprint reps / hill reps) a rep notation — never more than one of these.
 function target(s: Session): string {
+  // Once logged, show what was actually done first, with the original plan target in
+  // brackets — e.g. "4.2 km completed (3 km)" or "30 min completed (45 min)".
+  if (s.completed && s.completedDistanceKm != null) {
+    return `${s.completedDistanceKm} km completed${s.distanceKm ? ` (${s.distanceKm} km)` : ''}`;
+  }
+  if (s.completed && s.completedTimeMin != null) {
+    return `${s.completedTimeMin} min completed${s.timeMin ? ` (${s.timeMin} min)` : ''}`;
+  }
   if (s.repLabel) return s.repLabel;
   if (s.distanceKm) return `${s.distanceKm} km`;
   if (s.timeMin) return `${s.timeMin} min`;

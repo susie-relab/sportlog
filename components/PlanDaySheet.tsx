@@ -203,6 +203,9 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
                           {p.completed && <span className="text-green-400 text-xs flex-shrink-0">✓ Completed</span>}
                         </div>
                         {p.detail && <p className="text-sm text-[#94A3B8] mt-1.5 whitespace-pre-line leading-relaxed">{p.detail}</p>}
+                        {p.completed && p.completedEffort != null && (
+                          <p className="text-xs text-[#64748B] mt-1.5">Effort {p.completedEffort}/10</p>
+                        )}
 
                         <div className="flex flex-col gap-1.5 mt-3">
                           {onLogAndComplete && isRunSession(p) && !p.completed && (
@@ -291,6 +294,9 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
                 {exerciseTypeTag(sel) && <p className="text-xs text-[#64748B]">{exerciseTypeTag(sel)}</p>}
                 {sessionTarget(sel) && <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(sel) }}>{sessionTarget(sel)}</p>}
                 {sel.detail && <p className="text-sm text-[#94A3B8] mt-2 whitespace-pre-line leading-relaxed">{sel.detail}</p>}
+                {sel.completed && sel.completedEffort != null && (
+                  <p className="text-xs text-[#64748B] mt-1.5">Effort {sel.completedEffort}/10</p>
+                )}
               </>
             )}
 

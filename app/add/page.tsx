@@ -175,7 +175,10 @@ export default function AddPage() {
         if (wk && wk.days[planLink.day]) {
           const parts = sessionParts(wk.days[planLink.day]);
           const idx = planLink.part != null && planLink.part < parts.length ? planLink.part : 0;
-          const newParts = parts.map((p, i) => i === idx ? { ...p, completed: true, completedActivityId: inserted?.id ?? null } : p);
+          const newParts = parts.map((p, i) => i === idx ? {
+            ...p, completed: true, completedActivityId: inserted?.id ?? null,
+            completedDistanceKm: distanceKm ?? null, completedTimeMin: durationMinutes || null, completedEffort: effort,
+          } : p);
           wk.days[planLink.day] = newParts.length === 1 ? newParts[0] : combineSessions(newParts);
           await supabase.from('training_plans').update({ plan_data: pd, updated_at: new Date().toISOString() }).eq('id', planLink.planId);
 

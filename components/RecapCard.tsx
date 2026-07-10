@@ -11,7 +11,7 @@ interface Props {
   todayISO: string;
 }
 
-function addDays(dateISO: string, n: number): string {
+export function addDays(dateISO: string, n: number): string {
   const [y, m, d] = dateISO.split('-').map(Number);
   const dt = new Date(y, m - 1, d + n);
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
@@ -31,7 +31,7 @@ function planStats(plans: PlanRecord[], start: string, end: string) {
   return { planned, done };
 }
 
-function recapFor(activities: Activity[], plans: PlanRecord[], start: string, end: string) {
+export function recapFor(activities: Activity[], plans: PlanRecord[], start: string, end: string) {
   const inRange = activities.filter(a => a.date >= start && a.date <= end);
   const km = inRange.reduce((s, a) => s + (a.distance_km || 0), 0);
   const mins = inRange.reduce((s, a) => s + a.duration_minutes, 0);
@@ -44,14 +44,16 @@ function fmt(d: string) { return d.split('-').reverse().join('/'); }
 
 export default function RecapCard({ activities, plans, weekStartDay, todayISO }: Props) {
   const dow = new Date(todayISO + 'T00:00:00').getDay(); // 0 = Sunday
-  const isMonday = dow === 1;
+  // The recap fires on whichever day starts the user's week — Monday by default, or Sunday
+  // if they've set Week start day to Sunday in Settings.
+  const isWeekStart = weekStartDay === 'sunday' ? dow === 0 : dow === 1;
   const isFirstOfMonth = todayISO.slice(8, 10) === '01';
 
-  if (!isMonday && !isFirstOfMonth) return null;
+  if (!isWeekStart && !isFirstOfMonth) return null;
 
   const cards: React.ReactNode[] = [];
 
-  if (isMonday) {
+  if (isWeekStart) {
     const thisWeekStart = localWeekKey(todayISO, weekStartDay);
     const lastWeekStart = addDays(thisWeekStart, -7);
     const lastWeekEnd = addDays(thisWeekStart, -1);

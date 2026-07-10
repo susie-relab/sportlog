@@ -237,17 +237,6 @@ export default function ActivityLogPage() {
         </select>
       </div>
 
-      {/* Reorder bar — shown once a date's "↕ Reorder" button (below, on that date's card) is clicked */}
-      {reordering && (
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xs text-[#64748B] flex-1">Reordering {formatDate(reordering)}…</span>
-          <button onClick={saveOrder} disabled={savingOrder} className="btn-primary btn-compact disabled:opacity-60">
-            {savingOrder ? 'Saving…' : '💾 Save order'}
-          </button>
-          <button onClick={cancelReordering} disabled={savingOrder} className="btn-secondary btn-compact">Cancel</button>
-        </div>
-      )}
-
       {/* Activity list */}
       <div className="flex flex-col gap-2">
         {filtered.length === 0 ? (
@@ -319,6 +308,24 @@ export default function ActivityLogPage() {
                       >
                         ↕ Reorder {formatDate(a.date)}
                       </button>
+                    )}
+                    {reordering === a.date && (
+                      <>
+                        <button
+                          onClick={e => { e.stopPropagation(); saveOrder(); }}
+                          disabled={savingOrder}
+                          className="px-3 py-1.5 rounded-lg bg-blue-600/20 border border-blue-600/40 text-blue-400 text-xs font-medium hover:bg-blue-600/30 transition-colors disabled:opacity-60"
+                        >
+                          {savingOrder ? 'Saving…' : '💾 Save order'}
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); cancelReordering(); }}
+                          disabled={savingOrder}
+                          className="px-3 py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-xs font-medium hover:border-[#475569] hover:text-white transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2">
