@@ -7,7 +7,7 @@ import {
   ExerciseType, RunType,
   EXERCISE_TYPE_LABELS, RUN_TYPE_LABELS,
   EXERCISE_TYPE_COLORS, RUN_TYPE_COLORS,
-  EXERCISE_TYPE_ORDER,
+  EXERCISE_TYPE_ORDER, RUN_TYPE_TERRAIN, RUN_TYPE_WORKOUT,
   SportSubType, GymSubType, WaterSnowSubType, SwimSubType, FitnessSubType, BikeSubType, StretchSubType, WalkSubType,
   SPORT_SUB_LABELS, GYM_SUB_LABELS, WATER_SNOW_SUB_LABELS, SWIM_SUB_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
 } from '@/types';
@@ -20,8 +20,6 @@ import PbCelebrationModal from '@/components/PbCelebrationModal';
 import { detectAutoPBs } from '@/lib/pbDetect';
 import { todayLocalISO, openDatePicker } from '@/lib/utils';
 
-const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy', 'treadmill'];
-
 function ColorDot({ color }: { color: string }) {
   return <span className="inline-block w-2.5 h-2.5 rounded-full mr-2" style={{ background: color }} />;
 }
@@ -31,6 +29,7 @@ export default function AddPage() {
   const [name, setName] = useState('');
   const [exerciseType, setExerciseType] = useState<ExerciseType | ''>('');
   const [runType, setRunType] = useState<RunType | ''>('');
+  const [runTypeModifier, setRunTypeModifier] = useState<RunType | ''>('');
   const [subType, setSubType] = useState<string>('');
   const [gymTypes, setGymTypes] = useState<string[]>([]);
   const [hours, setHours] = useState('');
@@ -128,6 +127,7 @@ export default function AddPage() {
       name: name.trim(),
       exercise_type: exerciseType,
       run_type: exerciseType === 'run' ? runType || null : null,
+      run_type_modifier: exerciseType === 'run' ? runTypeModifier || null : null,
       sub_type: exerciseType === 'hiit' ? gymTypes.join(',') || null : subType || null,
       duration_minutes: durationMinutes,
       effort,
@@ -196,7 +196,7 @@ export default function AddPage() {
       setTimeout(() => setConfettiColor(null), 2200);
       if (isPb || pbReasons.length > 0) setPbCelebration(pbReasons);
       // Reset form
-      setName(''); setExerciseType(''); setRunType(''); setSubType(''); setGymTypes([]); setHours(''); setMins(''); setSecs('');
+      setName(''); setExerciseType(''); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setHours(''); setMins(''); setSecs('');
       setEffort(null); setDistance(''); setNotes(''); setIntensityMins('');
       setPaceMin(''); setPaceSec(''); setMaxPaceMin(''); setMaxPaceSec('');
       setMaxHr(''); setAvgHr(''); setElevationGain(''); setIsPb(false); setPbDesc('');
@@ -256,7 +256,7 @@ export default function AddPage() {
             {EXERCISE_TYPE_ORDER.map(type => (
               <button
                 key={type}
-                onClick={() => { setExerciseType(type); setRunType(''); setSubType(''); setGymTypes([]); }}
+                onClick={() => { setExerciseType(type); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); }}
                 className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium border transition-all text-left ${
                   exerciseType === type
                     ? 'border-2 text-white'
@@ -274,12 +274,12 @@ export default function AddPage() {
           </div>
         </div>
 
-        {/* Run Type */}
+        {/* Run Type — workout type and terrain/equipment are independent; pick at most one of each */}
         {exerciseType === 'run' && (
           <div>
-            <label className="label">Run Type <span className="text-[#64748B]">(optional)</span></label>
+            <label className="label">Run Type <span className="text-[#64748B]">(optional — pick up to one of each row)</span></label>
             <div className="grid grid-cols-2 gap-2">
-              {RUN_TYPES.map(type => (
+              {RUN_TYPE_WORKOUT.map(type => (
                 <button
                   key={type}
                   onClick={() => setRunType(runType === type ? '' : type)}
@@ -289,6 +289,26 @@ export default function AddPage() {
                       : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
                   }`}
                   style={runType === type ? {
+                    borderColor: RUN_TYPE_COLORS[type],
+                    background: RUN_TYPE_COLORS[type] + '33',
+                  } : {}}
+                >
+                  <ColorDot color={RUN_TYPE_COLORS[type]} />
+                  {RUN_TYPE_LABELS[type]}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {RUN_TYPE_TERRAIN.map(type => (
+                <button
+                  key={type}
+                  onClick={() => setRunTypeModifier(runTypeModifier === type ? '' : type)}
+                  className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium border transition-all text-left ${
+                    runTypeModifier === type
+                      ? 'border-2 text-white'
+                      : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
+                  }`}
+                  style={runTypeModifier === type ? {
                     borderColor: RUN_TYPE_COLORS[type],
                     background: RUN_TYPE_COLORS[type] + '33',
                   } : {}}

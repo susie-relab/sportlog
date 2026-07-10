@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
-import { Activity, RunType, RUN_TYPE_LABELS, RUN_TYPE_COLORS } from '@/types';
+import { Activity, RunType, RUN_TYPE_LABELS, RUN_TYPE_COLORS, RUN_TYPE_WORKOUT, RUN_TYPE_TERRAIN, combinedRunTypeLabel } from '@/types';
 import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
 import ShareCard, { ShareStat } from '@/components/ShareCard';
@@ -61,7 +61,7 @@ export default function RunLogPage() {
 
   const filtered = runsByPeriod.filter(r => {
     const matchSearch = !search || r.name.toLowerCase().includes(search.toLowerCase());
-    const matchType = !filterRunType || r.run_type === filterRunType;
+    const matchType = !filterRunType || r.run_type === filterRunType || r.run_type_modifier === filterRunType;
     return matchSearch && matchType;
   });
 
@@ -79,7 +79,7 @@ export default function RunLogPage() {
     if (r.run_type) runTypeCounts[r.run_type] = (runTypeCounts[r.run_type] || 0) + 1;
   }
 
-  const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy', 'treadmill'];
+  const RUN_TYPES: RunType[] = [...RUN_TYPE_WORKOUT, ...RUN_TYPE_TERRAIN];
 
   // Years derived from actual run data, most recent first
   const years = [...new Set(runs.map(r => new Date(r.date).getFullYear()))].sort((a, b) => b - a);
@@ -298,8 +298,8 @@ export default function RunLogPage() {
                     {r.is_pb && <span>⭐</span>}
                   </div>
                   <div className="flex gap-2 mt-0.5 flex-wrap">
-                    {r.run_type && (
-                      <span className="text-xs font-medium" style={{ color }}>{RUN_TYPE_LABELS[r.run_type]}</span>
+                    {combinedRunTypeLabel(r.run_type, r.run_type_modifier) && (
+                      <span className="text-xs font-medium" style={{ color }}>{combinedRunTypeLabel(r.run_type, r.run_type_modifier)}</span>
                     )}
                     <span className="text-xs text-[#64748B]">{formatDate(r.date)}</span>
                   </div>
@@ -380,7 +380,7 @@ export default function RunLogPage() {
           activities={runs}
           filenamePrefix="sportlog-runs"
           typeOptions={RUN_TYPES.map(t => ({ key: t, label: RUN_TYPE_LABELS[t] }))}
-          matchType={(a, key) => a.run_type === key}
+          matchType={(a, key) => a.run_type === key || a.run_type_modifier === key}
           onClose={() => setExporting(false)}
         />
       )}

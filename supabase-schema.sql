@@ -153,6 +153,9 @@ create index if not exists training_plans_user on training_plans(user_id, create
 -- alter table activities add column if not exists note_hidden boolean not null default false;
 -- alter table notes add column if not exists hidden boolean not null default false;
 
+-- Migration: second run type field, e.g. Treadmill + Easy -> "Treadmill - Easy Run"
+-- alter table activities add column if not exists run_type_modifier text;
+
 -- Migration: if goals table already exists, run these:
 -- alter table goals add column if not exists activity_type text not null default 'all';
 -- alter table goals drop constraint if exists goals_user_id_period_key;

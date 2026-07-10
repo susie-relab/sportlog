@@ -5,15 +5,13 @@ import {
   Activity, ExerciseType, RunType,
   EXERCISE_TYPE_LABELS, RUN_TYPE_LABELS,
   EXERCISE_TYPE_COLORS, RUN_TYPE_COLORS,
-  EXERCISE_TYPE_ORDER,
+  EXERCISE_TYPE_ORDER, RUN_TYPE_TERRAIN, RUN_TYPE_WORKOUT,
   SportSubType, GymSubType, WaterSnowSubType, SwimSubType, FitnessSubType, BikeSubType, StretchSubType, WalkSubType,
   SPORT_SUB_LABELS, GYM_SUB_LABELS, WATER_SNOW_SUB_LABELS, SWIM_SUB_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
 } from '@/types';
 import DistancePicker from './DistancePicker';
 import ImageUploader from './ImageUploader';
 import { openDatePicker } from '@/lib/utils';
-
-const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy', 'treadmill'];
 
 function ColorDot({ color }: { color: string }) {
   return <span className="inline-block w-2.5 h-2.5 rounded-full mr-2 flex-shrink-0" style={{ background: color }} />;
@@ -30,6 +28,7 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
   const [name, setName] = useState(activity.name);
   const [exerciseType, setExerciseType] = useState<ExerciseType>(activity.exercise_type);
   const [runType, setRunType] = useState<RunType | ''>(activity.run_type || '');
+  const [runTypeModifier, setRunTypeModifier] = useState<RunType | ''>(activity.run_type_modifier || '');
   const [subType, setSubType] = useState(activity.exercise_type === 'hiit' ? '' : activity.sub_type || '');
   const [gymTypes, setGymTypes] = useState<string[]>(activity.exercise_type === 'hiit' && activity.sub_type ? activity.sub_type.split(',') : []);
   const [hours, setHours] = useState(String(Math.floor(activity.duration_minutes / 60) || ''));
@@ -83,6 +82,7 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
         name: name.trim(),
         exercise_type: exerciseType,
         run_type: exerciseType === 'run' ? runType || null : null,
+        run_type_modifier: exerciseType === 'run' ? runTypeModifier || null : null,
         sub_type: exerciseType === 'hiit' ? gymTypes.join(',') || null : subType || null,
         duration_minutes: durationMinutes,
         effort,
@@ -149,7 +149,7 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
               {EXERCISE_TYPE_ORDER.map(type => (
                 <button
                   key={type}
-                  onClick={() => { setExerciseType(type); setRunType(''); setSubType(''); setGymTypes([]); }}
+                  onClick={() => { setExerciseType(type); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); }}
                   className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium border transition-all text-left ${
                     exerciseType === type ? 'border-2 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
                   }`}
@@ -165,12 +165,12 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
             </div>
           </div>
 
-          {/* Run Type */}
+          {/* Run Type — workout type and terrain/equipment are independent; pick at most one of each */}
           {exerciseType === 'run' && (
             <div>
-              <label className="label">Run Type <span className="text-[#64748B]">(optional)</span></label>
+              <label className="label">Run Type <span className="text-[#64748B]">(optional — pick up to one of each row)</span></label>
               <div className="grid grid-cols-2 gap-2">
-                {RUN_TYPES.map(type => (
+                {RUN_TYPE_WORKOUT.map(type => (
                   <button
                     key={type}
                     onClick={() => setRunType(runType === type ? '' : type)}
@@ -178,6 +178,24 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
                       runType === type ? 'border-2 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
                     }`}
                     style={runType === type ? {
+                      borderColor: RUN_TYPE_COLORS[type],
+                      background: RUN_TYPE_COLORS[type] + '33',
+                    } : {}}
+                  >
+                    <ColorDot color={RUN_TYPE_COLORS[type]} />
+                    {RUN_TYPE_LABELS[type]}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {RUN_TYPE_TERRAIN.map(type => (
+                  <button
+                    key={type}
+                    onClick={() => setRunTypeModifier(runTypeModifier === type ? '' : type)}
+                    className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium border transition-all text-left ${
+                      runTypeModifier === type ? 'border-2 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
+                    }`}
+                    style={runTypeModifier === type ? {
                       borderColor: RUN_TYPE_COLORS[type],
                       background: RUN_TYPE_COLORS[type] + '33',
                     } : {}}

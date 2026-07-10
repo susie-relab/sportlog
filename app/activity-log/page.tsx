@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import {
   Activity, ExerciseType,
-  EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, RUN_TYPE_LABELS,
+  EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, combinedRunTypeLabel,
   EXERCISE_TYPE_ORDER, subTypeLabel,
 } from '@/types';
 import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
@@ -257,7 +257,7 @@ export default function ActivityLogPage() {
                   </div>
                   <div className="flex gap-2 mt-0.5 flex-wrap">
                     {a.sub_type && <span className="text-xs font-medium text-white">{subTypeLabel(a.sub_type)}</span>}
-                    {a.run_type && <span className="text-xs font-medium text-white">{RUN_TYPE_LABELS[a.run_type]}</span>}
+                    {combinedRunTypeLabel(a.run_type, a.run_type_modifier) && <span className="text-xs font-medium text-white">{combinedRunTypeLabel(a.run_type, a.run_type_modifier)}</span>}
                     <span className="text-xs" style={{ color }}>{EXERCISE_TYPE_LABELS[a.exercise_type]}</span>
                     <span className="text-xs text-[#64748B]">{formatDate(a.date)}</span>
                   </div>
@@ -348,7 +348,7 @@ export default function ActivityLogPage() {
 
       {sharing && (() => {
         const subtypeLabel = sharing.exercise_type === 'run'
-          ? (sharing.run_type ? RUN_TYPE_LABELS[sharing.run_type] : null)
+          ? combinedRunTypeLabel(sharing.run_type, sharing.run_type_modifier)
           : (sharing.sub_type ? subTypeLabel(sharing.sub_type) : null);
         const subtypeKey = sharing.exercise_type === 'run' ? sharing.run_type : sharing.sub_type;
         const typeLabel = EXERCISE_TYPE_LABELS[sharing.exercise_type];

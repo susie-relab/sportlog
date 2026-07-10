@@ -36,7 +36,7 @@ export const EXERCISE_TYPE_COLORS: Record<ExerciseType, string> = {
   water_snow: '#0EA5E9',
 };
 
-export type RunType = 'long' | 'easy' | 'tempo' | 'fartlek' | 'speed_intervals' | 'hill_reps' | 'trail' | 'long_intervals' | 'push_buggy' | 'treadmill';
+export type RunType = 'long' | 'easy' | 'tempo' | 'fartlek' | 'speed_intervals' | 'hill_reps' | 'trail' | 'long_intervals' | 'push_buggy' | 'treadmill' | 'beach' | 'track' | 'road' | 'urban' | 'cross_country';
 
 export const RUN_TYPE_LABELS: Record<RunType, string> = {
   long: 'Long',
@@ -49,6 +49,11 @@ export const RUN_TYPE_LABELS: Record<RunType, string> = {
   long_intervals: 'Long Intervals',
   push_buggy: 'Push Buggy',
   treadmill: 'Treadmill',
+  beach: 'Beach',
+  track: 'Track',
+  road: 'Road',
+  urban: 'Urban',
+  cross_country: 'Cross Country',
 };
 
 export const RUN_TYPE_COLORS: Record<RunType, string> = {
@@ -62,7 +67,31 @@ export const RUN_TYPE_COLORS: Record<RunType, string> = {
   treadmill: '#7C3AED',
   long_intervals: '#1E3A8A',
   push_buggy: '#7DD3FC',
+  beach: '#FBBF24',
+  track: '#F472B6',
+  road: '#94A3B8',
+  urban: '#22C55E',
+  cross_country: '#84CC16',
 };
+
+// Run types split into two independently-selectable groups: pick at most one from each.
+// e.g. Treadmill + Easy -> "Treadmill - Easy Run". Either group alone is also valid on its own
+// (e.g. just Push Buggy, or just Fartlek).
+export const RUN_TYPE_TERRAIN: RunType[] = ['treadmill', 'trail', 'push_buggy', 'beach', 'urban', 'road', 'track', 'cross_country'];
+export const RUN_TYPE_WORKOUT: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'long_intervals'];
+
+/** Combined display label for a run's two optional type fields, e.g. "Treadmill - Easy Run",
+ *  or just "Push Buggy" / "Fartlek" when only one is set. */
+export function combinedRunTypeLabel(runType?: RunType | null, runTypeModifier?: RunType | null): string | null {
+  if (runType && runTypeModifier) {
+    const terrain = RUN_TYPE_TERRAIN.includes(runTypeModifier) ? runTypeModifier : runType;
+    const workout = terrain === runType ? runTypeModifier : runType;
+    return `${RUN_TYPE_LABELS[terrain]} - ${RUN_TYPE_LABELS[workout]} Run`;
+  }
+  if (runType) return RUN_TYPE_LABELS[runType];
+  if (runTypeModifier) return RUN_TYPE_LABELS[runTypeModifier];
+  return null;
+}
 
 // --- Subtypes (all optional) ---
 
@@ -123,6 +152,7 @@ export interface Activity {
   name: string;
   exercise_type: ExerciseType;
   run_type?: RunType;
+  run_type_modifier?: RunType;
   sub_type?: string;
   duration_minutes: number;
   effort: number;
