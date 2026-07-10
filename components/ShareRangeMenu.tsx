@@ -83,7 +83,7 @@ export default function ShareRangeMenu({ activities, icon, accentColor, nounSing
 
   return (
     <div className="relative inline-block">
-      <button onClick={() => setOpen(o => !o)} className="btn-secondary text-sm flex items-center gap-1.5">↗ Share</button>
+      <button onClick={() => setOpen(o => !o)} className="btn-secondary text-xs flex items-center gap-1 px-3 py-1.5">↗ Share</button>
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />

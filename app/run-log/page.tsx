@@ -95,7 +95,7 @@ export default function RunLogPage() {
           <button
             onClick={() => setExporting(true)}
             disabled={runs.length === 0}
-            className="btn-secondary text-sm flex items-center gap-1.5"
+            className="btn-secondary text-xs flex items-center gap-1 px-3 py-1.5"
           >
             ↓ Export
           </button>
