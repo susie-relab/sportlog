@@ -17,6 +17,7 @@ import { useDirtyForm } from '@/components/DirtyFormContext';
 import { sessionParts, combineSessions, WEEKDAYS, isRunSession } from '@/lib/runPlanGenerator';
 import ConfettiBurst from '@/components/ConfettiBurst';
 import PbCelebrationModal from '@/components/PbCelebrationModal';
+import ActivitySavedModal, { randomEncouragement } from '@/components/ActivitySavedModal';
 import { detectAutoPBs } from '@/lib/pbDetect';
 import { todayLocalISO, openDatePicker } from '@/lib/utils';
 
@@ -52,10 +53,10 @@ export default function AddPage() {
   const [date, setDate] = useState(todayLocalISO());
   const [showMore, setShowMore] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [confettiColor, setConfettiColor] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [pbCelebration, setPbCelebration] = useState<string[] | null>(null);
+  const [savedTitle, setSavedTitle] = useState<string | null>(null);
   const { setDirty, showWarning, setShowWarning, pendingHref } = useDirtyForm();
   const router = useRouter();
   const [planLink, setPlanLink] = useState<{ planId: string; week: number; day: string; part?: number } | null>(null);
@@ -192,10 +193,10 @@ export default function AddPage() {
     if (dbErr) {
       setError(dbErr.message);
     } else {
-      setSuccess(true);
       setConfettiColor(accentColor);
       setTimeout(() => setConfettiColor(null), 2200);
       if (isPb || pbReasons.length > 0) setPbCelebration(pbReasons);
+      else setSavedTitle(randomEncouragement());
       // Reset form
       setName(''); setExerciseType(''); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setHours(''); setMins(''); setSecs('');
       setEffort(null); setDistance(''); setNotes(''); setIntensityMins('');
@@ -203,7 +204,6 @@ export default function AddPage() {
       setMaxHr(''); setAvgHr(''); setElevationGain(''); setIsPb(false); setPbDesc('');
       setImages([]);
       setDate(todayLocalISO());
-      setTimeout(() => setSuccess(false), 3000);
       // form is clean after save
 
       // Give the confetti/PB-celebration a moment to play before navigating away.
@@ -226,11 +226,6 @@ export default function AddPage() {
       <h1 className="text-xl font-bold text-white mb-5">Add Exercise</h1>
 
       {confettiColor && <ConfettiBurst color={confettiColor} />}
-      {success && (
-        <div className="mb-4 p-3 rounded-lg bg-green-900/40 border border-green-700 text-green-300 text-sm">
-          Exercise saved! 🎉
-        </div>
-      )}
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-900/40 border border-red-700 text-red-300 text-sm">
           {error}
@@ -639,6 +634,9 @@ export default function AddPage() {
       )}
       {pbCelebration && (
         <PbCelebrationModal reasons={pbCelebration} onClose={() => setPbCelebration(null)} />
+      )}
+      {savedTitle && (
+        <ActivitySavedModal title={savedTitle} onClose={() => setSavedTitle(null)} />
       )}
     </div>
   );

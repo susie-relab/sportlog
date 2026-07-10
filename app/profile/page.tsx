@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import Avatar from '@/components/Avatar';
+import Toast from '@/components/Toast';
 import { uploadImages, deleteImage } from '@/lib/images';
 
 export default function ProfilePage() {
@@ -93,11 +94,7 @@ export default function ProfilePage() {
       </div>
       <p className="text-sm text-[#64748B] mb-5">{user?.email}</p>
 
-      {msg && (
-        <div className={`mb-4 p-3 rounded-lg border text-sm ${msg.ok ? 'bg-green-900/40 border-green-700 text-green-300' : 'bg-red-900/40 border-red-700 text-red-300'}`}>
-          {msg.text}
-        </div>
-      )}
+      <Toast msg={msg} />
 
       {/* Avatar */}
       <div className="card mb-4 flex items-center gap-4">
