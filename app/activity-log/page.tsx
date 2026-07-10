@@ -7,7 +7,7 @@ import {
   EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, combinedRunTypeLabel,
   EXERCISE_TYPE_ORDER, subTypeLabel,
 } from '@/types';
-import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo, todayLocalISO } from '@/lib/utils';
+import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
 import ImageGallery from '@/components/ImageGallery';
 import ShareCard, { ShareStat } from '@/components/ShareCard';
@@ -30,7 +30,7 @@ export default function ActivityLogPage() {
   const [exporting, setExporting] = useState(false);
   const [chartWindow, setChartWindow] = useState<ChartWindow>('30d');
   const [showChart, setShowChart] = useState(false);
-  const [reordering, setReordering] = useState(false);
+  const [reordering, setReordering] = useState<string | null>(null);
   const [staged, setStaged] = useState<Activity[] | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
 
@@ -63,17 +63,16 @@ export default function ActivityLogPage() {
   const mostActiveType30 = (Object.entries(byType) as [ExerciseType, number][]).sort((a, b) => b[1] - a[1])[0];
   const longestDist30 = Math.max(0, ...past30.map(a => a.distance_km || 0));
 
-  const today = todayLocalISO();
   const list = reordering && staged ? staged : activities;
   const filtered = list.filter(a => {
     const matchSearch = !search || a.name.toLowerCase().includes(search.toLowerCase());
     const matchType = !filterType || a.exercise_type === filterType;
     return matchSearch && matchType;
   });
-  const todayCount = activities.filter(a => a.date === today).length;
+  const dateCounts = activities.reduce<Record<string, number>>((m, a) => { m[a.date] = (m[a.date] || 0) + 1; return m; }, {});
 
-  const startReordering = () => { setStaged([...activities]); setReordering(true); };
-  const cancelReordering = () => { setStaged(null); setReordering(false); };
+  const startReordering = (date: string) => { setStaged([...activities]); setReordering(date); };
+  const cancelReordering = () => { setStaged(null); setReordering(null); };
 
   // While reordering, swap created_at (the field the list is sorted by within a date) between
   // two neighbours in the staged copy only — nothing is written to the DB until Save is clicked.
@@ -96,7 +95,7 @@ export default function ActivityLogPage() {
     setActivities(staged);
     setSavingOrder(false);
     setStaged(null);
-    setReordering(false);
+    setReordering(null);
   };
 
   const TYPES = EXERCISE_TYPE_ORDER;
@@ -238,18 +237,15 @@ export default function ActivityLogPage() {
         </select>
       </div>
 
-      {/* Reorder today's activities */}
-      {todayCount > 1 && (
-        reordering ? (
-          <div className="flex gap-2 mb-4">
-            <button onClick={saveOrder} disabled={savingOrder} className="btn-primary btn-compact flex-1 disabled:opacity-60">
-              {savingOrder ? 'Saving…' : '💾 Save order'}
-            </button>
-            <button onClick={cancelReordering} disabled={savingOrder} className="btn-secondary btn-compact flex-1">Cancel</button>
-          </div>
-        ) : (
-          <button onClick={startReordering} className="btn-secondary btn-compact mb-4">↕ Reorder Today</button>
-        )
+      {/* Reorder bar — shown once a date's "↕ Reorder" button (below, on that date's card) is clicked */}
+      {reordering && (
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-xs text-[#64748B] flex-1">Reordering {formatDate(reordering)}…</span>
+          <button onClick={saveOrder} disabled={savingOrder} className="btn-primary btn-compact disabled:opacity-60">
+            {savingOrder ? 'Saving…' : '💾 Save order'}
+          </button>
+          <button onClick={cancelReordering} disabled={savingOrder} className="btn-secondary btn-compact">Cancel</button>
+        </div>
       )}
 
       {/* Activity list */}
@@ -259,8 +255,8 @@ export default function ActivityLogPage() {
         ) : filtered.map((a, i) => {
           const color = EXERCISE_TYPE_COLORS[a.exercise_type];
           const isOpen = expanded === a.id;
-          const canMoveUp = reordering && a.date === today && i > 0 && filtered[i - 1].date === a.date;
-          const canMoveDown = reordering && a.date === today && i < filtered.length - 1 && filtered[i + 1].date === a.date;
+          const canMoveUp = reordering === a.date && i > 0 && filtered[i - 1].date === a.date;
+          const canMoveDown = reordering === a.date && i < filtered.length - 1 && filtered[i + 1].date === a.date;
           return (
             <div key={a.id} className="card cursor-pointer" onClick={() => setExpanded(isOpen ? null : a.id)}>
               <div className="flex items-center gap-3">
@@ -315,6 +311,14 @@ export default function ActivityLogPage() {
                     >
                       ↗ Share
                     </button>
+                    {!reordering && dateCounts[a.date] > 1 && (
+                      <button
+                        onClick={e => { e.stopPropagation(); startReordering(a.date); }}
+                        className="px-3 py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-xs font-medium hover:border-[#475569] hover:text-white transition-colors"
+                      >
+                        ↕ Reorder {formatDate(a.date)}
+                      </button>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                     <Detail label="Duration" value={formatDuration(a.duration_minutes, a.duration_seconds)} />
