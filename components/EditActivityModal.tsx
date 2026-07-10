@@ -12,6 +12,7 @@ import {
 import DistancePicker from './DistancePicker';
 import ImageUploader from './ImageUploader';
 import { openDatePicker } from '@/lib/utils';
+import { revertCompletedActivity } from '@/lib/runPlanGenerator';
 
 function ColorDot({ color }: { color: string }) {
   return <span className="inline-block w-2.5 h-2.5 rounded-full mr-2 flex-shrink-0" style={{ background: color }} />;
@@ -119,6 +120,15 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
   const handleDelete = async () => {
     setDeleting(true);
     await supabase.from('activities').delete().eq('id', activity.id);
+    // If this activity completed a plan session, put that session back to "not completed"
+    // instead of leaving it stuck showing done for a session that no longer has a log entry.
+    const { data: plans } = await supabase.from('training_plans').select('id, plan_data').eq('user_id', activity.user_id);
+    if (plans) {
+      for (const plan of plans) {
+        const { data, changed } = revertCompletedActivity(plan.plan_data, activity.id);
+        if (changed) await supabase.from('training_plans').update({ plan_data: data }).eq('id', plan.id);
+      }
+    }
     onDeleted(activity.id);
   };
 
@@ -360,9 +370,9 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
 
           {/* Effort */}
           <div>
-            <label className="label">Effort * <span className="text-[#64748B]">(1–10)</span></label>
+            <label className="label">Effort * <span className="text-[#64748B]">(1–11)</span></label>
             <div className="flex gap-1.5 flex-wrap">
-              {[1,2,3,4,5,6,7,8,9,10].map(n => (
+              {[1,2,3,4,5,6,7,8,9,10,11].map(n => (
                 <button
                   key={n}
                   onClick={() => setEffort(n)}

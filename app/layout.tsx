@@ -5,6 +5,7 @@ import Nav from "@/components/Nav";
 import AuthProvider from "@/components/AuthProvider";
 import { DirtyFormProvider } from "@/components/DirtyFormContext";
 import ThemeApplier from "@/components/ThemeApplier";
+import NumberInputWheelGuard from "@/components/NumberInputWheelGuard";
 
 // Body font — clean, modern, similar readability to Calibri/Aptos
 const jakarta = Plus_Jakarta_Sans({
@@ -42,6 +43,7 @@ export default function RootLayout({
       <body className="min-h-full bg-[#0F172A] text-[#F1F5F9]">
         <AuthProvider>
           <ThemeApplier />
+          <NumberInputWheelGuard />
           <DirtyFormProvider>
             <div className="flex min-h-screen">
               <Nav />

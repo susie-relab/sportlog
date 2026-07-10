@@ -99,8 +99,8 @@ export type SportSubType = 'football' | 'tennis' | 'netball' | 'volleyball' | 'g
 export type GymSubType = 'hiit_workout' | 'strength' | 'conditioning' | 'crossfit' | 'hyrox' | 'arms' | 'legs' | 'back_shoulders' | 'core' | 'row_indoor' | 'stair_climber' | 'ski_erg';
 export type WaterSnowSubType = 'kayak' | 'sailing' | 'surf' | 'rowing' | 'waka_ama' | 'sup' | 'snowboard' | 'skiing';
 export type SwimSubType = 'ocean' | 'pool';
-export type SwimFocus = 'endurance' | 'sprint' | 'technique' | 'power' | 'recovery';
-export type SwimStyle = 'mixed' | 'freestyle' | 'backstroke' | 'breaststroke' | 'butterfly' | 'im';
+export type SwimFocus = 'endurance' | 'sprint' | 'technique' | 'power' | 'recovery' | 'distance' | 'interval_set' | 'time_trial';
+export type SwimStyle = 'mixed' | 'freestyle' | 'backstroke' | 'breaststroke' | 'butterfly' | 'im' | 'kick_only' | 'pull_only';
 export type FitnessSubType = 'boxing' | 'jump_rope' | 'dance' | 'skateboard' | 'rock_climbing' | 'trampoline' | 'martial_arts' | 'cleaning';
 export type BikeSubType = 'mtb' | 'road' | 'mixed_terrain' | 'commute' | 'electric' | 'indoor_spin' | 'bmx' | 'track' | 'bikepacking';
 export type StretchSubType = 'pilates' | 'flexibility' | 'physio';
@@ -125,9 +125,11 @@ export const WATER_SNOW_SUB_LABELS: Record<WaterSnowSubType, string> = {
 export const SWIM_SUB_LABELS: Record<SwimSubType, string> = { ocean: 'Ocean', pool: 'Pool' };
 export const SWIM_FOCUS_LABELS: Record<SwimFocus, string> = {
   endurance: 'Endurance', sprint: 'Sprint', technique: 'Technique', power: 'Power', recovery: 'Recovery',
+  distance: 'Distance', interval_set: 'Interval Set', time_trial: 'Time Trial',
 };
 export const SWIM_STYLE_LABELS: Record<SwimStyle, string> = {
-  mixed: 'Mixed', freestyle: 'Freestyle', backstroke: 'Backstroke', breaststroke: 'Breaststroke', butterfly: 'Butterfly', im: 'IM',
+  mixed: 'Mixed', freestyle: 'Freestyle', backstroke: 'Backstroke', breaststroke: 'Breaststroke', butterfly: 'Butterfly', im: 'Individual Medley',
+  kick_only: 'Kick-only', pull_only: 'Pull-only',
 };
 export const FITNESS_SUB_LABELS: Record<FitnessSubType, string> = {
   boxing: 'Boxing', jump_rope: 'Jump Rope', dance: 'Dance', skateboard: 'Skateboard',

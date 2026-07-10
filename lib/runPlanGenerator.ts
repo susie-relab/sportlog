@@ -1205,6 +1205,26 @@ export function combineSessions(list: Session[]): Session {
   return combined;
 }
 
+/** If any session part across the plan is linked to this activity id, mark it not-completed again
+ *  (e.g. because the linked activity was deleted from the Activity Log). Pure — returns a new
+ *  PlanData and whether anything changed, so the caller only needs to persist when it did. */
+export function revertCompletedActivity(data: PlanData, activityId: string): { data: PlanData; changed: boolean } {
+  let changed = false;
+  const weeks = data.weeks.map(w => {
+    const days = { ...w.days };
+    for (const d of WEEKDAYS) {
+      const s = days[d];
+      const parts = sessionParts(s);
+      if (!parts.some(p => p.completedActivityId === activityId)) continue;
+      changed = true;
+      const newParts = parts.map(p => p.completedActivityId === activityId ? { ...p, completed: false, completedActivityId: null } : p);
+      days[d] = newParts.length === 1 ? newParts[0] : combineSessions(newParts);
+    }
+    return { ...w, days };
+  });
+  return { data: { ...data, weeks }, changed };
+}
+
 /** Add a session on top of another day's existing session (combined), leaving the source day empty. Pure.
  *  No-ops if the target day is already at MAX_SESSIONS_PER_DAY — callers should guard with sessionCount() first. */
 export function addSessionToDay(data: PlanData, from: { week: number; day: Weekday }, to: { week: number; day: Weekday }): PlanData {

@@ -8,7 +8,7 @@ create table if not exists activities (
   exercise_type text not null,
   run_type text,
   duration_minutes integer not null,
-  effort integer not null check (effort between 1 and 10),
+  effort integer not null check (effort between 1 and 11),
   distance_km numeric(8,2),
   notes text,
   intensity_minutes integer,
@@ -160,10 +160,15 @@ create index if not exists training_plans_user on training_plans(user_id, create
 -- and pace can be stored/displayed to sub-minute precision instead of always rounding down.
 -- alter table activities add column if not exists duration_seconds smallint not null default 0;
 
--- Migration: swim focus (Endurance/Sprint/Technique/Power/Recovery) and swim styles
--- (Mixed/Freestyle/Backstroke/Breaststroke/Butterfly/IM — comma-joined, multi-select)
+-- Migration: swim focus (Endurance/Sprint/Technique/Power/Recovery/Distance/Interval Set/Time
+-- Trial) and swim styles (Mixed/Freestyle/Backstroke/Breaststroke/Butterfly/IM/Kick-only/Pull-only
+-- — comma-joined, multi-select)
 -- alter table activities add column if not exists swim_focus text;
 -- alter table activities add column if not exists swim_styles text;
+
+-- Migration: allow effort up to 11 ("this one goes to eleven")
+-- alter table activities drop constraint if exists activities_effort_check;
+-- alter table activities add constraint activities_effort_check check (effort between 1 and 11);
 
 -- Migration: if goals table already exists, run these:
 -- alter table goals add column if not exists activity_type text not null default 'all';

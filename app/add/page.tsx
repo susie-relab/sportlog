@@ -499,9 +499,9 @@ export default function AddPage() {
 
         {/* Effort */}
         <div>
-          <label className="label">Effort * <span className="text-[#64748B]">(1–10)</span></label>
+          <label className="label">Effort * <span className="text-[#64748B]">(1–11)</span></label>
           <div className="flex gap-1.5 flex-wrap">
-            {[1,2,3,4,5,6,7,8,9,10].map(n => (
+            {[1,2,3,4,5,6,7,8,9,10,11].map(n => (
               <button
                 key={n}
                 onClick={() => setEffort(n)}
