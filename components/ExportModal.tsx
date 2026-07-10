@@ -37,16 +37,17 @@ interface Props {
   typeOptions: ExportTypeOption[];
   matchType: (a: Activity, key: string) => boolean;
   onClose: () => void;
+  mode?: 'runs' | 'activities'; // 'runs' keeps a single Run Type column; 'activities' splits into Subtype + Run Style
 }
 
-export default function ExportModal({ activities, filenamePrefix, typeOptions, matchType, onClose }: Props) {
+export default function ExportModal({ activities, filenamePrefix, typeOptions, matchType, onClose, mode = 'runs' }: Props) {
   const [step, setStep] = useState<'confirm' | 'filter'>('confirm');
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set(typeOptions.map(t => t.key)));
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
   const doExport = (list: Activity[]) => {
-    const csv = activitiesToCsv(list);
+    const csv = activitiesToCsv(list, mode);
     downloadCsv(csv, `${filenamePrefix}-${new Date().toISOString().split('T')[0]}.csv`);
     onClose();
   };

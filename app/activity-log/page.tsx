@@ -389,6 +389,7 @@ export default function ActivityLogPage() {
           typeOptions={EXERCISE_TYPE_ORDER.map(t => ({ key: t, label: EXERCISE_TYPE_LABELS[t] }))}
           matchType={(a, key) => a.exercise_type === key}
           onClose={() => setExporting(false)}
+          mode="activities"
         />
       )}
     </div>

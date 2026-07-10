@@ -49,7 +49,7 @@ export default function ExportPage() {
       return;
     }
 
-    const csv = activitiesToCsv(data as Activity[]);
+    const csv = activitiesToCsv(data as Activity[], filter === 'run' ? 'runs' : 'activities');
     const label = filter === 'run' ? 'runs' : filter === 'year' ? `${year}` : filter === 'custom' ? 'custom' : 'all';
     downloadCsv(csv, `sportlog-${label}-${new Date().toISOString().split('T')[0]}.csv`);
     setResult(`✅ Exported ${data.length} activities.`);
