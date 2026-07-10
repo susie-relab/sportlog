@@ -7,10 +7,11 @@ export type ExerciseType =
   | 'swim'
   | 'walk'
   | 'stretch'
-  | 'water_snow';
+  | 'water'
+  | 'snow';
 
 // Display order for UI
-export const EXERCISE_TYPE_ORDER: ExerciseType[] = ['run', 'sport', 'hiit', 'solo_fitness', 'bike', 'swim', 'walk', 'stretch', 'water_snow'];
+export const EXERCISE_TYPE_ORDER: ExerciseType[] = ['run', 'sport', 'hiit', 'solo_fitness', 'bike', 'swim', 'walk', 'stretch', 'water', 'snow'];
 
 export const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
   run: 'Run',
@@ -21,12 +22,13 @@ export const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
   swim: 'Swim',
   walk: 'Walk / Hike',
   stretch: 'Stretch',
-  water_snow: 'Water / Snow',
+  water: 'Water',
+  snow: 'Snow',
 };
 
 // Default emoji per exercise type — used unless a subtype below overrides it.
 export const EXERCISE_TYPE_EMOJI: Record<ExerciseType, string> = {
-  run: '🏃', sport: '🎽', hiit: '🏋️', solo_fitness: '💪', bike: '🚲', swim: '🏊', walk: '🚶', stretch: '🧘', water_snow: '🌊',
+  run: '🏃', sport: '🎽', hiit: '🏋️', solo_fitness: '💪', bike: '🚲', swim: '🏊', walk: '🚶', stretch: '🧘', water: '🌊', snow: '❄️',
 };
 
 // A handful of subtypes/run-styles get their own more specific emoji instead of
@@ -73,13 +75,36 @@ const SUBTYPE_EMOJI_OVERRIDES: Record<string, string> = {
   trampoline: '🤸',
   martial_arts: '🥋',
   cleaning: '🧹',
-  // Water / Snow subtypes
+  // Water subtypes
   kayak: '🛶',
   sailing: '⛵',
   surf: '🏄',
   rowing: '🚣‍♀️',
   waka_ama: '🏝️',
   sup: '🛥️',
+  polo: '🤽',
+  boogie_boarding: '🏖️',
+  windsurfing: '🌬️',
+  kitesurfing: '🪁',
+  wakeboarding: '🚤',
+  waterskiing: '🛟',
+  diving: '🤿',
+  spear_fishing: '🔱',
+  fishing: '🎣',
+  // Snow subtypes
+  sledding: '🛷',
+  skating: '⛸️',
+  // Swim subtypes
+  water_jogging: '💦',
+  aqua_aerobics: '💧',
+  // Fitness Training subtypes
+  gymnastics: '🤸‍♂️',
+  calisthenics: '🤸🏽',
+  sandboarding: '🐫',
+  unicycling: '🛞',
+  axe_throwing: '🪓',
+  archery: '🏹',
+  slack_lining: '🤹',
 };
 
 export function activityEmoji(type: ExerciseType, subtype?: string | null): string {
@@ -96,7 +121,8 @@ export const EXERCISE_TYPE_COLORS: Record<ExerciseType, string> = {
   swim: '#06B6D4',
   walk: '#F97316',
   stretch: '#22C55E',
-  water_snow: '#0EA5E9',
+  water: '#0EA5E9',
+  snow: '#CBD5E1',
 };
 
 export type RunType = 'long' | 'easy' | 'tempo' | 'fartlek' | 'speed_intervals' | 'hill_reps' | 'trail' | 'long_intervals' | 'push_buggy' | 'treadmill' | 'beach' | 'track' | 'road' | 'urban' | 'cross_country';
@@ -161,11 +187,13 @@ export function combinedRunTypeLabel(runType?: RunType | null, runTypeModifier?:
 export type SportSubType = 'football' | 'tennis' | 'netball' | 'volleyball' | 'golf' | 'turbo_touch' | 'padel' | 'touch_rugby' | 'basketball' | 'cricket' | 'badminton' | 'rugby' | 'hockey' | 'frisbee' | 'table_tennis';
 export type SportFocus = 'game' | 'training' | 'skills' | 'conditioning' | 'recovery';
 export type GymSubType = 'hiit_workout' | 'strength' | 'conditioning' | 'crossfit' | 'hyrox' | 'arms' | 'legs' | 'back_shoulders' | 'core' | 'row_indoor' | 'stair_climber' | 'ski_erg';
-export type WaterSnowSubType = 'kayak' | 'sailing' | 'surf' | 'rowing' | 'waka_ama' | 'sup' | 'snowboard' | 'skiing';
-export type SwimSubType = 'ocean' | 'pool';
+export type WaterSubType = 'kayak' | 'sailing' | 'surf' | 'rowing' | 'waka_ama' | 'sup' | 'polo' | 'boogie_boarding' | 'bodysurfing' | 'windsurfing' | 'kitesurfing' | 'wakeboarding' | 'waterskiing' | 'diving' | 'spear_fishing' | 'fishing';
+export type SnowSubType = 'snowboard' | 'skiing' | 'sledding' | 'skating';
+export type SnowStyle = 'downhill' | 'cross_country' | 'half_pipe' | 'freestyle';
+export type SwimSubType = 'ocean' | 'pool' | 'water_jogging' | 'aqua_aerobics';
 export type SwimFocus = 'endurance' | 'sprint' | 'technique' | 'power' | 'recovery' | 'distance' | 'interval_set' | 'time_trial';
 export type SwimStyle = 'mixed' | 'freestyle' | 'backstroke' | 'breaststroke' | 'butterfly' | 'im' | 'kick_only' | 'pull_only';
-export type FitnessSubType = 'boxing' | 'jump_rope' | 'dance' | 'skateboard' | 'rock_climbing' | 'trampoline' | 'martial_arts' | 'cleaning';
+export type FitnessSubType = 'boxing' | 'jump_rope' | 'dance' | 'skateboard' | 'rock_climbing' | 'trampoline' | 'martial_arts' | 'cleaning' | 'gymnastics' | 'calisthenics' | 'sandboarding' | 'unicycling' | 'axe_throwing' | 'archery' | 'slack_lining';
 export type BikeSubType = 'mtb' | 'road' | 'mixed_terrain' | 'commute' | 'electric' | 'indoor_spin' | 'bmx' | 'track' | 'bikepacking';
 export type StretchSubType = 'pilates' | 'flexibility' | 'physio';
 export type WalkSubType = 'multi_day' | 'outdoor' | 'treadmill' | 'speed' | 'stroll' | 'beach' | 'push_buggy';
@@ -185,11 +213,21 @@ export const GYM_SUB_LABELS: Record<GymSubType, string> = {
   back_shoulders: 'Back & Shoulders', core: 'Core', row_indoor: 'Row Indoor',
   stair_climber: 'Stair Climber', ski_erg: 'Ski Erg',
 };
-export const WATER_SNOW_SUB_LABELS: Record<WaterSnowSubType, string> = {
-  kayak: 'Kayak', sailing: 'Sailing', surf: 'Surf', rowing: 'Rowing',
-  waka_ama: 'Waka Ama', sup: 'SUP', snowboard: 'Snowboard', skiing: 'Skiing',
+export const WATER_SUB_LABELS: Record<WaterSubType, string> = {
+  kayak: 'Kayak', sailing: 'Sailing', surf: 'Surf', rowing: 'Rowing', waka_ama: 'Waka Ama', sup: 'SUP',
+  polo: 'Polo', boogie_boarding: 'Boogie Boarding', bodysurfing: 'Bodysurfing', windsurfing: 'Windsurfing',
+  kitesurfing: 'Kitesurfing', wakeboarding: 'Wakeboarding', waterskiing: 'Waterskiing', diving: 'Diving',
+  spear_fishing: 'Spear Fishing', fishing: 'Fishing',
 };
-export const SWIM_SUB_LABELS: Record<SwimSubType, string> = { ocean: 'Ocean', pool: 'Pool' };
+export const SNOW_SUB_LABELS: Record<SnowSubType, string> = {
+  snowboard: 'Snowboard', skiing: 'Skiing', sledding: 'Sledding', skating: 'Skating',
+};
+export const SNOW_STYLE_LABELS: Record<SnowStyle, string> = {
+  downhill: 'Downhill', cross_country: 'Cross-country', half_pipe: 'Half-pipe', freestyle: 'Freestyle',
+};
+export const SWIM_SUB_LABELS: Record<SwimSubType, string> = {
+  ocean: 'Ocean', pool: 'Pool', water_jogging: 'Water Jogging', aqua_aerobics: 'Aqua Aerobics',
+};
 export const SWIM_FOCUS_LABELS: Record<SwimFocus, string> = {
   endurance: 'Endurance', sprint: 'Sprint', technique: 'Technique', power: 'Power', recovery: 'Recovery',
   distance: 'Distance', interval_set: 'Interval Set', time_trial: 'Time Trial',
@@ -201,6 +239,8 @@ export const SWIM_STYLE_LABELS: Record<SwimStyle, string> = {
 export const FITNESS_SUB_LABELS: Record<FitnessSubType, string> = {
   boxing: 'Boxing', jump_rope: 'Jump Rope', dance: 'Dance', skateboard: 'Skateboard',
   rock_climbing: 'Rock Climbing', trampoline: 'Trampoline', martial_arts: 'Martial Arts', cleaning: 'Cleaning',
+  gymnastics: 'Gymnastics', calisthenics: 'Calisthenics', sandboarding: 'Sandboarding', unicycling: 'Unicycling',
+  axe_throwing: 'Axe Throwing', archery: 'Archery', slack_lining: 'Slack-lining',
 };
 export const BIKE_SUB_LABELS: Record<BikeSubType, string> = {
   mtb: 'MTB', road: 'Road', mixed_terrain: 'Mixed Terrain', commute: 'Commute', electric: 'Electric',
@@ -216,7 +256,7 @@ export const WALK_SUB_LABELS: Record<WalkSubType, string> = {
 
 // All subtype labels in one map + a helper to display a (possibly comma-joined) sub_type value.
 const ALL_SUB_LABELS: Record<string, string> = {
-  ...SPORT_SUB_LABELS, ...GYM_SUB_LABELS, ...WATER_SNOW_SUB_LABELS, ...SWIM_SUB_LABELS,
+  ...SPORT_SUB_LABELS, ...GYM_SUB_LABELS, ...WATER_SUB_LABELS, ...SNOW_SUB_LABELS, ...SWIM_SUB_LABELS,
   ...FITNESS_SUB_LABELS, ...BIKE_SUB_LABELS, ...STRETCH_SUB_LABELS, ...WALK_SUB_LABELS,
 };
 export function subTypeLabel(subType?: string | null): string {
@@ -243,7 +283,7 @@ export function allFavouriteItems(): FavouriteItem[] {
     key: type, type, label: type === 'run' ? 'Running' : EXERCISE_TYPE_LABELS[type], emoji: activityEmoji(type),
   }));
   const subMaps: [ExerciseType, Record<string, string>][] = [
-    ['sport', SPORT_SUB_LABELS], ['hiit', GYM_SUB_LABELS], ['water_snow', WATER_SNOW_SUB_LABELS],
+    ['sport', SPORT_SUB_LABELS], ['hiit', GYM_SUB_LABELS], ['water', WATER_SUB_LABELS], ['snow', SNOW_SUB_LABELS],
     ['swim', SWIM_SUB_LABELS], ['solo_fitness', FITNESS_SUB_LABELS], ['bike', BIKE_SUB_LABELS],
     ['stretch', STRETCH_SUB_LABELS], ['walk', WALK_SUB_LABELS],
   ];
@@ -301,6 +341,7 @@ export interface Activity {
   sport_focus?: SportFocus;
   swim_focus?: SwimFocus;
   swim_styles?: string; // comma-joined SwimStyle keys — multi-select, like sub_type for hiit
+  snow_styles?: string; // comma-joined SnowStyle keys — multi-select, like swim_styles
   duration_minutes: number;
   duration_seconds?: number; // leftover seconds (0-59) on top of duration_minutes
   effort: number;

@@ -13,7 +13,8 @@ export const EXERCISE_TYPE_ICONS: Record<ExerciseType, LucideIcon> = {
   swim: Waves,
   walk: PersonStanding,
   stretch: PersonStanding,
-  water_snow: Snowflake,
+  water: Waves,
+  snow: Snowflake,
 };
 
 export const WEEK_SHARE_ICON: LucideIcon = Calendar;

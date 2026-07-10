@@ -7,7 +7,7 @@ import {
 } from '@/lib/runPlanGenerator';
 import {
   ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, EXERCISE_TYPE_ORDER,
-  SPORT_SUB_LABELS, GYM_SUB_LABELS, WATER_SNOW_SUB_LABELS, SWIM_SUB_LABELS,
+  SPORT_SUB_LABELS, GYM_SUB_LABELS, WATER_SUB_LABELS, SNOW_SUB_LABELS, SWIM_SUB_LABELS,
   FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
 } from '@/types';
 import PlanWeekTable from './PlanWeekTable';
@@ -15,7 +15,7 @@ import PlanDaySheet from './PlanDaySheet';
 import { todayLocalISO, openDatePicker } from '@/lib/utils';
 
 const SUB_LABELS: Partial<Record<ExerciseType, Record<string, string>>> = {
-  sport: SPORT_SUB_LABELS, hiit: GYM_SUB_LABELS, water_snow: WATER_SNOW_SUB_LABELS,
+  sport: SPORT_SUB_LABELS, hiit: GYM_SUB_LABELS, water: WATER_SUB_LABELS, snow: SNOW_SUB_LABELS,
   swim: SWIM_SUB_LABELS, solo_fitness: FITNESS_SUB_LABELS, bike: BIKE_SUB_LABELS, stretch: STRETCH_SUB_LABELS, walk: WALK_SUB_LABELS,
 };
 const LEVELS: PlanLevel[] = ['relaxed', 'moderate', 'tough'];

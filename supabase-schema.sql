@@ -173,6 +173,15 @@ create index if not exists training_plans_user on training_plans(user_id, create
 -- Migration: sport focus (Game/Match, Training, Skills, Conditioning, Recovery) for team sports
 -- alter table activities add column if not exists sport_focus text;
 
+-- Migration: split "water_snow" into two standalone exercise types, "water" and "snow"
+-- (Snow gained Sledding + Skating subtypes and a Style field: Downhill/Cross-country/Half-pipe/
+-- Freestyle. Water gained Polo/Boogie Boarding/Bodysurfing/Windsurfing/Kitesurfing/Wakeboarding/
+-- Waterskiing/Diving/Spear Fishing/Fishing. Swim gained Water Jogging/Aqua Aerobics. Fitness
+-- Training gained Gymnastics/Calisthenics/Sandboarding/Unicycling/Axe Throwing/Archery/Slack-lining.)
+-- alter table activities add column if not exists snow_styles text;
+-- update activities set exercise_type = 'snow' where exercise_type = 'water_snow' and sub_type in ('snowboard', 'skiing');
+-- update activities set exercise_type = 'water' where exercise_type = 'water_snow';
+
 -- Migration: if goals table already exists, run these:
 -- alter table goals add column if not exists activity_type text not null default 'all';
 -- alter table goals drop constraint if exists goals_user_id_period_key;

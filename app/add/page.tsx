@@ -8,8 +8,8 @@ import {
   EXERCISE_TYPE_LABELS, RUN_TYPE_LABELS,
   EXERCISE_TYPE_COLORS, RUN_TYPE_COLORS,
   EXERCISE_TYPE_ORDER, RUN_TYPE_TERRAIN, RUN_TYPE_WORKOUT,
-  SportSubType, SportFocus, GymSubType, WaterSnowSubType, SwimSubType, SwimFocus, SwimStyle, FitnessSubType, BikeSubType, StretchSubType, WalkSubType,
-  SPORT_SUB_LABELS, SPORT_FOCUS_LABELS, GYM_SUB_LABELS, WATER_SNOW_SUB_LABELS, SWIM_SUB_LABELS, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
+  SportSubType, SportFocus, GymSubType, WaterSubType, SnowSubType, SnowStyle, SwimSubType, SwimFocus, SwimStyle, FitnessSubType, BikeSubType, StretchSubType, WalkSubType,
+  SPORT_SUB_LABELS, SPORT_FOCUS_LABELS, GYM_SUB_LABELS, WATER_SUB_LABELS, SNOW_SUB_LABELS, SNOW_STYLE_LABELS, SWIM_SUB_LABELS, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
 } from '@/types';
 import DistancePicker from '@/components/DistancePicker';
 import ImageUploader from '@/components/ImageUploader';
@@ -36,6 +36,7 @@ export default function AddPage() {
   const [sportFocus, setSportFocus] = useState<SportFocus | ''>('');
   const [swimFocus, setSwimFocus] = useState<SwimFocus | ''>('');
   const [swimStyles, setSwimStyles] = useState<string[]>([]);
+  const [snowStyles, setSnowStyles] = useState<string[]>([]);
   const [hours, setHours] = useState('');
   const [mins, setMins] = useState('');
   const [secs, setSecs] = useState('');
@@ -136,6 +137,7 @@ export default function AddPage() {
       sport_focus: exerciseType === 'sport' ? sportFocus || null : null,
       swim_focus: exerciseType === 'swim' ? swimFocus || null : null,
       swim_styles: exerciseType === 'swim' ? swimStyles.join(',') || null : null,
+      snow_styles: exerciseType === 'snow' ? snowStyles.join(',') || null : null,
       duration_minutes: durationMinutes,
       duration_seconds: durationExtraSeconds,
       effort,
@@ -207,7 +209,7 @@ export default function AddPage() {
       if (isPb || pbReasons.length > 0) setPbCelebration(pbReasons);
       else setSavedTitle(randomEncouragement());
       // Reset form
-      setName(''); setExerciseType(''); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setSportFocus(''); setSwimFocus(''); setSwimStyles([]); setHours(''); setMins(''); setSecs('');
+      setName(''); setExerciseType(''); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setSportFocus(''); setSwimFocus(''); setSwimStyles([]); setSnowStyles([]); setHours(''); setMins(''); setSecs('');
       setEffort(null); setDistance(''); setNotes(''); setIntensityMins('');
       setPaceMin(''); setPaceSec(''); setMaxPaceMin(''); setMaxPaceSec('');
       setMaxHr(''); setAvgHr(''); setElevationGain(''); setIsPb(false); setPbDesc('');
@@ -261,7 +263,7 @@ export default function AddPage() {
             {EXERCISE_TYPE_ORDER.map(type => (
               <button
                 key={type}
-                onClick={() => { setExerciseType(type); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setSportFocus(''); setSwimFocus(''); setSwimStyles([]); }}
+                onClick={() => { setExerciseType(type); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setSportFocus(''); setSwimFocus(''); setSwimStyles([]); setSnowStyles([]); }}
                 className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium border transition-all text-left ${
                   exerciseType === type
                     ? 'border-2 text-white'
@@ -367,16 +369,41 @@ export default function AddPage() {
             </div>
           </div>
         )}
-        {exerciseType === 'water_snow' && (
+        {exerciseType === 'water' && (
           <div>
             <label className="label">Activity <span className="text-[#64748B]">(optional)</span></label>
             <div className="grid grid-cols-3 gap-1.5">
-              {(Object.keys(WATER_SNOW_SUB_LABELS) as WaterSnowSubType[]).map(t => (
+              {(Object.keys(WATER_SUB_LABELS) as WaterSubType[]).map(t => (
                 <button key={t} onClick={() => setSubType(subType === t ? '' : t)}
                   className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${subType === t ? 'border-sky-500 bg-sky-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
-                  {WATER_SNOW_SUB_LABELS[t]}
+                  {WATER_SUB_LABELS[t]}
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+        {exerciseType === 'snow' && (
+          <div>
+            <label className="label">Activity <span className="text-[#64748B]">(optional)</span></label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(Object.keys(SNOW_SUB_LABELS) as SnowSubType[]).map(t => (
+                <button key={t} onClick={() => setSubType(subType === t ? '' : t)}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${subType === t ? 'border-sky-500 bg-sky-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                  {SNOW_SUB_LABELS[t]}
+                </button>
+              ))}
+            </div>
+            <label className="label mt-3">Snow Style <span className="text-[#64748B]">(optional + multi-select)</span></label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(Object.keys(SNOW_STYLE_LABELS) as SnowStyle[]).map(t => {
+                const active = snowStyles.includes(t);
+                return (
+                  <button key={t} onClick={() => setSnowStyles(active ? snowStyles.filter(x => x !== t) : [...snowStyles, t])}
+                    className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${active ? 'border-sky-500 bg-sky-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                    {SNOW_STYLE_LABELS[t]}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
