@@ -8,11 +8,12 @@ interface Props {
   format?: (v: number) => string;
   itemHeight?: number;
   height?: number;
+  width?: number;
 }
 
 /** One scrollable "spin wheel" column of numbers, snapping to the centered row.
  *  Scrolling and tapping a row are both valid ways to select a value. */
-export default function NumberWheelColumn({ values, value, onChange, format, itemHeight = 40, height = 200 }: Props) {
+export default function NumberWheelColumn({ values, value, onChange, format, itemHeight = 40, height = 200, width }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastEmitted = useRef(value);
@@ -65,7 +66,7 @@ export default function NumberWheelColumn({ values, value, onChange, format, ite
       ref={ref}
       onScroll={handleScroll}
       className="overflow-y-scroll snap-y snap-mandatory no-scrollbar"
-      style={{ height }}
+      style={{ height, width }}
     >
       <div style={{ height: padding }} />
       {values.map((v, i) => (
