@@ -460,14 +460,14 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
               <label className="label">Avg HR (optional)</label>
               <ScrollFieldPicker
                 label="Avg Heart Rate" unit="bpm" min={28} max={230} value={avgHr} onChange={setAvgHr}
-                suggestion={suggestedAvgHr(user?.user_metadata?.age ?? null, effort)} placeholder="bpm"
+                suggestion={suggestedAvgHr(user?.user_metadata?.age ?? null, effort)} preferSuggestion placeholder="bpm"
               />
             </div>
             <div>
               <label className="label">Max HR (optional)</label>
               <ScrollFieldPicker
                 label="Max Heart Rate" unit="bpm" min={28} max={230} value={maxHr} onChange={setMaxHr}
-                suggestion={suggestedMaxHr(user?.user_metadata?.age ?? null, effort)} placeholder="bpm"
+                suggestion={suggestedMaxHr(user?.user_metadata?.age ?? null, effort)} preferSuggestion placeholder="bpm"
               />
             </div>
           </div>

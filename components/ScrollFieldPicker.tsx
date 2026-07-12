@@ -11,6 +11,9 @@ interface Props {
   min?: number; // lower bound of the whole-number wheel, default 0
   decimals?: 0 | 2; // 0 = integer (HR, Elevation), 2 = whole + hundredths (Distance)
   suggestion?: number; // seeds the wheel(s) when the field is currently empty
+  preferSuggestion?: boolean; // re-seed to the (possibly just-updated) suggestion every time the
+                               // picker is opened, instead of only when the field is empty — e.g.
+                               // Heart Rate should reflect a newly-changed Effort as soon as you tap in
   placeholder?: string;
 }
 
@@ -25,7 +28,7 @@ function range(min: number, max: number): number[] {
  *  directly into the centered value all work; tapping outside the popup commits
  *  whatever is currently set and closes it. No card chrome — just the floating
  *  wheel columns over the page. */
-export default function ScrollFieldPicker({ label, unit, value, onChange, max, min = 0, decimals = 0, suggestion, placeholder }: Props) {
+export default function ScrollFieldPicker({ label, unit, value, onChange, max, min = 0, decimals = 0, suggestion, preferSuggestion, placeholder }: Props) {
   const [open, setOpen] = useState(false);
   const [whole, setWhole] = useState(0);
   const [frac, setFrac] = useState(0);
@@ -41,7 +44,7 @@ export default function ScrollFieldPicker({ label, unit, value, onChange, max, m
   }, [whole, frac, focused]);
 
   const openPicker = () => {
-    const parsed = value ? parseFloat(value) : (suggestion ?? min);
+    const parsed = (preferSuggestion && suggestion != null) ? suggestion : (value ? parseFloat(value) : (suggestion ?? min));
     setWhole(Math.max(min, Math.floor(parsed)));
     setFrac(Math.round((parsed - Math.floor(parsed)) * 100));
     setOpen(true);
