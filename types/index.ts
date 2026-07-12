@@ -296,6 +296,13 @@ export function combinedSportLabel(subType?: string | null, focus?: SportFocus |
   return base || null;
 }
 
+/** The type/focus part ("Football - Game / Match") and the style part ("Turf")
+ *  split out, so the UI can render the style smaller / in a different colour. */
+export function sportLabelParts(subType?: string | null, focus?: SportFocus | null, style?: SportStyle | null): { base: string | null; style: string | null } {
+  const dashParts = [subType ? subTypeLabel(subType) : null, focus ? SPORT_FOCUS_LABELS[focus] : null].filter(Boolean);
+  return { base: dashParts.join(' - ') || null, style: style ? SPORT_STYLE_LABELS[style] : null };
+}
+
 // Effort (1-11) -> % of theoretical max HR, used to seed the Max HR scroll-picker suggestion.
 const MAX_HR_EFFORT_PCT: Record<number, number> = {
   1: 0.55, 2: 0.62, 3: 0.67, 4: 0.78, 5: 0.84, 6: 0.89, 7: 0.92, 8: 0.96, 9: 0.99, 10: 1.00, 11: 1.02,

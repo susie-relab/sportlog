@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import {
   Activity, ExerciseType,
-  EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, combinedRunTypeLabel, combinedSportLabel, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, SPORT_FOCUS_LABELS, SNOW_STYLE_LABELS, WATER_STYLE_LABELS,
+  EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, combinedRunTypeLabel, sportLabelParts, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, SPORT_FOCUS_LABELS, SNOW_STYLE_LABELS, WATER_STYLE_LABELS,
   EXERCISE_TYPE_ORDER, subTypeLabel,
 } from '@/types';
 import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
@@ -273,7 +273,16 @@ export default function ActivityLogPage() {
                   </div>
                   <div className="flex gap-2 mt-0.5 flex-wrap">
                     {a.exercise_type === 'sport'
-                      ? (combinedSportLabel(a.sub_type, a.sport_focus, a.sport_style) && <span className="text-xs font-medium text-white">{combinedSportLabel(a.sub_type, a.sport_focus, a.sport_style)}</span>)
+                      ? (() => {
+                          const { base, style } = sportLabelParts(a.sub_type, a.sport_focus, a.sport_style);
+                          if (!base && !style) return null;
+                          return (
+                            <span className="text-xs font-medium text-white">
+                              {base}
+                              {style && <span className="text-[11px] font-normal text-[#94A3B8]">{base ? ' · ' : ''}{style}</span>}
+                            </span>
+                          );
+                        })()
                       : (a.sub_type && <span className="text-xs font-medium text-white">{subTypeLabel(a.sub_type)}</span>)}
                     {a.swim_focus && <span className="text-xs font-medium text-white">{SWIM_FOCUS_LABELS[a.swim_focus]}</span>}
                     {combinedRunTypeLabel(a.run_type, a.run_type_modifier) && <span className="text-xs font-medium text-white">{combinedRunTypeLabel(a.run_type, a.run_type_modifier)}</span>}
