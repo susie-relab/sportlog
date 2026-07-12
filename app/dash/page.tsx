@@ -289,6 +289,33 @@ export default function DashPage() {
 
       <RecapCard activities={activities} plans={plans} weekStartDay={weekStartPref} todayISO={todayISO} />
 
+      {/* Evening reminder to protect the current day streak */}
+      {showStreakNudge && (
+        <Link href="/add" className="flex items-center gap-3 mb-5 p-3 rounded-xl border border-orange-500/40 hover:border-orange-500/70 transition-colors" style={{ background: 'rgba(249,115,22,0.1)' }}>
+          <span className="text-2xl flex-shrink-0">🔥</span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-orange-300">Don&apos;t lose your streak — log exercise today!</p>
+            <p className="text-xs text-orange-400/70 mt-0.5">You&apos;re on a {dayStreak}-day streak. Tap to log an activity.</p>
+          </div>
+        </Link>
+      )}
+
+      {/* Streaks — tap to see when the streak started/broke */}
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <button onClick={() => setStreakModal('day')} className="card text-center border-orange-500/30 hover:border-orange-500/60 transition-colors" style={{ background: 'rgba(249,115,22,0.08)' }}>
+          <div className="text-3xl font-extrabold text-orange-400" style={{ fontFamily: 'var(--font-display)' }}>
+            {dayStreak}
+          </div>
+          <div className="text-xs text-orange-400/70 mt-1 uppercase tracking-wide font-semibold">Day Streak 🔥</div>
+        </button>
+        <button onClick={() => setStreakModal('week')} className="card text-center border-yellow-500/30 hover:border-yellow-500/60 transition-colors" style={{ background: 'rgba(234,179,8,0.08)' }}>
+          <div className="text-3xl font-extrabold text-yellow-400" style={{ fontFamily: 'var(--font-display)' }}>
+            {weekStreak}
+          </div>
+          <div className="text-xs text-yellow-400/70 mt-1 uppercase tracking-wide font-semibold">Week Streak ⚡</div>
+        </button>
+      </div>
+
       {/* Desktop: plan + streaks/14-day side by side instead of one long column */}
       <div className="lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start">
       <div>
@@ -322,6 +349,7 @@ export default function DashPage() {
             })}
 
             {/* Next run (upcoming) */}
+            {nextRun && todayPlanItems.length > 0 && <div className="border-t border-[#293548] my-1" />}
             {nextRun && (
               <div className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[#293548] bg-[#0F172A]">
                 <span className="w-1.5 h-9 rounded-full flex-shrink-0" style={{ background: sessionColor(nextRun.next.session) }} />
@@ -354,54 +382,6 @@ export default function DashPage() {
 
         </div>
       )}
-      </div>
-
-      <div>
-      {/* Evening reminder to protect the current day streak */}
-      {showStreakNudge && (
-        <Link href="/add" className="flex items-center gap-3 mb-5 p-3 rounded-xl border border-orange-500/40 hover:border-orange-500/70 transition-colors" style={{ background: 'rgba(249,115,22,0.1)' }}>
-          <span className="text-2xl flex-shrink-0">🔥</span>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-orange-300">Don&apos;t lose your streak — log exercise today!</p>
-            <p className="text-xs text-orange-400/70 mt-0.5">You&apos;re on a {dayStreak}-day streak. Tap to log an activity.</p>
-          </div>
-        </Link>
-      )}
-
-      {/* Streaks — tap to see when the streak started/broke */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        <button onClick={() => setStreakModal('day')} className="card text-center border-orange-500/30 hover:border-orange-500/60 transition-colors" style={{ background: 'rgba(249,115,22,0.08)' }}>
-          <div className="text-3xl font-extrabold text-orange-400" style={{ fontFamily: 'var(--font-display)' }}>
-            {dayStreak}
-          </div>
-          <div className="text-xs text-orange-400/70 mt-1 uppercase tracking-wide font-semibold">Day Streak 🔥</div>
-        </button>
-        <button onClick={() => setStreakModal('week')} className="card text-center border-yellow-500/30 hover:border-yellow-500/60 transition-colors" style={{ background: 'rgba(234,179,8,0.08)' }}>
-          <div className="text-3xl font-extrabold text-yellow-400" style={{ fontFamily: 'var(--font-display)' }}>
-            {weekStreak}
-          </div>
-          <div className="text-xs text-yellow-400/70 mt-1 uppercase tracking-wide font-semibold">Week Streak ⚡</div>
-        </button>
-      </div>
-
-      {/* 14-day snapshot */}
-      <h2 className="text-sm font-semibold text-[#64748B] uppercase tracking-wide mb-3">Last 14 Days</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <StatCard value={String(total14)} label="Activities" />
-        <StatCard value={String(runs14.length)} label="Runs" />
-        <StatCard value={`${dist14.toFixed(1)}`} label="km" />
-        <StatCard value={formatDuration(mins14)} label="Total Time" />
-      </div>
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        <StatCard value={String(intensity14)} label="Intensity Mins" color="#06B6D4" />
-        <StatCard value={String(total14 > 0 ? Math.round(dist14 / total14 * 10) / 10 : 0)} label="Avg km/session" color="#A78BFA" />
-      </div>
-
-      <LastWeekSummaryCard activities={activities} plans={plans} weekStartDay={weekStartPref} todayISO={todayISO} />
-      <FavouritesCard favourites={user?.user_metadata?.favourite_activities ?? []} activities={activities} />
-
-      </div>
-      </div>
 
       {/* This week's plan — full width; table on desktop, list on mobile */}
       {todayPlanItems.length > 0 && (
@@ -513,6 +493,27 @@ export default function DashPage() {
           )}
         </div>
       )}
+      </div>
+
+      <div>
+      {/* 14-day snapshot */}
+      <h2 className="text-sm font-semibold text-[#64748B] uppercase tracking-wide mb-3">Last 14 Days</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <StatCard value={String(total14)} label="Activities" />
+        <StatCard value={String(runs14.length)} label="Runs" />
+        <StatCard value={`${dist14.toFixed(1)}`} label="km" />
+        <StatCard value={formatDuration(mins14)} label="Total Time" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <StatCard value={String(intensity14)} label="Intensity Mins" color="#06B6D4" />
+        <StatCard value={String(total14 > 0 ? Math.round(dist14 / total14 * 10) / 10 : 0)} label="Avg km/session" color="#A78BFA" />
+      </div>
+
+      <LastWeekSummaryCard activities={activities} plans={plans} weekStartDay={weekStartPref} todayISO={todayISO} />
+      <FavouritesCard favourites={user?.user_metadata?.favourite_activities ?? []} activities={activities} />
+
+      </div>
+      </div>
 
       {/* 14-day activity mix — stacked by type, one bar per day (full width) */}
       {presentTypes14.length > 0 && (

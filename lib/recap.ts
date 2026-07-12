@@ -1,0 +1,44 @@
+import { Activity } from '@/types';
+import { PlanRecord, todaysSession, isRunSession, sessionParts } from '@/lib/runPlanGenerator';
+
+export function addDays(dateISO: string, n: number): string {
+  const [y, m, d] = dateISO.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + n);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+/** Planned/completed session counts across ACTIVE plans for a date range.
+ *  Counts every individual session part (a combined day like "Training + Conditioning"
+ *  is 2 planned sessions, and each part's completion counts on its own) so the numbers
+ *  match what the week table visually shows. */
+export function planStats(plans: PlanRecord[], start: string, end: string) {
+  let planned = 0, done = 0;
+  for (let d = start; d <= end; d = addDays(d, 1)) {
+    for (const p of plans) {
+      if (!p.active) continue;
+      const pos = todaysSession(p, d);
+      if (pos && isRunSession(pos.session)) {
+        for (const part of sessionParts(pos.session)) {
+          if (!isRunSession(part)) continue;
+          planned++;
+          if (part.completed) done++;
+        }
+      }
+    }
+  }
+  return { planned, done };
+}
+
+export function recapFor(activities: Activity[], plans: PlanRecord[], start: string, end: string) {
+  const inRange = activities.filter(a => a.date >= start && a.date <= end);
+  const km = inRange.reduce((s, a) => s + (a.distance_km || 0), 0);
+  const mins = inRange.reduce((s, a) => s + a.duration_minutes, 0);
+  const pbs = inRange.filter(a => a.is_pb);
+  const { planned, done } = planStats(plans, start, end);
+  return { count: inRange.length, km, mins, pbs, planned, done };
+}
+
+/** Upcoming planned session-part count across active plans for a date range. */
+export function upcomingCount(plans: PlanRecord[], start: string, end: string) {
+  return planStats(plans, start, end).planned;
+}
