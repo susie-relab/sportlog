@@ -35,7 +35,35 @@ export function recapFor(activities: Activity[], plans: PlanRecord[], start: str
   const mins = inRange.reduce((s, a) => s + a.duration_minutes, 0);
   const pbs = inRange.filter(a => a.is_pb);
   const { planned, done } = planStats(plans, start, end);
-  return { count: inRange.length, km, mins, pbs, planned, done };
+  // The week's standout session — longest by duration, distance as tiebreaker.
+  const topActivity = inRange.length
+    ? [...inRange].sort((a, b) => (b.duration_minutes - a.duration_minutes) || ((b.distance_km || 0) - (a.distance_km || 0)))[0]
+    : null;
+  return { count: inRange.length, km, mins, pbs, planned, done, topActivity };
+}
+
+/** Percentage change of `current` vs `prev`, rounded, or null when there's no
+ *  meaningful baseline (prev is 0). Positive = up on last period. */
+export function deltaPct(current: number, prev: number): number | null {
+  if (!prev) return null;
+  return Math.round(((current - prev) / prev) * 100);
+}
+
+/** A recap for a period plus the same numbers for the period immediately before it,
+ *  so callers can show "+12% vs last week"-style comparisons. `periodDays` is the
+ *  length of the window (7 for a week) used to derive the prior window. */
+export function recapWithComparison(activities: Activity[], plans: PlanRecord[], start: string, end: string, periodDays: number) {
+  const current = recapFor(activities, plans, start, end);
+  const prevEnd = addDays(start, -1);
+  const prevStart = addDays(start, -periodDays);
+  const prev = recapFor(activities, plans, prevStart, prevEnd);
+  return {
+    ...current,
+    prev,
+    kmDelta: deltaPct(current.km, prev.km),
+    minsDelta: deltaPct(current.mins, prev.mins),
+    countDelta: deltaPct(current.count, prev.count),
+  };
 }
 
 /** Upcoming planned session-part count across active plans for a date range. */

@@ -7,8 +7,8 @@
 //   CRON_SECRET — Vercel injects this as a Bearer token on cron invocations
 import { Activity } from '@/types';
 import { PlanRecord } from '@/lib/runPlanGenerator';
-import { recapFor, addDays } from '@/lib/recap';
-import { formatDuration, localWeekKey, WeekStart } from '@/lib/utils';
+import { recapWithComparison, addDays, upcomingCount } from '@/lib/recap';
+import { formatDuration, localWeekKey, WeekStart, calcWeekStreak } from '@/lib/utils';
 
 const TIMEZONE = process.env.RECAP_TIMEZONE || 'Pacific/Auckland';
 
@@ -24,23 +24,40 @@ function todayInTz(): string {
 
 function fmt(d: string) { return d.split('-').reverse().join('/'); }
 
-function recapHtml(title: string, range: string, r: ReturnType<typeof recapFor>, appUrl: string): string {
-  const stat = (v: string, label: string) =>
+const esc = (s: string) =>
+  String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function deltaHtml(pct: number | null): string {
+  if (pct == null || pct === 0) return '';
+  const up = pct > 0;
+  return `<span style="color:${up ? '#4ADE80' : '#F87171'};font-size:10px;"> ${up ? '↑' : '↓'}${Math.abs(pct)}%</span>`;
+}
+
+type Recap = ReturnType<typeof recapWithComparison>;
+
+function recapHtml(title: string, range: string, r: Recap, opts: { appUrl: string; weekStreak?: number; upcoming?: number }): string {
+  const { appUrl, weekStreak, upcoming } = opts;
+  const stat = (v: string, label: string, delta: number | null) =>
     `<td style="text-align:center;padding:12px;background:#1E293B;border-radius:8px;">
        <div style="font-size:24px;font-weight:800;color:#60A5FA;">${v}</div>
-       <div style="font-size:11px;color:#94A3B8;text-transform:uppercase;">${label}</div>
+       <div style="font-size:11px;color:#94A3B8;text-transform:uppercase;">${label}${deltaHtml(delta)}</div>
      </td>`;
+  const line = (color: string, html: string) => `<p style="font-size:13px;color:${color};margin:6px 0 0;">${html}</p>`;
+  const top = r.topActivity;
   return `
   <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#0F172A;color:#E2E8F0;padding:24px;border-radius:12px;max-width:520px;">
     <h2 style="margin:0 0 4px;color:#fff;">🏃 ${title}</h2>
     <p style="margin:0 0 16px;color:#64748B;font-size:13px;">${range}</p>
     <table style="width:100%;border-collapse:separate;border-spacing:6px;"><tr>
-      ${stat(String(r.count), 'Activities')}
-      ${stat(r.km.toFixed(1), 'km')}
-      ${stat(formatDuration(r.mins), 'Time')}
+      ${stat(String(r.count), 'Activities', r.countDelta)}
+      ${stat(r.km.toFixed(1), 'km', r.kmDelta)}
+      ${stat(formatDuration(r.mins), 'Time', r.minsDelta)}
     </tr></table>
-    ${r.planned > 0 ? `<p style="font-size:13px;color:#94A3B8;">Plan sessions: <strong style="color:#fff;">${r.done}/${r.planned}</strong> completed</p>` : ''}
-    ${r.pbs.length > 0 ? `<p style="font-size:13px;color:#FACC15;">⭐ ${r.pbs.length} PB${r.pbs.length > 1 ? 's' : ''} hit!</p>` : ''}
+    ${top ? line('#94A3B8', `🏆 Top session: <strong style="color:#fff;">${esc(top.name)}</strong> — ${formatDuration(top.duration_minutes)}${top.distance_km ? ` · ${top.distance_km} km` : ''}`) : ''}
+    ${r.planned > 0 ? line('#94A3B8', `Plan sessions: <strong style="color:#fff;">${r.done}/${r.planned}</strong> completed`) : ''}
+    ${r.pbs.length > 0 ? line('#FACC15', `⭐ ${r.pbs.length} PB${r.pbs.length > 1 ? 's' : ''} hit!`) : ''}
+    ${weekStreak && weekStreak > 1 ? line('#FACC15', `⚡ ${weekStreak}-week streak going!`) : ''}
+    ${upcoming && upcoming > 0 ? line('#64748B', `This week: ${upcoming} session${upcoming > 1 ? 's' : ''} planned`) : ''}
     <p style="margin-top:16px;"><a href="${appUrl}/dash" style="color:#60A5FA;font-size:13px;">Open SportLog →</a></p>
     <p style="margin-top:12px;font-size:11px;color:#475569;">You're receiving this because recap emails are enabled in your SportLog settings.</p>
   </div>`;
@@ -101,10 +118,12 @@ export async function GET(request: Request) {
       const thisWeekStart = localWeekKey(todayISO, weekStart);
       const lastWeekStart = addDays(thisWeekStart, -7);
       const lastWeekEnd = addDays(thisWeekStart, -1);
-      const r = recapFor(activities, plans, lastWeekStart, lastWeekEnd);
+      const r = recapWithComparison(activities, plans, lastWeekStart, lastWeekEnd, 7);
+      const weekStreak = calcWeekStreak(activities.map(a => a.date), weekStart);
+      const upcoming = upcomingCount(plans, thisWeekStart, addDays(thisWeekStart, 6));
       emails.push({
         subject: 'Your SportLog weekly recap 🏃',
-        html: recapHtml("Last Week's Recap", `${fmt(lastWeekStart)} to ${fmt(lastWeekEnd)}`, r, appUrl),
+        html: recapHtml("Last Week's Recap", `${fmt(lastWeekStart)} to ${fmt(lastWeekEnd)}`, r, { appUrl, weekStreak, upcoming }),
       });
     }
     if (wantsMonthly) {
@@ -112,10 +131,11 @@ export async function GET(request: Request) {
       const prev = new Date(Date.UTC(y, m - 2, 1));
       const first = `${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, '0')}-01`;
       const end = addDays(todayISO, -1);
-      const r = recapFor(activities, plans, first, end);
+      const monthDays = new Date(Date.UTC(y, m - 1, 0)).getUTCDate();
+      const r = recapWithComparison(activities, plans, first, end, monthDays);
       emails.push({
         subject: 'Your SportLog monthly recap 📅',
-        html: recapHtml("Last Month's Recap", `${fmt(first)} to ${fmt(end)}`, r, appUrl),
+        html: recapHtml("Last Month's Recap", `${fmt(first)} to ${fmt(end)}`, r, { appUrl }),
       });
     }
 
