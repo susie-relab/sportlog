@@ -6,8 +6,8 @@ import {
   EXERCISE_TYPE_LABELS, RUN_TYPE_LABELS,
   EXERCISE_TYPE_COLORS, RUN_TYPE_COLORS,
   EXERCISE_TYPE_ORDER, RUN_TYPE_TERRAIN, RUN_TYPE_WORKOUT,
-  SportSubType, SportFocus, GymSubType, WaterSubType, SnowSubType, SnowStyle, SwimSubType, SwimFocus, SwimStyle, FitnessSubType, BikeSubType, StretchSubType, WalkSubType,
-  SPORT_SUB_LABELS, SPORT_FOCUS_LABELS, GYM_SUB_LABELS, WATER_SUB_LABELS, SNOW_SUB_LABELS, SNOW_STYLE_LABELS, SWIM_SUB_LABELS, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
+  SportSubType, SportFocus, SportStyle, GymSubType, WaterSubType, WaterStyle, SnowSubType, SnowStyle, SwimSubType, SwimFocus, SwimStyle, FitnessSubType, BikeSubType, StretchSubType, WalkSubType,
+  SPORT_SUB_LABELS, SPORT_FOCUS_LABELS, SPORT_STYLE_LABELS, GYM_SUB_LABELS, WATER_SUB_LABELS, WATER_STYLE_LABELS, SNOW_SUB_LABELS, SNOW_STYLE_LABELS, SWIM_SUB_LABELS, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
   suggestedMaxHr, suggestedAvgHr,
 } from '@/types';
 import DistancePicker from './DistancePicker';
@@ -37,9 +37,12 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
   const [subType, setSubType] = useState(activity.exercise_type === 'hiit' ? '' : activity.sub_type || '');
   const [gymTypes, setGymTypes] = useState<string[]>(activity.exercise_type === 'hiit' && activity.sub_type ? activity.sub_type.split(',') : []);
   const [sportFocus, setSportFocus] = useState<SportFocus | ''>(activity.sport_focus || '');
+  const [sportStyle, setSportStyle] = useState<SportStyle | ''>(activity.sport_style || '');
   const [swimFocus, setSwimFocus] = useState<SwimFocus | ''>(activity.swim_focus || '');
   const [swimStyles, setSwimStyles] = useState<string[]>(activity.swim_styles ? activity.swim_styles.split(',') : []);
   const [snowStyles, setSnowStyles] = useState<string[]>(activity.snow_styles ? activity.snow_styles.split(',') : []);
+  const [waterStyles, setWaterStyles] = useState<string[]>(activity.water_styles ? activity.water_styles.split(',') : []);
+  const [showMore, setShowMore] = useState(false);
   const [hours, setHours] = useState(String(Math.floor(activity.duration_minutes / 60) || ''));
   const [mins, setMins] = useState(String(activity.duration_minutes % 60 || ''));
   const [secs, setSecs] = useState(String(activity.duration_seconds || ''));
@@ -97,9 +100,11 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
         run_type_modifier: exerciseType === 'run' ? runTypeModifier || null : null,
         sub_type: exerciseType === 'hiit' ? gymTypes.join(',') || null : subType || null,
         sport_focus: exerciseType === 'sport' ? sportFocus || null : null,
+        sport_style: exerciseType === 'sport' ? sportStyle || null : null,
         swim_focus: exerciseType === 'swim' ? swimFocus || null : null,
         swim_styles: exerciseType === 'swim' ? swimStyles.join(',') || null : null,
         snow_styles: exerciseType === 'snow' ? snowStyles.join(',') || null : null,
+        water_styles: exerciseType === 'water' ? waterStyles.join(',') || null : null,
         duration_minutes: durationMinutes,
         duration_seconds: durationExtraSeconds,
         effort,
@@ -175,7 +180,7 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
               {EXERCISE_TYPE_ORDER.map(type => (
                 <button
                   key={type}
-                  onClick={() => { setExerciseType(type); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setSportFocus(''); setSwimFocus(''); setSwimStyles([]); setSnowStyles([]); }}
+                  onClick={() => { setExerciseType(type); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setSportFocus(''); setSportStyle(''); setSwimFocus(''); setSwimStyles([]); setSnowStyles([]); setWaterStyles([]); }}
                   className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium border transition-all text-left ${
                     exerciseType === type ? 'border-2 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
                   }`}
@@ -256,6 +261,15 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
                   </button>
                 ))}
               </div>
+              <label className="label mt-3">Sport Style <span className="text-[#64748B]">(optional)</span></label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {(Object.keys(SPORT_STYLE_LABELS) as SportStyle[]).map(t => (
+                  <button key={t} onClick={() => setSportStyle(sportStyle === t ? '' : t)}
+                    className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${sportStyle === t ? 'border-orange-500 bg-orange-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                    {SPORT_STYLE_LABELS[t]}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {/* Gym subtype — multi select */}
@@ -285,6 +299,18 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
                     {WATER_SUB_LABELS[t]}
                   </button>
                 ))}
+              </div>
+              <label className="label mt-3">Water Style <span className="text-[#64748B]">(optional + multi-select)</span></label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {(Object.keys(WATER_STYLE_LABELS) as WaterStyle[]).map(t => {
+                  const active = waterStyles.includes(t);
+                  return (
+                    <button key={t} onClick={() => setWaterStyles(active ? waterStyles.filter(x => x !== t) : [...waterStyles, t])}
+                      className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${active ? 'border-sky-500 bg-sky-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                      {WATER_STYLE_LABELS[t]}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -435,54 +461,68 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
             <DistancePicker value={distance} onChange={setDistance} />
           </div>
 
-          {/* Pace */}
-          <div>
-            <label className="label">Avg Pace (optional) <span className="text-[#64748B]">min/km</span></label>
-            <div className="flex gap-2 items-center">
-              <input type="number" className="input" placeholder="Min" value={paceMin} onChange={e => setPaceMin(e.target.value)} />
-              <span className="text-[#64748B]">:</span>
-              <input type="number" className="input" placeholder="Sec" min="0" max="59" value={paceSec} onChange={e => setPaceSec(e.target.value)} />
-            </div>
-          </div>
+          {/* More details toggle */}
+          <button
+            type="button"
+            onClick={() => setShowMore(v => !v)}
+            className="flex items-center gap-2 text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors py-1"
+          >
+            <span>{showMore ? '▼' : '▶'}</span>
+            {showMore ? 'Hide optional details' : 'More optional details'}
+          </button>
 
-          <div>
-            <label className="label">Max Pace (optional) <span className="text-[#64748B]">min/km</span></label>
-            <div className="flex gap-2 items-center">
-              <input type="number" className="input" placeholder="Min" value={maxPaceMin} onChange={e => setMaxPaceMin(e.target.value)} />
-              <span className="text-[#64748B]">:</span>
-              <input type="number" className="input" placeholder="Sec" min="0" max="59" value={maxPaceSec} onChange={e => setMaxPaceSec(e.target.value)} />
-            </div>
-          </div>
+          {showMore && (
+            <>
+              {/* Pace */}
+              <div>
+                <label className="label">Avg Pace (optional) <span className="text-[#64748B]">min/km</span></label>
+                <div className="flex gap-2 items-center">
+                  <input type="number" className="input" placeholder="Min" value={paceMin} onChange={e => setPaceMin(e.target.value)} />
+                  <span className="text-[#64748B]">:</span>
+                  <input type="number" className="input" placeholder="Sec" min="0" max="59" value={paceSec} onChange={e => setPaceSec(e.target.value)} />
+                </div>
+              </div>
 
-          {/* HR */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Avg HR (optional)</label>
-              <ScrollFieldPicker
-                label="Avg Heart Rate" unit="bpm" min={28} max={230} value={avgHr} onChange={setAvgHr}
-                suggestion={suggestedAvgHr(user?.user_metadata?.age ?? null, effort)} preferSuggestion placeholder="bpm"
-              />
-            </div>
-            <div>
-              <label className="label">Max HR (optional)</label>
-              <ScrollFieldPicker
-                label="Max Heart Rate" unit="bpm" min={28} max={230} value={maxHr} onChange={setMaxHr}
-                suggestion={suggestedMaxHr(user?.user_metadata?.age ?? null, effort)} preferSuggestion placeholder="bpm"
-              />
-            </div>
-          </div>
+              <div>
+                <label className="label">Max Pace (optional) <span className="text-[#64748B]">min/km</span></label>
+                <div className="flex gap-2 items-center">
+                  <input type="number" className="input" placeholder="Min" value={maxPaceMin} onChange={e => setMaxPaceMin(e.target.value)} />
+                  <span className="text-[#64748B]">:</span>
+                  <input type="number" className="input" placeholder="Sec" min="0" max="59" value={maxPaceSec} onChange={e => setMaxPaceSec(e.target.value)} />
+                </div>
+              </div>
 
-          {/* Intensity */}
-          <div>
-            <label className="label">Intensity Minutes (optional)</label>
-            <input type="number" className="input" placeholder="e.g. 25" value={intensityMins} onChange={e => setIntensityMins(e.target.value)} />
-          </div>
+              {/* HR */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Avg HR (optional)</label>
+                  <ScrollFieldPicker
+                    label="Avg Heart Rate" unit="bpm" min={28} max={230} value={avgHr} onChange={setAvgHr}
+                    suggestion={suggestedAvgHr(user?.user_metadata?.age ?? null, effort)} preferSuggestion placeholder="bpm"
+                  />
+                </div>
+                <div>
+                  <label className="label">Max HR (optional)</label>
+                  <ScrollFieldPicker
+                    label="Max Heart Rate" unit="bpm" min={28} max={230} value={maxHr} onChange={setMaxHr}
+                    suggestion={suggestedMaxHr(user?.user_metadata?.age ?? null, effort)} preferSuggestion placeholder="bpm"
+                  />
+                </div>
+              </div>
 
-          {/* Elevation Gain */}
-          <div>
-            <label className="label">Elevation Gain (optional) <span className="text-[#64748B]">m</span></label>
-            <ScrollFieldPicker label="Elevation Gain" unit="m" max={9000} value={elevationGain} onChange={setElevationGain} suggestion={0} placeholder="e.g. 120" />
-          </div>
+              {/* Intensity */}
+              <div>
+                <label className="label">Intensity Minutes (optional)</label>
+                <input type="number" className="input" placeholder="e.g. 25" value={intensityMins} onChange={e => setIntensityMins(e.target.value)} />
+              </div>
+
+              {/* Elevation Gain */}
+              <div>
+                <label className="label">Elevation Gain (optional) <span className="text-[#64748B]">m</span></label>
+                <ScrollFieldPicker label="Elevation Gain" unit="m" max={9000} value={elevationGain} onChange={setElevationGain} suggestion={0} placeholder="e.g. 120" />
+              </div>
+            </>
+          )}
 
           {/* Notes */}
           <div>

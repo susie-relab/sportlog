@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import {
   Activity, ExerciseType,
-  EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, combinedRunTypeLabel, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, SPORT_FOCUS_LABELS, SNOW_STYLE_LABELS,
+  EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, combinedRunTypeLabel, combinedSportLabel, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, SPORT_FOCUS_LABELS, SNOW_STYLE_LABELS, WATER_STYLE_LABELS,
   EXERCISE_TYPE_ORDER, subTypeLabel,
 } from '@/types';
 import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
@@ -266,14 +266,19 @@ export default function ActivityLogPage() {
                     >▼</button>
                   </div>
                 )}
+                {a.image_urls && a.image_urls.length > 0 && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={a.image_urls[0]} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-[#334155]" />
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-white truncate">{a.name}</span>
                     {a.is_pb && <span className="text-sm">⭐</span>}
                   </div>
                   <div className="flex gap-2 mt-0.5 flex-wrap">
-                    {a.sub_type && <span className="text-xs font-medium text-white">{subTypeLabel(a.sub_type)}</span>}
-                    {a.sport_focus && <span className="text-xs font-medium text-white">{SPORT_FOCUS_LABELS[a.sport_focus]}</span>}
+                    {a.exercise_type === 'sport'
+                      ? (combinedSportLabel(a.sub_type, a.sport_focus, a.sport_style) && <span className="text-xs font-medium text-white">{combinedSportLabel(a.sub_type, a.sport_focus, a.sport_style)}</span>)
+                      : (a.sub_type && <span className="text-xs font-medium text-white">{subTypeLabel(a.sub_type)}</span>)}
                     {a.swim_focus && <span className="text-xs font-medium text-white">{SWIM_FOCUS_LABELS[a.swim_focus]}</span>}
                     {combinedRunTypeLabel(a.run_type, a.run_type_modifier) && <span className="text-xs font-medium text-white">{combinedRunTypeLabel(a.run_type, a.run_type_modifier)}</span>}
                     <span className="text-xs" style={{ color }}>{EXERCISE_TYPE_LABELS[a.exercise_type]}</span>
@@ -334,6 +339,7 @@ export default function ActivityLogPage() {
                     <Detail label="Effort" value={`${a.effort}/10`} />
                     {a.swim_styles && <Detail label="Swim Style" value={a.swim_styles.split(',').map(s => SWIM_STYLE_LABELS[s as keyof typeof SWIM_STYLE_LABELS] ?? s).join(', ')} />}
                     {a.snow_styles && <Detail label="Snow Style" value={a.snow_styles.split(',').map(s => SNOW_STYLE_LABELS[s as keyof typeof SNOW_STYLE_LABELS] ?? s).join(', ')} />}
+                    {a.water_styles && <Detail label="Water Style" value={a.water_styles.split(',').map(s => WATER_STYLE_LABELS[s as keyof typeof WATER_STYLE_LABELS] ?? s).join(', ')} />}
                     {a.distance_km && <Detail label="Distance" value={`${a.distance_km} km`} />}
                     {a.pace_min_km && (
                       <>

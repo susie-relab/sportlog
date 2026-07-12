@@ -8,8 +8,8 @@ import {
   EXERCISE_TYPE_LABELS, RUN_TYPE_LABELS,
   EXERCISE_TYPE_COLORS, RUN_TYPE_COLORS,
   EXERCISE_TYPE_ORDER, RUN_TYPE_TERRAIN, RUN_TYPE_WORKOUT,
-  SportSubType, SportFocus, GymSubType, WaterSubType, SnowSubType, SnowStyle, SwimSubType, SwimFocus, SwimStyle, FitnessSubType, BikeSubType, StretchSubType, WalkSubType,
-  SPORT_SUB_LABELS, SPORT_FOCUS_LABELS, GYM_SUB_LABELS, WATER_SUB_LABELS, SNOW_SUB_LABELS, SNOW_STYLE_LABELS, SWIM_SUB_LABELS, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
+  SportSubType, SportFocus, SportStyle, GymSubType, WaterSubType, WaterStyle, SnowSubType, SnowStyle, SwimSubType, SwimFocus, SwimStyle, FitnessSubType, BikeSubType, StretchSubType, WalkSubType,
+  SPORT_SUB_LABELS, SPORT_FOCUS_LABELS, SPORT_STYLE_LABELS, GYM_SUB_LABELS, WATER_SUB_LABELS, WATER_STYLE_LABELS, SNOW_SUB_LABELS, SNOW_STYLE_LABELS, SWIM_SUB_LABELS, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
   suggestedMaxHr, suggestedAvgHr,
 } from '@/types';
 import DistancePicker from '@/components/DistancePicker';
@@ -36,9 +36,11 @@ export default function AddPage() {
   const [subType, setSubType] = useState<string>('');
   const [gymTypes, setGymTypes] = useState<string[]>([]);
   const [sportFocus, setSportFocus] = useState<SportFocus | ''>('');
+  const [sportStyle, setSportStyle] = useState<SportStyle | ''>('');
   const [swimFocus, setSwimFocus] = useState<SwimFocus | ''>('');
   const [swimStyles, setSwimStyles] = useState<string[]>([]);
   const [snowStyles, setSnowStyles] = useState<string[]>([]);
+  const [waterStyles, setWaterStyles] = useState<string[]>([]);
   const [hours, setHours] = useState('');
   const [mins, setMins] = useState('');
   const [secs, setSecs] = useState('');
@@ -137,9 +139,11 @@ export default function AddPage() {
       run_type_modifier: exerciseType === 'run' ? runTypeModifier || null : null,
       sub_type: exerciseType === 'hiit' ? gymTypes.join(',') || null : subType || null,
       sport_focus: exerciseType === 'sport' ? sportFocus || null : null,
+      sport_style: exerciseType === 'sport' ? sportStyle || null : null,
       swim_focus: exerciseType === 'swim' ? swimFocus || null : null,
       swim_styles: exerciseType === 'swim' ? swimStyles.join(',') || null : null,
       snow_styles: exerciseType === 'snow' ? snowStyles.join(',') || null : null,
+      water_styles: exerciseType === 'water' ? waterStyles.join(',') || null : null,
       duration_minutes: durationMinutes,
       duration_seconds: durationExtraSeconds,
       effort,
@@ -211,7 +215,7 @@ export default function AddPage() {
       if (isPb || pbReasons.length > 0) setPbCelebration(pbReasons);
       else setSavedTitle(randomEncouragement());
       // Reset form
-      setName(''); setExerciseType(''); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setSportFocus(''); setSwimFocus(''); setSwimStyles([]); setSnowStyles([]); setHours(''); setMins(''); setSecs('');
+      setName(''); setExerciseType(''); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setSportFocus(''); setSportStyle(''); setSwimFocus(''); setSwimStyles([]); setSnowStyles([]); setWaterStyles([]); setHours(''); setMins(''); setSecs('');
       setEffort(null); setDistance(''); setNotes(''); setIntensityMins('');
       setPaceMin(''); setPaceSec(''); setMaxPaceMin(''); setMaxPaceSec('');
       setMaxHr(''); setAvgHr(''); setElevationGain(''); setIsPb(false); setPbDesc('');
@@ -265,7 +269,7 @@ export default function AddPage() {
             {EXERCISE_TYPE_ORDER.map(type => (
               <button
                 key={type}
-                onClick={() => { setExerciseType(type); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setSportFocus(''); setSwimFocus(''); setSwimStyles([]); setSnowStyles([]); }}
+                onClick={() => { setExerciseType(type); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setSportFocus(''); setSportStyle(''); setSwimFocus(''); setSwimStyles([]); setSnowStyles([]); setWaterStyles([]); }}
                 className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium border transition-all text-left ${
                   exerciseType === type
                     ? 'border-2 text-white'
@@ -352,6 +356,15 @@ export default function AddPage() {
                 </button>
               ))}
             </div>
+            <label className="label mt-3">Sport Style <span className="text-[#64748B]">(optional)</span></label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(Object.keys(SPORT_STYLE_LABELS) as SportStyle[]).map(t => (
+                <button key={t} onClick={() => setSportStyle(sportStyle === t ? '' : t)}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${sportStyle === t ? 'border-orange-500 bg-orange-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                  {SPORT_STYLE_LABELS[t]}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {/* Gym subtype — multi select */}
@@ -381,6 +394,18 @@ export default function AddPage() {
                   {WATER_SUB_LABELS[t]}
                 </button>
               ))}
+            </div>
+            <label className="label mt-3">Water Style <span className="text-[#64748B]">(optional + multi-select)</span></label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(Object.keys(WATER_STYLE_LABELS) as WaterStyle[]).map(t => {
+                const active = waterStyles.includes(t);
+                return (
+                  <button key={t} onClick={() => setWaterStyles(active ? waterStyles.filter(x => x !== t) : [...waterStyles, t])}
+                    className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${active ? 'border-sky-500 bg-sky-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                    {WATER_STYLE_LABELS[t]}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

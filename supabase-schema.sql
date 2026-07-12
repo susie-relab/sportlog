@@ -182,6 +182,13 @@ create index if not exists training_plans_user on training_plans(user_id, create
 -- update activities set exercise_type = 'snow' where exercise_type = 'water_snow' and sub_type in ('snowboard', 'skiing');
 -- update activities set exercise_type = 'water' where exercise_type = 'water_snow';
 
+-- Migration: Sport Style field (Indoor/Outdoor/Grass/Turf/Clay-Dirt/Rooftop/Water/Beach — moved
+-- off Sport Focus onto its own field), Water Style (Recreational/Training/Competition/Whitewater/
+-- Hydrofoil/Park, multi-select), Rafting added as a Water activity type, and Snow Style gained
+-- Recreational/Training/Competition alongside the existing Downhill/Cross-country/Half-pipe/Freestyle.
+-- alter table activities add column if not exists sport_style text;
+-- alter table activities add column if not exists water_styles text;
+
 -- Migration: if goals table already exists, run these:
 -- alter table goals add column if not exists activity_type text not null default 'all';
 -- alter table goals drop constraint if exists goals_user_id_period_key;

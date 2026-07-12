@@ -93,6 +93,7 @@ const SUBTYPE_EMOJI_OVERRIDES: Record<string, string> = {
   fishing: '🎣',
   canyoning: '🧗‍♀️',
   coasteering: '🪨',
+  rafting: '🛟',
   // Snow subtypes
   sledding: '🛷',
   skating: '⛸️',
@@ -173,13 +174,14 @@ export const RUN_TYPE_COLORS: Record<RunType, string> = {
 export const RUN_TYPE_TERRAIN: RunType[] = ['treadmill', 'trail', 'push_buggy', 'beach', 'urban', 'road', 'track', 'cross_country'];
 export const RUN_TYPE_WORKOUT: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'long_intervals'];
 
-/** Combined display label for a run's two optional type fields, e.g. "Treadmill - Easy Run",
- *  or just "Push Buggy" / "Fartlek" when only one is set. */
+/** Combined display label for a run's two optional type fields, workout first then
+ *  style, e.g. "Tempo - Treadmill", or just "Push Buggy" / "Fartlek" when only one is
+ *  set. No trailing "Run" — the exercise-type badge already shows that. */
 export function combinedRunTypeLabel(runType?: RunType | null, runTypeModifier?: RunType | null): string | null {
   if (runType && runTypeModifier) {
     const terrain = RUN_TYPE_TERRAIN.includes(runTypeModifier) ? runTypeModifier : runType;
     const workout = terrain === runType ? runTypeModifier : runType;
-    return `${RUN_TYPE_LABELS[terrain]} - ${RUN_TYPE_LABELS[workout]} Run`;
+    return `${RUN_TYPE_LABELS[workout]} - ${RUN_TYPE_LABELS[terrain]}`;
   }
   if (runType) return RUN_TYPE_LABELS[runType];
   if (runTypeModifier) return RUN_TYPE_LABELS[runTypeModifier];
@@ -189,11 +191,13 @@ export function combinedRunTypeLabel(runType?: RunType | null, runTypeModifier?:
 // --- Subtypes (all optional) ---
 
 export type SportSubType = 'football' | 'tennis' | 'netball' | 'volleyball' | 'golf' | 'turbo_touch' | 'padel' | 'touch_rugby' | 'basketball' | 'cricket' | 'badminton' | 'rugby' | 'hockey' | 'frisbee' | 'table_tennis';
-export type SportFocus = 'game' | 'training' | 'skills' | 'conditioning' | 'recovery' | 'competition' | 'casual' | 'warm_up' | 'beach' | 'indoor';
+export type SportFocus = 'game' | 'training' | 'skills' | 'conditioning' | 'recovery' | 'competition' | 'casual' | 'warm_up';
+export type SportStyle = 'indoor' | 'outdoor' | 'grass' | 'turf' | 'clay_dirt' | 'rooftop' | 'water' | 'beach';
 export type GymSubType = 'hiit_workout' | 'strength' | 'conditioning' | 'crossfit' | 'hyrox' | 'arms' | 'legs' | 'back_shoulders' | 'core' | 'row_indoor' | 'stair_climber' | 'ski_erg';
-export type WaterSubType = 'kayak' | 'sailing' | 'surf' | 'rowing' | 'waka_ama' | 'sup' | 'polo' | 'boogie_boarding' | 'bodysurfing' | 'windsurfing' | 'kitesurfing' | 'wakeboarding' | 'waterskiing' | 'diving' | 'spear_fishing' | 'fishing' | 'canyoning' | 'coasteering';
+export type WaterSubType = 'kayak' | 'sailing' | 'surf' | 'rowing' | 'waka_ama' | 'sup' | 'polo' | 'boogie_boarding' | 'bodysurfing' | 'windsurfing' | 'kitesurfing' | 'wakeboarding' | 'waterskiing' | 'diving' | 'spear_fishing' | 'fishing' | 'canyoning' | 'coasteering' | 'rafting';
+export type WaterStyle = 'recreational' | 'training' | 'competition' | 'whitewater' | 'hydrofoil' | 'park';
 export type SnowSubType = 'snowboard' | 'skiing' | 'sledding' | 'skating';
-export type SnowStyle = 'downhill' | 'cross_country' | 'half_pipe' | 'freestyle';
+export type SnowStyle = 'downhill' | 'cross_country' | 'half_pipe' | 'freestyle' | 'recreational' | 'training' | 'competition';
 export type SwimSubType = 'ocean' | 'pool' | 'water_jogging' | 'aqua_aerobics';
 export type SwimFocus = 'endurance' | 'sprint' | 'technique' | 'power' | 'recovery' | 'distance' | 'interval_set' | 'time_trial';
 export type SwimStyle = 'mixed' | 'freestyle' | 'backstroke' | 'breaststroke' | 'butterfly' | 'im' | 'kick_only' | 'pull_only';
@@ -211,7 +215,11 @@ export const SPORT_SUB_LABELS: Record<SportSubType, string> = {
 export const SPORT_FOCUS_LABELS: Record<SportFocus, string> = {
   game: 'Game / Match', training: 'Training', skills: 'Skills', conditioning: 'Conditioning', recovery: 'Recovery',
   // key stays 'competition' so already-saved activities keep their label
-  competition: 'Tournament', casual: 'Casual', warm_up: 'Warm-up', beach: 'Beach', indoor: 'Indoor',
+  competition: 'Tournament', casual: 'Casual', warm_up: 'Warm-up',
+};
+export const SPORT_STYLE_LABELS: Record<SportStyle, string> = {
+  indoor: 'Indoor', outdoor: 'Outdoor', grass: 'Grass', turf: 'Turf', clay_dirt: 'Clay / Dirt',
+  rooftop: 'Rooftop', water: 'Water', beach: 'Beach',
 };
 export const GYM_SUB_LABELS: Record<GymSubType, string> = {
   hiit_workout: 'HIIT', strength: 'Strength', conditioning: 'Conditioning',
@@ -224,12 +232,18 @@ export const WATER_SUB_LABELS: Record<WaterSubType, string> = {
   polo: 'Polo', boogie_boarding: 'Boogie-Boarding', bodysurfing: 'Bodysurfing', windsurfing: 'Windsurfing',
   kitesurfing: 'Kitesurfing', wakeboarding: 'Wakeboarding', waterskiing: 'Waterskiing', diving: 'Diving',
   spear_fishing: 'Spear Fishing', fishing: 'Fishing', canyoning: 'Canyoning', coasteering: 'Coasteering',
+  rafting: 'Rafting',
+};
+export const WATER_STYLE_LABELS: Record<WaterStyle, string> = {
+  recreational: 'Recreational', training: 'Training', competition: 'Competition',
+  whitewater: 'Whitewater', hydrofoil: 'Hydrofoil', park: 'Park',
 };
 export const SNOW_SUB_LABELS: Record<SnowSubType, string> = {
   snowboard: 'Snowboard', skiing: 'Skiing', sledding: 'Sledding', skating: 'Skating',
 };
 export const SNOW_STYLE_LABELS: Record<SnowStyle, string> = {
   downhill: 'Downhill', cross_country: 'Cross-country', half_pipe: 'Half-pipe', freestyle: 'Freestyle',
+  recreational: 'Recreational', training: 'Training', competition: 'Competition',
 };
 export const SWIM_SUB_LABELS: Record<SwimSubType, string> = {
   ocean: 'Ocean', pool: 'Pool', water_jogging: 'Water Jogging', aqua_aerobics: 'Aqua Aerobics',
@@ -269,6 +283,17 @@ const ALL_SUB_LABELS: Record<string, string> = {
 export function subTypeLabel(subType?: string | null): string {
   if (!subType) return '';
   return subType.split(',').map(k => ALL_SUB_LABELS[k.trim()] ?? k.trim()).join(', ');
+}
+
+/** Combined display label for a sport activity's three optional fields, e.g.
+ *  "Football - Training | Turf" — sport type and focus dash-joined, style appended
+ *  after a pipe. Any subset of the three can be missing. No trailing "Sport" —
+ *  the exercise-type badge already shows that. */
+export function combinedSportLabel(subType?: string | null, focus?: SportFocus | null, style?: SportStyle | null): string | null {
+  const dashParts = [subType ? subTypeLabel(subType) : null, focus ? SPORT_FOCUS_LABELS[focus] : null].filter(Boolean);
+  const base = dashParts.join(' - ');
+  if (style) return base ? `${base} | ${SPORT_STYLE_LABELS[style]}` : SPORT_STYLE_LABELS[style];
+  return base || null;
 }
 
 // Effort (1-11) -> % of theoretical max HR, used to seed the Max HR scroll-picker suggestion.
@@ -371,9 +396,11 @@ export interface Activity {
   run_type_modifier?: RunType;
   sub_type?: string;
   sport_focus?: SportFocus;
+  sport_style?: SportStyle;
   swim_focus?: SwimFocus;
   swim_styles?: string; // comma-joined SwimStyle keys — multi-select, like sub_type for hiit
   snow_styles?: string; // comma-joined SnowStyle keys — multi-select, like swim_styles
+  water_styles?: string; // comma-joined WaterStyle keys — multi-select, like swim_styles
   duration_minutes: number;
   duration_seconds?: number; // leftover seconds (0-59) on top of duration_minutes
   effort: number;
