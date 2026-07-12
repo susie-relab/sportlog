@@ -15,6 +15,7 @@ interface Props {
 export default function NumberWheelColumn({ values, value, onChange, format, itemHeight = 40, height = 200 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastEmitted = useRef(value);
   const padding = (height - itemHeight) / 2;
 
   const indexOf = (v: number) => {
@@ -35,17 +36,27 @@ export default function NumberWheelColumn({ values, value, onChange, format, ite
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Re-sync the wheel when `value` changes from outside this column (e.g. the
+  // user typed a new number) — but skip the sync we caused ourselves via scroll/click.
+  useEffect(() => {
+    if (value !== lastEmitted.current) {
+      scrollToIndex(indexOf(value));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
   const handleScroll = () => {
     if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
     scrollTimeout.current = setTimeout(() => {
       if (!ref.current) return;
       const i = Math.max(0, Math.min(values.length - 1, Math.round(ref.current.scrollTop / itemHeight)));
-      if (values[i] !== value) onChange(values[i]);
+      if (values[i] !== value) { lastEmitted.current = values[i]; onChange(values[i]); }
     }, 100);
   };
 
   const handleClick = (i: number) => {
     scrollToIndex(i);
+    lastEmitted.current = values[i];
     onChange(values[i]);
   };
 
