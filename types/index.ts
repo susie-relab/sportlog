@@ -189,7 +189,7 @@ export function combinedRunTypeLabel(runType?: RunType | null, runTypeModifier?:
 // --- Subtypes (all optional) ---
 
 export type SportSubType = 'football' | 'tennis' | 'netball' | 'volleyball' | 'golf' | 'turbo_touch' | 'padel' | 'touch_rugby' | 'basketball' | 'cricket' | 'badminton' | 'rugby' | 'hockey' | 'frisbee' | 'table_tennis';
-export type SportFocus = 'game' | 'training' | 'skills' | 'conditioning' | 'recovery' | 'competition' | 'casual' | 'warm_up' | 'beach';
+export type SportFocus = 'game' | 'training' | 'skills' | 'conditioning' | 'recovery' | 'competition' | 'casual' | 'warm_up' | 'beach' | 'indoor';
 export type GymSubType = 'hiit_workout' | 'strength' | 'conditioning' | 'crossfit' | 'hyrox' | 'arms' | 'legs' | 'back_shoulders' | 'core' | 'row_indoor' | 'stair_climber' | 'ski_erg';
 export type WaterSubType = 'kayak' | 'sailing' | 'surf' | 'rowing' | 'waka_ama' | 'sup' | 'polo' | 'boogie_boarding' | 'bodysurfing' | 'windsurfing' | 'kitesurfing' | 'wakeboarding' | 'waterskiing' | 'diving' | 'spear_fishing' | 'fishing' | 'canyoning' | 'coasteering';
 export type SnowSubType = 'snowboard' | 'skiing' | 'sledding' | 'skating';
@@ -210,7 +210,8 @@ export const SPORT_SUB_LABELS: Record<SportSubType, string> = {
 };
 export const SPORT_FOCUS_LABELS: Record<SportFocus, string> = {
   game: 'Game / Match', training: 'Training', skills: 'Skills', conditioning: 'Conditioning', recovery: 'Recovery',
-  competition: 'Competition', casual: 'Casual', warm_up: 'Warm-up', beach: 'Beach',
+  // key stays 'competition' so already-saved activities keep their label
+  competition: 'Tournament', casual: 'Casual', warm_up: 'Warm-up', beach: 'Beach', indoor: 'Indoor',
 };
 export const GYM_SUB_LABELS: Record<GymSubType, string> = {
   hiit_workout: 'HIIT', strength: 'Strength', conditioning: 'Conditioning',
