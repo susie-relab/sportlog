@@ -10,6 +10,12 @@ import { PlanRecord } from '@/lib/runPlanGenerator';
 import { recapWithComparison, addDays, upcomingCount } from '@/lib/recap';
 import { formatDuration, localWeekKey, WeekStart, calcWeekStreak } from '@/lib/utils';
 
+// Run on the Node runtime (needs Intl timezone + long-running fetches) and give the
+// cron enough headroom to page users + fetch each one's data + send emails.
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
 const TIMEZONE = process.env.RECAP_TIMEZONE || 'Pacific/Auckland';
 
 type AdminUser = {
@@ -78,6 +84,7 @@ export async function GET(request: Request) {
     return Response.json({ error: 'Recap emails are not configured (missing env vars).' }, { status: 503 });
   }
 
+  try {
   const adminHeaders = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
   const todayISO = todayInTz();
   const isFirstOfMonth = todayISO.slice(8, 10) === '01';
@@ -87,8 +94,13 @@ export async function GET(request: Request) {
   const users: AdminUser[] = [];
   for (let page = 1; page <= 20; page++) {
     const res = await fetch(`${supabaseUrl}/auth/v1/admin/users?page=${page}&per_page=200`, { headers: adminHeaders });
-    if (!res.ok) return Response.json({ error: `Failed to list users (${res.status})` }, { status: 502 });
-    const batch = (await res.json()).users as AdminUser[];
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      return Response.json({ error: `Failed to list users (${res.status})`, detail: body.slice(0, 300) }, { status: 200 });
+    }
+    const json = await res.json();
+    const batch = (Array.isArray(json) ? json : json.users) as AdminUser[] | undefined;
+    if (!batch || batch.length === 0) break;
     users.push(...batch);
     if (batch.length < 200) break;
   }
@@ -151,4 +163,10 @@ export async function GET(request: Request) {
   }
 
   return Response.json({ date: todayISO, usersChecked: users.length, sent, errors });
+  } catch (err) {
+    // Surface the real cause as JSON (200) so it shows in the cron logs instead of a bare 502.
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack?.split('\n').slice(0, 4).join(' | ') : undefined;
+    return Response.json({ error: 'Recap run failed', message, stack }, { status: 200 });
+  }
 }
