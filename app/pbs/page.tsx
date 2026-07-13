@@ -28,6 +28,8 @@ interface ManualPB {
   title: string;
   description: string;
   date: string;
+  distance_km?: number | null;
+  duration_minutes?: number | null;
 }
 
 interface DistanceOverride {
@@ -50,6 +52,8 @@ export default function PBsPage() {
   const [manualTitle, setManualTitle] = useState('');
   const [manualDesc, setManualDesc] = useState('');
   const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
+  const [manualDistance, setManualDistance] = useState('');
+  const [manualDuration, setManualDuration] = useState('');
   const [activeTab, setActiveTab] = useState<'starred' | 'distance' | 'type' | 'monthly' | 'manual'>('starred');
   const [starredFilter, setStarredFilter] = useState<'all' | 'manual'>('all');
   const [sharing, setSharing] = useState<Activity | null>(null);
@@ -194,10 +198,12 @@ export default function PBsPage() {
       title: manualTitle.trim(),
       description: manualDesc,
       date: manualDate,
+      distance_km: manualDistance ? parseFloat(manualDistance) : null,
+      duration_minutes: manualDuration ? parseInt(manualDuration) : null,
     }).select().single();
     if (data) {
       setManualPBs(prev => [data as ManualPB, ...prev]);
-      setManualTitle(''); setManualDesc(''); setAddingManual(false);
+      setManualTitle(''); setManualDesc(''); setManualDistance(''); setManualDuration(''); setAddingManual(false);
     }
   };
 
@@ -211,7 +217,7 @@ export default function PBsPage() {
     { key: 'distance', label: 'Distance PBs' },
     { key: 'type', label: 'By Type' },
     { key: 'monthly', label: 'Best Months' },
-    { key: 'manual', label: 'Manual' },
+    { key: 'manual', label: 'Add PB' },
   ] as const;
 
   if (loading) return <div className="text-[#64748B] text-sm">Loading...</div>;
@@ -497,7 +503,7 @@ export default function PBsPage() {
       {activeTab === 'manual' && (
         <div className="flex flex-col gap-3">
           <button onClick={() => setAddingManual(!addingManual)} className="btn-primary">
-            + Add Manual PB
+            + Add Another PB
           </button>
 
           {addingManual && (
@@ -509,6 +515,16 @@ export default function PBsPage() {
               <div>
                 <label className="label">Description</label>
                 <input className="input" placeholder="Details..." value={manualDesc} onChange={e => setManualDesc(e.target.value)} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Distance (km)</label>
+                  <input type="number" className="input" placeholder="e.g. 5" value={manualDistance} onChange={e => setManualDistance(e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Duration (min)</label>
+                  <input type="number" className="input" placeholder="e.g. 20" value={manualDuration} onChange={e => setManualDuration(e.target.value)} />
+                </div>
               </div>
               <div>
                 <label className="label">Date</label>
@@ -531,7 +547,11 @@ export default function PBsPage() {
                   <span className="font-semibold text-white">{pb.title}</span>
                 </div>
                 {pb.description && <p className="text-sm text-[#94A3B8] mt-1">{pb.description}</p>}
-                <p className="text-xs text-[#64748B] mt-1">{formatDate(pb.date)}</p>
+                <div className="flex gap-3 mt-1 flex-wrap">
+                  <span className="text-xs text-[#64748B]">{formatDate(pb.date)}</span>
+                  {pb.distance_km != null && <span className="text-xs text-[#94A3B8]">{pb.distance_km} km</span>}
+                  {pb.duration_minutes != null && <span className="text-xs text-[#94A3B8]">{formatDuration(pb.duration_minutes)}</span>}
+                </div>
               </div>
               <button onClick={() => deleteManualPB(pb.id)} className="text-[#475569] hover:text-red-400 text-xs ml-3">✕</button>
             </div>

@@ -217,3 +217,7 @@ create index if not exists training_plans_user on training_plans(user_id, create
 --   on distance_pb_overrides for all
 --   using (auth.uid() = user_id)
 --   with check (auth.uid() = user_id);
+
+-- Migration: optional distance/duration on manual PBs.
+-- alter table manual_pbs add column if not exists distance_km numeric(8,2);
+-- alter table manual_pbs add column if not exists duration_minutes integer;
