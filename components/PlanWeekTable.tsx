@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PlanData, PlanWeek, Session, SessionType, Weekday, WEEKDAYS, WEEKDAY_LABELS, WEEKDAY_SHORT, isRunSession, sessionCount, sessionParts, MAX_SESSIONS_PER_DAY } from '@/lib/runPlanGenerator';
 import { EXERCISE_TYPE_COLORS, EXERCISE_TYPE_LABELS, ExerciseType } from '@/types';
 
@@ -118,9 +118,15 @@ interface Props {
   onAdd?: (fromWeek: number, from: Weekday, toWeek: number, to: Weekday) => void;
 }
 
+const OVER_LABEL: Record<'move' | 'swap' | 'choose', string> = {
+  move: '↓ Move here',
+  swap: '⇄ Swap',
+  choose: '⇄ Swap or add',
+};
+
 function DayCell({ s, onClick, compact, drag }: {
   s: Session; onClick?: () => void; compact?: boolean;
-  drag?: { onPointerDown: (e: React.PointerEvent) => void; isDragging: boolean; isOver: boolean };
+  drag?: { onPointerDown: (e: React.PointerEvent) => void; isDragging: boolean; isOver: false | 'move' | 'swap' | 'choose' };
 }) {
   if (s.beforeStart) {
     return <div className={`w-full rounded-lg border border-dashed border-[#1E293B] ${compact ? 'h-8' : 'p-2.5 h-[52px]'}`} />;
@@ -133,12 +139,16 @@ function DayCell({ s, onClick, compact, drag }: {
   return (
     <div className="relative">
       <button
-        onClick={onClick}
-        className={`w-full text-left rounded-lg transition-colors ${
+        onClick={drag ? undefined : onClick}
+        onPointerDown={drag?.onPointerDown}
+        aria-label={drag ? 'Tap to view, press and hold to drag to another day' : undefined}
+        className={`w-full text-left rounded-lg transition-all select-none ${
           isCombined ? 'p-1 flex flex-col gap-1' : 'p-2.5'
         } border ${
           s.completed ? 'border-green-600/60 bg-green-900/15' : 'border-[#293548] bg-[#0F172A] hover:border-[#475569]'
-        } ${compact && !isCombined ? 'flex items-center gap-2' : ''} ${drag?.isDragging ? 'opacity-40' : ''} ${drag?.isOver ? 'ring-2 ring-blue-400' : ''}`}
+        } ${compact && !isCombined ? 'flex items-center gap-2' : ''} ${drag ? 'cursor-grab active:cursor-grabbing' : ''} ${
+          drag?.isDragging ? 'opacity-50 scale-[0.97] shadow-xl ring-2 ring-blue-400 relative z-10' : ''
+        } ${drag?.isOver ? 'ring-2 ring-emerald-400 bg-emerald-500/10 scale-[1.02]' : ''}`}
       >
         {parts.map((p, i) => {
           const color = sessionColor(p);
@@ -162,17 +172,15 @@ function DayCell({ s, onClick, compact, drag }: {
           );
         })}
       </button>
-      {drag && (
-        <button
-          type="button"
-          onPointerDown={drag.onPointerDown}
-          onClick={e => e.stopPropagation()}
-          aria-label="Press and hold to drag to another day"
-          className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded text-[#64748B] hover:text-white bg-[#0F172A]/90 border border-[#293548] cursor-grab active:cursor-grabbing"
-          style={{ touchAction: 'none' }}
-        >
-          ⠿
-        </button>
+      {drag && !drag.isDragging && (
+        <span className="absolute top-1 right-1 text-[#475569]/70 text-xs pointer-events-none leading-none">⠿</span>
+      )}
+      {drag?.isOver && (
+        <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-[#0B1220]/85 pointer-events-none">
+          <span className="text-[11px] font-bold text-emerald-300 px-2 py-1 rounded-md bg-emerald-500/15 border border-emerald-500/40">
+            {OVER_LABEL[drag.isOver]}
+          </span>
+        </div>
       )}
     </div>
   );
@@ -190,16 +198,32 @@ function WeekHeader({ w }: { w: PlanWeek }) {
   );
 }
 
+const HOLD_DELAY_MS = 280; // how long a press must be held before it's treated as a drag, not a tap
+const MOVE_TOLERANCE_PX = 9; // movement allowed during the hold before we bail out and let the page scroll instead
+
 export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, onAdd }: Props) {
   const [dragFrom, setDragFrom] = useState<{ week: number; day: Weekday; pointerId: number } | null>(null);
-  const [overCell, setOverCell] = useState<{ week: number; day: Weekday } | null>(null);
+  const [overCell, setOverCell] = useState<{ week: number; day: Weekday; kind: 'move' | 'swap' | 'choose' } | null>(null);
   const [dropChoice, setDropChoice] = useState<{ fromWeek: number; from: Weekday; toWeek: number; to: Weekday } | null>(null);
 
-  // Pointer-based drag (works for mouse AND touch, unlike native HTML5 drag-and-drop) —
-  // press-and-hold the ⠿ handle on a day, drag over any other day (even a different week's),
-  // release to drop. Cell hit-testing uses elementFromPoint against a data-cellkey marker.
+  // Kept as refs (not state) so the single mount-lifetime pointer listener below always sees
+  // the latest values without needing to re-subscribe on every render.
+  const planRef = useRef(plan); planRef.current = plan;
+  const onMoveRef = useRef(onMove); onMoveRef.current = onMove;
+  const onAddRef = useRef(onAdd); onAddRef.current = onAdd;
+  const onDayClickRef = useRef(onDayClick); onDayClickRef.current = onDayClick;
+  const dragFromRef = useRef(dragFrom); dragFromRef.current = dragFrom;
+
+  // A press anywhere in a day's box: held still for HOLD_DELAY_MS → starts a drag; released
+  // quickly (or moved) → treated as a tap that opens the day sheet. This lets you press and
+  // hold ANYWHERE in the box to reorder, not just a small handle, while a normal touch-scroll
+  // starting on a box still works (we never call preventDefault until the drag has engaged).
+  const pressRef = useRef<{
+    week: number; day: Weekday; pointerId: number; startX: number; startY: number;
+    timer: ReturnType<typeof setTimeout>; engaged: boolean;
+  } | null>(null);
+
   useEffect(() => {
-    if (!dragFrom || !onMove) return;
     const findCell = (x: number, y: number): { week: number; day: Weekday } | null => {
       const el = document.elementFromPoint(x, y);
       const cellEl = el?.closest('[data-cellkey]') as HTMLElement | null;
@@ -207,20 +231,44 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, o
       const [wk, dy] = cellEl.dataset.cellkey.split('|');
       return { week: parseInt(wk, 10), day: dy as Weekday };
     };
+    const clearPending = () => {
+      if (pressRef.current) clearTimeout(pressRef.current.timer);
+      pressRef.current = null;
+    };
     const onPointerMove = (e: PointerEvent) => {
-      if (e.pointerId !== dragFrom.pointerId) return;
+      const pending = pressRef.current;
+      if (pending && !pending.engaged && pending.pointerId === e.pointerId) {
+        const moved = Math.hypot(e.clientX - pending.startX, e.clientY - pending.startY);
+        if (moved > MOVE_TOLERANCE_PX) clearPending(); // let the browser scroll — this wasn't a hold
+        return; // never preventDefault while still pending
+      }
+      const from = dragFromRef.current;
+      if (!from || from.pointerId !== e.pointerId) return;
       e.preventDefault();
-      setOverCell(findCell(e.clientX, e.clientY));
+      const cell = findCell(e.clientX, e.clientY);
+      if (!cell || (cell.week === from.week && cell.day === from.day)) { setOverCell(null); return; }
+      const targetSession = planRef.current.weeks.find(w => w.weekNumber === cell.week)?.days[cell.day];
+      const kind: 'move' | 'swap' | 'choose' = targetSession && isRunSession(targetSession)
+        ? (onAddRef.current ? 'choose' : 'swap')
+        : 'move';
+      setOverCell(prev => (prev && prev.week === cell.week && prev.day === cell.day && prev.kind === kind) ? prev : { ...cell, kind });
     };
     const onPointerUp = (e: PointerEvent) => {
-      if (e.pointerId !== dragFrom.pointerId) return;
+      const pending = pressRef.current;
+      if (pending && !pending.engaged && pending.pointerId === e.pointerId) {
+        clearPending();
+        onDayClickRef.current?.(pending.week, pending.day); // quick tap — open the day sheet
+        return;
+      }
+      const from = dragFromRef.current;
+      if (!from || from.pointerId !== e.pointerId) return;
       const cell = findCell(e.clientX, e.clientY);
-      if (cell && (cell.week !== dragFrom.week || cell.day !== dragFrom.day)) {
-        const targetSession = plan.weeks.find(w => w.weekNumber === cell.week)?.days[cell.day];
-        if (onAdd && targetSession && isRunSession(targetSession)) {
-          setDropChoice({ fromWeek: dragFrom.week, from: dragFrom.day, toWeek: cell.week, to: cell.day });
+      if (cell && (cell.week !== from.week || cell.day !== from.day)) {
+        const targetSession = planRef.current.weeks.find(w => w.weekNumber === cell.week)?.days[cell.day];
+        if (onAddRef.current && targetSession && isRunSession(targetSession)) {
+          setDropChoice({ fromWeek: from.week, from: from.day, toWeek: cell.week, to: cell.day });
         } else {
-          onMove(dragFrom.week, dragFrom.day, cell.week, cell.day);
+          onMoveRef.current?.(from.week, from.day, cell.week, cell.day);
         }
       }
       setDragFrom(null);
@@ -234,12 +282,21 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, o
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
     };
-  }, [dragFrom, plan, onMove, onAdd]);
+  }, []);
 
   const dragProps = (week: number, day: Weekday) => onMove ? {
-    onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); e.stopPropagation(); setDragFrom({ week, day, pointerId: e.pointerId }); },
+    onPointerDown: (e: React.PointerEvent) => {
+      const pointerId = e.pointerId;
+      const timer = setTimeout(() => {
+        const p = pressRef.current;
+        if (!p || p.pointerId !== pointerId) return;
+        p.engaged = true;
+        setDragFrom({ week: p.week, day: p.day, pointerId });
+      }, HOLD_DELAY_MS);
+      pressRef.current = { week, day, pointerId, startX: e.clientX, startY: e.clientY, timer, engaged: false };
+    },
     isDragging: dragFrom?.week === week && dragFrom?.day === day,
-    isOver: !!overCell && overCell.week === week && overCell.day === day && !(dragFrom?.week === week && dragFrom?.day === day),
+    isOver: (overCell && overCell.week === week && overCell.day === day ? overCell.kind : false) as false | 'move' | 'swap' | 'choose',
   } : undefined;
   // any week without distance is treated as a "sessions" plan for the column header
   const anyKm = plan.weeks.some(w => w.totalKm > 0);
@@ -285,7 +342,7 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, o
         </table>
         {onMove && (
           <p className="text-[10px] text-[#475569] mt-1">
-            Tip: press and hold the ⠿ handle, then drag onto another day{onAdd ? ' to swap or add it to that day' : ' to swap them'} — any week.
+            Tip: press and hold anywhere on a session, then drag onto another day{onAdd ? ' to swap or add it to that day' : ' to swap them'} — any week.
           </p>
         )}
       </div>
@@ -336,7 +393,7 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, o
         ))}
         {onMove && (
           <p className="text-[10px] text-[#475569]">
-            Tip: press and hold the ⠿ handle, then drag onto another day{onAdd ? ' to swap or add it to that day' : ' to swap them'} — any week.
+            Tip: press and hold anywhere on a session, then drag onto another day{onAdd ? ' to swap or add it to that day' : ' to swap them'} — any week.
           </p>
         )}
       </div>
