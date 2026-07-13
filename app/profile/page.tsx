@@ -49,6 +49,16 @@ export default function ProfilePage() {
   const allItems = allFavouriteItems();
   const favItems = favourites.map(k => allItems.find(i => i.key === k)).filter(Boolean) as FavouriteItem[];
 
+  const moveFavourite = (index: number, dir: 'up' | 'down') => {
+    setFavourites(prev => {
+      const to = dir === 'up' ? index - 1 : index + 1;
+      if (to < 0 || to >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[to]] = [next[to], next[index]];
+      return next;
+    });
+  };
+
   const toggleFavourite = (key: string) => {
     setFavourites(prev => {
       if (prev.includes(key)) return prev.filter(k => k !== key);
@@ -59,8 +69,13 @@ export default function ProfilePage() {
 
   const saveFavourites = async () => {
     setSaving(true);
-    const { error } = await supabase.auth.updateUser({ data: { ...user?.user_metadata, favourite_activities: favourites } });
+    // Drop any stale key that no longer resolves to a real item (e.g. from a since-renamed
+    // taxonomy) so it can't silently throw off reorder-by-index later.
+    const validKeys = new Set(allItems.map(i => i.key));
+    const cleaned = favourites.filter(k => validKeys.has(k));
+    const { error } = await supabase.auth.updateUser({ data: { ...user?.user_metadata, favourite_activities: cleaned } });
     setSaving(false);
+    if (!error) setFavourites(cleaned);
     flash(error ? error.message : 'Favourites saved!', !error);
     if (!error) setShowFavPicker(false);
   };
@@ -204,6 +219,36 @@ export default function ProfilePage() {
         ) : (
           <>
             <p className="text-xs text-[#64748B] mb-3">{favourites.length}/15 selected</p>
+            {favItems.length > 0 && (
+              <div className="flex flex-col gap-1 mb-4">
+                <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-1">Order <span className="font-normal">(shown in this order)</span></p>
+                {favItems.map((i, idx) => {
+                  // favItems drops any stale/unresolved keys, so its index can drift from
+                  // favourites' real index — always resolve the true index before moving.
+                  const trueIndex = favourites.indexOf(i.key);
+                  return (
+                    <div key={i.key} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[#334155]">
+                      <div className="flex flex-col flex-shrink-0">
+                        <button
+                          onClick={() => moveFavourite(trueIndex, 'up')}
+                          disabled={idx === 0}
+                          className="text-[#64748B] hover:text-white disabled:opacity-20 disabled:hover:text-[#64748B] leading-none text-xs px-0.5"
+                          aria-label="Move up"
+                        >▲</button>
+                        <button
+                          onClick={() => moveFavourite(trueIndex, 'down')}
+                          disabled={idx === favItems.length - 1}
+                          className="text-[#64748B] hover:text-white disabled:opacity-20 disabled:hover:text-[#64748B] leading-none text-xs px-0.5"
+                          aria-label="Move down"
+                        >▼</button>
+                      </div>
+                      <span className="text-sm text-white truncate flex-1">{i.emoji} {i.label}</span>
+                      <button onClick={() => toggleFavourite(i.key)} aria-label={`Remove ${i.label}`} className="text-[#475569] hover:text-red-400 text-xs px-1 flex-shrink-0">✕</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="flex flex-col gap-3 max-h-80 overflow-y-auto pr-1">
               {EXERCISE_TYPE_ORDER.map(type => {
                 const items = allItems.filter(i => i.type === type);
