@@ -42,6 +42,16 @@ export function todayLocalISO(): string {
   return `${y}-${m}-${day}`;
 }
 
+/** Age in whole years from a "YYYY-MM-DD" birthday, as of today (local time). */
+export function calcAge(birthdayISO: string): number {
+  const [by, bm, bd] = birthdayISO.split('-').map(Number);
+  const today = new Date();
+  let age = today.getFullYear() - by;
+  const beforeBirthdayThisYear = (today.getMonth() + 1 < bm) || (today.getMonth() + 1 === bm && today.getDate() < bd);
+  if (beforeBirthdayThisYear) age--;
+  return age;
+}
+
 export function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-');
   return `${day}/${month}/${year}`;

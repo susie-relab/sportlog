@@ -21,7 +21,7 @@ import ConfettiBurst from '@/components/ConfettiBurst';
 import PbCelebrationModal from '@/components/PbCelebrationModal';
 import ActivitySavedModal, { randomEncouragement } from '@/components/ActivitySavedModal';
 import { detectAutoPBs } from '@/lib/pbDetect';
-import { todayLocalISO, openDatePicker } from '@/lib/utils';
+import { todayLocalISO, openDatePicker, calcAge } from '@/lib/utils';
 
 function ColorDot({ color }: { color: string }) {
   return <span className="inline-block w-2.5 h-2.5 rounded-full mr-2" style={{ background: color }} />;
@@ -637,14 +637,14 @@ export default function AddPage() {
                 <label className="label">Avg Heart Rate</label>
                 <ScrollFieldPicker
                   label="Avg Heart Rate" unit="bpm" min={28} max={230} value={avgHr} onChange={setAvgHr}
-                  suggestion={suggestedAvgHr(user?.user_metadata?.age ?? null, effort)} preferSuggestion placeholder="bpm"
+                  suggestion={suggestedAvgHr(user?.user_metadata?.birthday ? calcAge(user.user_metadata.birthday) : null, effort)} preferSuggestion placeholder="bpm"
                 />
               </div>
               <div>
                 <label className="label">Max Heart Rate</label>
                 <ScrollFieldPicker
                   label="Max Heart Rate" unit="bpm" min={28} max={230} value={maxHr} onChange={setMaxHr}
-                  suggestion={suggestedMaxHr(user?.user_metadata?.age ?? null, effort)} preferSuggestion placeholder="bpm"
+                  suggestion={suggestedMaxHr(user?.user_metadata?.birthday ? calcAge(user.user_metadata.birthday) : null, effort)} preferSuggestion placeholder="bpm"
                 />
               </div>
             </div>

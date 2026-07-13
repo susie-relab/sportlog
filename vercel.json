@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/recap-email", "schedule": "0 18 * * *" }
+    { "path": "/api/recap-email", "schedule": "0 18 * * *" },
+    { "path": "/api/birthday-email", "schedule": "0 20 * * *" }
   ]
 }

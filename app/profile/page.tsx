@@ -7,12 +7,13 @@ import Avatar, { AVATAR_COLORS, AvatarColorKey } from '@/components/Avatar';
 import Toast from '@/components/Toast';
 import AccountSwitcher from '@/components/AccountSwitcher';
 import { uploadImages, deleteImage } from '@/lib/images';
+import { openDatePicker, calcAge } from '@/lib/utils';
 import { Activity, EXERCISE_TYPE_ORDER, EXERCISE_TYPE_LABELS, allFavouriteItems, topActivityCounts, FavouriteItem } from '@/types';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const [username, setUsername] = useState('');
-  const [age, setAge] = useState('');
+  const [birthday, setBirthday] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarColor, setAvatarColor] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -33,7 +34,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user?.user_metadata?.username) setUsername(user.user_metadata.username);
-    if (user?.user_metadata?.age) setAge(String(user.user_metadata.age));
+    if (user?.user_metadata?.birthday) setBirthday(user.user_metadata.birthday);
     setAvatarUrl(user?.user_metadata?.avatar_url ?? null);
     setAvatarColor(user?.user_metadata?.avatar_color ?? null);
     setFavourites(user?.user_metadata?.favourite_activities ?? []);
@@ -67,8 +68,7 @@ export default function ProfilePage() {
   const handleUpdateUsername = async () => {
     if (!username.trim()) return;
     setSaving(true);
-    const ageNum = age.trim() ? parseInt(age) : null;
-    const { error } = await supabase.auth.updateUser({ data: { ...user?.user_metadata, username: username.trim(), age: ageNum } });
+    const { error } = await supabase.auth.updateUser({ data: { ...user?.user_metadata, username: username.trim(), birthday: birthday || null } });
     setSaving(false);
     flash(error ? error.message : 'Profile updated!', !error);
   };
@@ -177,8 +177,11 @@ export default function ProfilePage() {
       <div className="card mb-6">
         <h2 className="text-sm font-semibold text-white mb-3">Display Name</h2>
         <input className="input mb-3" placeholder="Enter a username" value={username} onChange={e => setUsername(e.target.value)} />
-        <h2 className="text-sm font-semibold text-white mb-3">Age <span className="text-[#64748B] font-normal">(optional)</span></h2>
-        <input type="number" min="0" max="120" className="input mb-3" placeholder="Enter your age" value={age} onChange={e => setAge(e.target.value)} />
+        <h2 className="text-sm font-semibold text-white mb-3">Birthday <span className="text-[#64748B] font-normal">(optional)</span></h2>
+        <div className="flex items-center gap-3 mb-3">
+          <input type="date" className="input flex-1" value={birthday} onClick={openDatePicker} onChange={e => setBirthday(e.target.value)} />
+          {birthday && <span className="text-sm text-[#94A3B8] whitespace-nowrap">Age: {calcAge(birthday)}</span>}
+        </div>
         <button onClick={handleUpdateUsername} disabled={saving} className="btn-primary w-full">Save Profile</button>
       </div>
 
