@@ -169,7 +169,7 @@ export default function ProfilePage() {
 
       {/* Accounts — switch between multiple logins saved on this device */}
       <div className="card mb-6">
-        <h2 className="text-sm font-semibold text-white mb-3">Accounts</h2>
+        <h2 className="text-sm font-semibold text-white mb-3">Switch Profile</h2>
         <AccountSwitcher />
       </div>
 
