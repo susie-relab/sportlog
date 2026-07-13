@@ -40,7 +40,27 @@ interface DistanceOverride {
   custom_time_seconds: number | null;
   custom_note: string | null;
   activity_id: string | null;
+  created_at?: string;
 }
+
+interface PbFeedItem {
+  key: string;
+  kind: 'starred' | 'distance' | 'type' | 'manual';
+  isManual: boolean; // reflects a manual action (manually starred, custom override, or a manual PB entry) vs a pure auto-computed one
+  title: string;
+  subtitle?: string;
+  date: string;
+  stat: string;
+  activity?: Activity;
+  auto?: boolean;
+}
+
+const FEED_KIND_LABEL: Record<PbFeedItem['kind'], string> = {
+  starred: '⭐ Starred', distance: '📏 Distance', type: '🏷 By Type', manual: '✍️ Manual',
+};
+const FEED_KIND_COLOR: Record<PbFeedItem['kind'], string> = {
+  starred: '#EAB308', distance: '#3B82F6', type: '#A855F7', manual: '#22C55E',
+};
 
 export default function PBsPage() {
   const { user } = useAuth();
@@ -80,8 +100,6 @@ export default function PBsPage() {
       setLoading(false);
     });
   }, [user]);
-
-  const starredPBs = activities.filter(a => a.is_pb && (starredFilter === 'all' || !a.pb_auto));
 
   const openOverrideEditor = (km: number) => {
     const existing = overrides.find(o => o.distance_km === km && o.status === 'custom');
@@ -164,6 +182,64 @@ export default function PBsPage() {
     };
   }).filter(Boolean);
 
+  // Unified "All PBs" feed — every starred activity, every distance-bucket PB, every
+  // by-type/by-run-type metric, and every manually-added PB, so nothing lives only in
+  // its own tab. Sorted newest-first by whatever date each entry is tied to.
+  const pbFeed: PbFeedItem[] = [];
+  for (const a of activities.filter(x => x.is_pb)) {
+    pbFeed.push({
+      key: `star-${a.id}`, kind: 'starred', isManual: !a.pb_auto,
+      title: a.name, subtitle: a.pb_description, date: a.date,
+      stat: [a.distance_km ? `${a.distance_km} km` : null, a.pace_min_km ? formatPaceMinKm(a.pace_min_km) : null, formatDuration(a.duration_minutes, a.duration_seconds)].filter(Boolean).join(' · '),
+      activity: a, auto: a.pb_auto,
+    });
+  }
+  for (const pb of bestPaceByDist) {
+    if (!pb || pb.override?.status === 'hidden') continue;
+    if (pb.override?.status === 'custom') {
+      const linked = pb.override.activity_id ? activities.find(x => x.id === pb.override!.activity_id) : undefined;
+      pbFeed.push({
+        key: `dist-${pb.km}`, kind: 'distance', isManual: true,
+        title: `${pb.label} PB`, subtitle: pb.override.custom_note || undefined,
+        date: linked?.date || pb.override.created_at?.slice(0, 10) || '',
+        stat: fmtClock(pb.override.custom_time_seconds!),
+        activity: linked,
+      });
+    } else if (pb.activity) {
+      pbFeed.push({
+        key: `dist-${pb.km}`, kind: 'distance', isManual: false,
+        title: `${pb.label} PB`, date: pb.activity.date,
+        stat: [formatPaceMinKm(pb.activity.pace_min_km!), pb.activity.distance_km ? `${pb.activity.distance_km} km` : null].filter(Boolean).join(' · '),
+        activity: pb.activity,
+      });
+    }
+  }
+  for (const pb of exerciseTypePBs) {
+    if (!pb) continue;
+    const label = EXERCISE_TYPE_LABELS[pb.type];
+    if (pb.longestDist) pbFeed.push({ key: `etype-${pb.type}-dist`, kind: 'type', isManual: false, title: `${label} — Longest Distance`, date: pb.longestDist.date, stat: `${pb.longestDist.distance_km} km`, activity: pb.longestDist });
+    if (pb.longestTime) pbFeed.push({ key: `etype-${pb.type}-time`, kind: 'type', isManual: false, title: `${label} — Longest Time`, date: pb.longestTime.date, stat: formatDuration(pb.longestTime.duration_minutes, pb.longestTime.duration_seconds), activity: pb.longestTime });
+    if (pb.bestPace) pbFeed.push({ key: `etype-${pb.type}-pace`, kind: 'type', isManual: false, title: `${label} — Best Pace`, date: pb.bestPace.date, stat: formatPaceMinKm(pb.bestPace.pace_min_km!), activity: pb.bestPace });
+    if (pb.maxPace) pbFeed.push({ key: `etype-${pb.type}-maxpace`, kind: 'type', isManual: false, title: `${label} — Max Pace`, date: pb.maxPace.date, stat: formatPaceMinKm(pb.maxPace.max_pace_min_km!), activity: pb.maxPace });
+    if (pb.maxHr) pbFeed.push({ key: `etype-${pb.type}-maxhr`, kind: 'type', isManual: false, title: `${label} — Max HR`, date: pb.maxHr.date, stat: `${pb.maxHr.max_hr} bpm`, activity: pb.maxHr });
+  }
+  for (const pb of runTypePBs) {
+    if (!pb) continue;
+    const label = RUN_TYPE_LABELS[pb.type];
+    if (pb.longestDist) pbFeed.push({ key: `rtype-${pb.type}-dist`, kind: 'type', isManual: false, title: `${label} Run — Longest Distance`, date: pb.longestDist.date, stat: `${pb.longestDist.distance_km} km`, activity: pb.longestDist });
+    if (pb.longestTime) pbFeed.push({ key: `rtype-${pb.type}-time`, kind: 'type', isManual: false, title: `${label} Run — Longest Time`, date: pb.longestTime.date, stat: formatDuration(pb.longestTime.duration_minutes, pb.longestTime.duration_seconds), activity: pb.longestTime });
+    if (pb.bestPace) pbFeed.push({ key: `rtype-${pb.type}-pace`, kind: 'type', isManual: false, title: `${label} Run — Best Pace`, date: pb.bestPace.date, stat: formatPaceMinKm(pb.bestPace.pace_min_km!), activity: pb.bestPace });
+  }
+  for (const pb of manualPBs) {
+    pbFeed.push({
+      key: `manual-${pb.id}`, kind: 'manual', isManual: true,
+      title: pb.title, subtitle: pb.description, date: pb.date,
+      stat: [pb.distance_km != null ? `${pb.distance_km} km` : null, pb.duration_minutes != null ? formatDuration(pb.duration_minutes) : null].filter(Boolean).join(' · '),
+    });
+  }
+  pbFeed.sort((a, b) => b.date.localeCompare(a.date));
+  const filteredFeed = starredFilter === 'all' ? pbFeed : pbFeed.filter(f => f.isManual);
+
   // Best months
   const monthlyStats = () => {
     const map: Record<string, { runs: number; activities: number; intensityMins: number; runDist: number; totalDist: number }> = {};
@@ -243,37 +319,42 @@ export default function PBsPage() {
         ))}
       </div>
 
-      {/* All PBs — manually starred + auto-detected */}
+      {/* All PBs — starred activities, distance PBs, by-type PBs, and manual entries, all together */}
       {activeTab === 'starred' && (
         <div className="flex flex-col gap-3">
           <div className="flex gap-1.5">
             <button onClick={() => setStarredFilter('all')} className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${starredFilter === 'all' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-300' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>All</button>
             <button onClick={() => setStarredFilter('manual')} className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${starredFilter === 'manual' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-300' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>Manual only</button>
           </div>
-          {starredPBs.length === 0 ? (
+          {filteredFeed.length === 0 ? (
             <div className="card text-[#64748B] text-sm">
               {starredFilter === 'manual'
-                ? 'No manually-starred PBs yet. When adding an activity, click the ⭐ to mark it as a personal best.'
+                ? 'No manually-added PBs yet — star an activity, override a distance PB, or add one under "Add PB".'
                 : 'No PBs yet — star an activity, or one will star itself automatically the moment it beats a previous best.'}
             </div>
-          ) : starredPBs.map(a => (
-            <button key={a.id} onClick={() => setEditingActivity(a)} className="card border-yellow-500/30 text-left w-full hover:border-yellow-500/60 transition-colors">
+          ) : filteredFeed.map(item => (
+            <button
+              key={item.key}
+              onClick={() => item.activity && setEditingActivity(item.activity)}
+              disabled={!item.activity}
+              className={`card text-left w-full transition-colors ${item.kind === 'starred' ? 'border-yellow-500/30' : 'border-[#293548]'} ${item.activity ? 'hover:border-[#475569]' : 'cursor-default'}`}
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">⭐</span>
-                    <span className="font-semibold text-white">{a.name}</span>
-                    {a.pb_auto && <span className="text-[9px] uppercase font-bold text-blue-300 bg-blue-500/10 border border-blue-500/30 px-1.5 py-0.5 rounded flex-shrink-0">Auto</span>}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ color: FEED_KIND_COLOR[item.kind], background: `${FEED_KIND_COLOR[item.kind]}22` }}>{FEED_KIND_LABEL[item.kind]}</span>
+                    <span className="font-semibold text-white">{item.title}</span>
+                    {item.auto && <span className="text-[9px] uppercase font-bold text-blue-300 bg-blue-500/10 border border-blue-500/30 px-1.5 py-0.5 rounded flex-shrink-0">Auto</span>}
                   </div>
-                  {a.pb_description && <p className="text-sm text-yellow-300 mt-1">{a.pb_description}</p>}
+                  {item.subtitle && <p className="text-sm text-yellow-300 mt-1">{item.subtitle}</p>}
                   <div className="flex gap-3 mt-2 flex-wrap">
-                    <span className="text-xs text-[#64748B]">{formatDate(a.date)}</span>
-                    {a.distance_km && <span className="text-xs text-[#94A3B8]">{a.distance_km} km</span>}
-                    {a.pace_min_km && <span className="text-xs text-[#94A3B8]">{formatPaceMinKm(a.pace_min_km)}</span>}
-                    <span className="text-xs text-[#94A3B8]">{formatDuration(a.duration_minutes, a.duration_seconds)}</span>
+                    {item.date && <span className="text-xs text-[#64748B]">{formatDate(item.date)}</span>}
+                    {item.stat && <span className="text-xs text-[#94A3B8]">{item.stat}</span>}
                   </div>
                 </div>
-                <span onClick={e => { e.stopPropagation(); setSharing(a); }} className="text-xs text-[#64748B] hover:text-white border border-[#334155] hover:border-[#475569] rounded-lg px-2.5 py-1.5 flex-shrink-0">↗ Share</span>
+                {item.kind === 'starred' && item.activity && (
+                  <span onClick={e => { e.stopPropagation(); setSharing(item.activity!); }} className="text-xs text-[#64748B] hover:text-white border border-[#334155] hover:border-[#475569] rounded-lg px-2.5 py-1.5 flex-shrink-0">↗ Share</span>
+                )}
               </div>
             </button>
           ))}
