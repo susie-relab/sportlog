@@ -78,6 +78,13 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
   const cwRuns = currentWeek ? WEEKDAYS.filter(d => isRunSession(currentWeek.days[d])) : [];
   const cwDone = currentWeek ? cwRuns.filter(d => currentWeek.days[d].completed).length : 0;
 
+  // sport/custom plans are always "active"; only run plans can be parked as inactive.
+  const isActive = !isRun || plan.active;
+  const minWeekNo = data.weeks[0]?.weekNumber ?? 0;
+  const maxWeekNo = data.weeks[data.weeks.length - 1]?.weekNumber ?? plan.weeks;
+  const week1No = data.weeks.find(w => w.weekNumber === 1)?.weekNumber ?? minWeekNo;
+  const [viewedWeek, setViewedWeek] = useState(isActive ? currentWeekNo : week1No);
+
   // Print/share summary info
   const runsPerWeekText = plan.days_per_week_min && plan.days_per_week_min !== plan.days_per_week
     ? `${plan.days_per_week_min}-${plan.days_per_week} ${isRun ? 'runs' : 'sessions'}/week`
@@ -258,10 +265,26 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
       )}
 
       {/* Navigation */}
-      <div className="flex items-center justify-between plan-no-print">
-        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wide">{viewAll ? 'Full Plan' : `This Week (Week ${currentWeekNo})`}</h2>
-        <div className="flex gap-1.5">
-          <button onClick={() => setViewAll(false)} className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${!viewAll ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>This week</button>
+      <div className="flex items-center justify-between plan-no-print flex-wrap gap-2">
+        <h2 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wide">
+          {viewAll ? 'Full Plan' : (isActive ? (viewedWeek === currentWeekNo ? `This Week (Week ${viewedWeek})` : `Week ${viewedWeek}`) : `Week ${viewedWeek}`)}
+        </h2>
+        <div className="flex gap-1.5 items-center">
+          {!viewAll && isActive && (
+            <>
+              <button
+                onClick={() => setViewedWeek(w => Math.max(minWeekNo, w - 1))}
+                disabled={viewedWeek <= minWeekNo}
+                className="text-xs px-3 py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] hover:border-[#475569] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-[#334155]"
+              >‹ Last week</button>
+              <button
+                onClick={() => setViewedWeek(w => Math.min(maxWeekNo, w + 1))}
+                disabled={viewedWeek >= maxWeekNo}
+                className="text-xs px-3 py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] hover:border-[#475569] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-[#334155]"
+              >Next week ›</button>
+            </>
+          )}
+          <button onClick={() => { setViewAll(false); setViewedWeek(isActive ? currentWeekNo : week1No); }} className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${!viewAll ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>{isActive ? 'This week' : 'Week 1'}</button>
           <button onClick={() => setViewAll(true)} className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${viewAll ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>Full plan</button>
         </div>
       </div>
@@ -269,7 +292,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
       {/* Week table */}
       <div className="plan-no-print">
         <PlanWeekTable
-          plan={viewAll ? data : { weeks: data.weeks.filter(w => w.weekNumber === currentWeekNo) }}
+          plan={viewAll ? data : { weeks: data.weeks.filter(w => w.weekNumber === viewedWeek) }}
           currentWeek={currentWeekNo}
           onDayClick={(week, day) => setSelected({ week, day })}
           onMove={(fromWeek, from, toWeek, to) => persist(movePlanSession(data, { week: fromWeek, day: from }, { week: toWeek, day: to }))}
