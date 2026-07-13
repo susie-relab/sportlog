@@ -43,6 +43,10 @@ export interface Session {
   completedEffort?: number | null;
   /** Difficulty relative to the original generated session. */
   variant?: 'easier' | 'harder' | null;
+  /** The session's values exactly as first generated, captured the first time Easier/Harder
+   *  is used — so Reset always restores the true original, even after several Easier/Harder
+   *  clicks in a row, instead of just undoing the most recent one. */
+  original?: { distanceKm?: number | null; timeMin?: number | null; estKm?: number | null; repLabel?: string | null; detail: string };
   /** A filler slot in the lead-in "Week 0" that falls before the plan's actual start date. */
   beforeStart?: boolean;
   /** When >1 session has been squished into this day via reordering, the individual original
@@ -998,9 +1002,30 @@ export function generateSportPlan(cfg: SportConfig): PlanData {
 // ---------- difficulty switching ----------
 // Returns a harder or easier variant of a session, or the original when reset.
 export function switchDifficulty(session: Session, dir: 'easier' | 'harder' | 'reset', cfg: PlanConfig): Session {
-  if (dir === 'reset') { const { variant, ...rest } = session; return { ...rest, variant: null }; }
+  // Capture the session's very first values before any adjustment — reused on every
+  // subsequent Easier/Harder click so Reset always has the true original to go back to.
+  const original = session.original ?? {
+    distanceKm: session.distanceKm ?? null,
+    timeMin: session.timeMin ?? null,
+    estKm: session.estKm ?? null,
+    repLabel: session.repLabel ?? null,
+    detail: session.detail,
+  };
+  if (dir === 'reset') {
+    const { variant, ...rest } = session;
+    return {
+      ...rest,
+      distanceKm: original.distanceKm ?? undefined,
+      timeMin: original.timeMin ?? undefined,
+      estKm: original.estKm ?? undefined,
+      repLabel: original.repLabel ?? undefined,
+      detail: original.detail,
+      variant: null,
+      original: undefined,
+    };
+  }
   const scale = dir === 'harder' ? 1.25 : 0.75;
-  const next: Session = { ...session, variant: dir };
+  const next: Session = { ...session, original, variant: dir };
   if (next.distanceKm) next.distanceKm = round(next.distanceKm * scale, 0.5);
   if (next.timeMin) next.timeMin = Math.round(next.timeMin * scale);
   if (next.estKm) next.estKm = round(next.estKm * scale, 0.5);
@@ -1009,10 +1034,12 @@ export function switchDifficulty(session: Session, dir: 'easier' | 'harder' | 'r
   }
   // Hill reps can escalate to a trail run (the hardest option).
   if (session.type === 'hill_reps' && dir === 'harder') {
-    return { ...trailRun(round((session.distanceKm || session.estKm || 6) * 1.2, 0.5)), variant: 'harder' };
+    return { ...trailRun(round((session.distanceKm || session.estKm || 6) * 1.2, 0.5)), variant: 'harder', original };
   }
+  // Always tag off the clean original detail (not the already-tagged current one), so
+  // repeated clicks show one tag instead of stacking " (harder) (harder) (harder)".
   const tag = dir === 'harder' ? ' (harder)' : ' (easier)';
-  next.detail = session.detail + tag;
+  next.detail = original.detail + tag;
   return next;
 }
 

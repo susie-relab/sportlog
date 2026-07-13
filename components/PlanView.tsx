@@ -272,8 +272,8 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
           plan={viewAll ? data : { weeks: data.weeks.filter(w => w.weekNumber === currentWeekNo) }}
           currentWeek={currentWeekNo}
           onDayClick={(week, day) => setSelected({ week, day })}
-          onMove={(week, from, to) => persist(movePlanSession(data, { week, day: from }, { week, day: to }))}
-          onAdd={(week, from, to) => persist(addSessionToDay(data, { week, day: from }, { week, day: to }))}
+          onMove={(fromWeek, from, toWeek, to) => persist(movePlanSession(data, { week: fromWeek, day: from }, { week: toWeek, day: to }))}
+          onAdd={(fromWeek, from, toWeek, to) => persist(addSessionToDay(data, { week: fromWeek, day: from }, { week: toWeek, day: to }))}
         />
       </div>
 

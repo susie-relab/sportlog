@@ -306,8 +306,8 @@ export default function PlanBuilder({ existing, hasActiveRunPlan, onSaved, onCan
         <div>
           <p className="text-xs text-[#64748B] uppercase tracking-wide font-semibold mb-3">Preview — click a day for more info or to reorder before saving</p>
           <PlanWeekTable plan={preview} onDayClick={(week, day) => setSelected({ week, day })}
-            onMove={(week, from, to) => setPreview(p => p && movePlanSession(p, { week, day: from }, { week, day: to }))}
-            onAdd={(week, from, to) => setPreview(p => p && addSessionToDay(p, { week, day: from }, { week, day: to }))} />
+            onMove={(fromWeek, from, toWeek, to) => setPreview(p => p && movePlanSession(p, { week: fromWeek, day: from }, { week: toWeek, day: to }))}
+            onAdd={(fromWeek, from, toWeek, to) => setPreview(p => p && addSessionToDay(p, { week: fromWeek, day: from }, { week: toWeek, day: to }))} />
         </div>
       )}
 

@@ -39,12 +39,12 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
 
   const weekNumbers = data.weeks.map(w => w.weekNumber);
 
-  const mutateSelf = (fn: (s: Session) => Session) => {
+  const mutateSelf = (fn: (s: Session) => Session, keepOpen = false) => {
     const newData = { ...data, weeks: data.weeks.map(w => w.weekNumber !== selected.week ? w : {
       ...w, days: { ...w.days, [selected.day]: fn(w.days[selected.day]) },
     }) };
     onSave(newData);
-    onClose();
+    if (!keepOpen) onClose();
   };
 
   const pendingDaySession = pendingDay ? data.weeks.find(w => w.weekNumber === targetWeek)?.days[pendingDay] : undefined;
@@ -104,7 +104,10 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
     onClose();
   };
 
-  const mutatePart = (i: number, fn: (s: Session) => Session) => { onSave(updateSessionPart(data, selected, i, fn)); onClose(); };
+  const mutatePart = (i: number, fn: (s: Session) => Session, keepOpen = false) => {
+    onSave(updateSessionPart(data, selected, i, fn));
+    if (!keepOpen) onClose();
+  };
   const makePartRestDay = (i: number) => { onSave(removeSessionPart(data, selected, i)); onClose(); };
   const startEditingPart = (i: number) => {
     const p = sessionParts(sel)[i];
@@ -236,9 +239,9 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
                           )}
                           {cfg && isRunSession(p) && (
                             <div className="grid grid-cols-3 gap-1.5">
-                              <button onClick={() => mutatePart(i, s => switchDifficulty(s, 'easier', cfg))} className="py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-[10px] hover:border-[#475569]">Easier</button>
-                              <button onClick={() => mutatePart(i, s => switchDifficulty(s, 'reset', cfg))} className="py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-[10px] hover:border-[#475569]">Reset</button>
-                              <button onClick={() => mutatePart(i, s => switchDifficulty(s, 'harder', cfg))} className="py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-[10px] hover:border-[#475569]">Harder</button>
+                              <button onClick={() => mutatePart(i, s => switchDifficulty(s, 'easier', cfg), true)} className="py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-[10px] hover:border-[#475569]">Easier</button>
+                              <button onClick={() => mutatePart(i, s => switchDifficulty(s, 'reset', cfg), true)} className="py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-[10px] hover:border-[#475569]">Reset</button>
+                              <button onClick={() => mutatePart(i, s => switchDifficulty(s, 'harder', cfg), true)} className="py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-[10px] hover:border-[#475569]">Harder</button>
                             </div>
                           )}
                         </div>
@@ -314,9 +317,9 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
                   <button onClick={() => setEditing(true)} className="py-2 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">✎ Edit details / goal</button>
                   {cfg && isRunSession(sel) && (
                     <div className="grid grid-cols-3 gap-2">
-                      <button onClick={() => mutateSelf(s => switchDifficulty(s, 'easier', cfg))} className="py-2 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">Easier</button>
-                      <button onClick={() => mutateSelf(s => switchDifficulty(s, 'reset', cfg))} className="py-2 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">Reset</button>
-                      <button onClick={() => mutateSelf(s => switchDifficulty(s, 'harder', cfg))} className="py-2 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">Harder</button>
+                      <button onClick={() => mutateSelf(s => switchDifficulty(s, 'easier', cfg), true)} className="py-2 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">Easier</button>
+                      <button onClick={() => mutateSelf(s => switchDifficulty(s, 'reset', cfg), true)} className="py-2 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">Reset</button>
+                      <button onClick={() => mutateSelf(s => switchDifficulty(s, 'harder', cfg), true)} className="py-2 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">Harder</button>
                     </div>
                   )}
                   {sel.type !== 'rest' && (

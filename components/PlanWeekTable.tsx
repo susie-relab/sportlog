@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PlanData, PlanWeek, Session, SessionType, Weekday, WEEKDAYS, WEEKDAY_LABELS, WEEKDAY_SHORT, isRunSession, sessionCount, sessionParts, MAX_SESSIONS_PER_DAY } from '@/lib/runPlanGenerator';
 import { EXERCISE_TYPE_COLORS, EXERCISE_TYPE_LABELS, ExerciseType } from '@/types';
 
@@ -112,15 +112,15 @@ interface Props {
   plan: PlanData;
   currentWeek?: number;
   onDayClick?: (weekNumber: number, day: Weekday) => void;
-  /** Enables drag-to-reorder within a week. Swaps the two days' sessions. */
-  onMove?: (weekNumber: number, from: Weekday, to: Weekday) => void;
+  /** Enables press-and-hold-the-handle drag-to-reorder, within or across weeks. Swaps the two days' sessions. */
+  onMove?: (fromWeek: number, from: Weekday, toWeek: number, to: Weekday) => void;
   /** Combines the dragged session onto the target day instead of swapping (up to MAX_SESSIONS_PER_DAY). */
-  onAdd?: (weekNumber: number, from: Weekday, to: Weekday) => void;
+  onAdd?: (fromWeek: number, from: Weekday, toWeek: number, to: Weekday) => void;
 }
 
 function DayCell({ s, onClick, compact, drag }: {
   s: Session; onClick?: () => void; compact?: boolean;
-  drag?: { onDragStart: () => void; onDrop: () => void; isDragging: boolean };
+  drag?: { onPointerDown: (e: React.PointerEvent) => void; isDragging: boolean; isOver: boolean };
 }) {
   if (s.beforeStart) {
     return <div className={`w-full rounded-lg border border-dashed border-[#1E293B] ${compact ? 'h-8' : 'p-2.5 h-[52px]'}`} />;
@@ -131,40 +131,50 @@ function DayCell({ s, onClick, compact, drag }: {
   const parts = sessionParts(s);
   const isCombined = parts.length > 1;
   return (
-    <button
-      onClick={onClick}
-      draggable={!!drag}
-      onDragStart={drag?.onDragStart}
-      onDragOver={drag ? (e => e.preventDefault()) : undefined}
-      onDrop={drag ? (e => { e.preventDefault(); drag.onDrop(); }) : undefined}
-      className={`w-full text-left rounded-lg transition-colors ${
-        isCombined ? 'p-1 flex flex-col gap-1' : 'p-2.5'
-      } border ${
-        s.completed ? 'border-green-600/60 bg-green-900/15' : 'border-[#293548] bg-[#0F172A] hover:border-[#475569]'
-      } ${compact && !isCombined ? 'flex items-center gap-2' : ''} ${drag ? 'cursor-grab active:cursor-grabbing' : ''} ${drag?.isDragging ? 'opacity-40' : ''}`}
-    >
-      {parts.map((p, i) => {
-        const color = sessionColor(p);
-        return (
-          <div key={i} className={isCombined ? `rounded-md border border-[#293548] bg-[#0B1220] p-1.5 ${compact ? 'flex items-center gap-2' : ''}` : (compact ? 'flex items-center gap-2 w-full' : 'w-full')}>
-            {compact && <span className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ background: color }} />}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                {!compact && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />}
-                <span className={`text-xs font-semibold truncate ${muted ? 'text-[#64748B]' : 'text-white'}`}>{p.title}</span>
-                {p.completed && <span className="text-green-400 text-xs ml-auto flex-shrink-0">✓</span>}
-                {p.variant && <span className="text-[9px] uppercase text-[#64748B] flex-shrink-0">{p.variant}</span>}
+    <div className="relative">
+      <button
+        onClick={onClick}
+        className={`w-full text-left rounded-lg transition-colors ${
+          isCombined ? 'p-1 flex flex-col gap-1' : 'p-2.5'
+        } border ${
+          s.completed ? 'border-green-600/60 bg-green-900/15' : 'border-[#293548] bg-[#0F172A] hover:border-[#475569]'
+        } ${compact && !isCombined ? 'flex items-center gap-2' : ''} ${drag?.isDragging ? 'opacity-40' : ''} ${drag?.isOver ? 'ring-2 ring-blue-400' : ''}`}
+      >
+        {parts.map((p, i) => {
+          const color = sessionColor(p);
+          return (
+            <div key={i} className={isCombined ? `rounded-md border border-[#293548] bg-[#0B1220] p-1.5 ${compact ? 'flex items-center gap-2' : ''}` : (compact ? 'flex items-center gap-2 w-full' : 'w-full')}>
+              {compact && <span className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ background: color }} />}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  {!compact && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />}
+                  <span className={`text-xs font-semibold truncate ${muted ? 'text-[#64748B]' : 'text-white'}`}>{p.title}</span>
+                  {p.completed && <span className="text-green-400 text-xs ml-auto flex-shrink-0">✓</span>}
+                  {p.variant && <span className="text-[9px] uppercase text-[#64748B] flex-shrink-0">{p.variant}</span>}
+                </div>
+                {exerciseTypeTag(p) && <div className="text-[10px] text-[#64748B] mt-0.5">{exerciseTypeTag(p)}</div>}
+                {target(p) && <div className="text-xs font-bold mt-0.5" style={{ color }}>{target(p)}</div>}
+                {!compact && !isCombined && p.detail && !muted && (
+                  <div className="text-[10px] text-[#64748B] mt-1 leading-snug line-clamp-2 whitespace-pre-line">{p.detail}</div>
+                )}
               </div>
-              {exerciseTypeTag(p) && <div className="text-[10px] text-[#64748B] mt-0.5">{exerciseTypeTag(p)}</div>}
-              {target(p) && <div className="text-xs font-bold mt-0.5" style={{ color }}>{target(p)}</div>}
-              {!compact && !isCombined && p.detail && !muted && (
-                <div className="text-[10px] text-[#64748B] mt-1 leading-snug line-clamp-2 whitespace-pre-line">{p.detail}</div>
-              )}
             </div>
-          </div>
-        );
-      })}
-    </button>
+          );
+        })}
+      </button>
+      {drag && (
+        <button
+          type="button"
+          onPointerDown={drag.onPointerDown}
+          onClick={e => e.stopPropagation()}
+          aria-label="Press and hold to drag to another day"
+          className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded text-[#64748B] hover:text-white bg-[#0F172A]/90 border border-[#293548] cursor-grab active:cursor-grabbing"
+          style={{ touchAction: 'none' }}
+        >
+          ⠿
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -181,29 +191,63 @@ function WeekHeader({ w }: { w: PlanWeek }) {
 }
 
 export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, onAdd }: Props) {
-  const [dragFrom, setDragFrom] = useState<{ week: number; day: Weekday } | null>(null);
-  const [dropChoice, setDropChoice] = useState<{ week: number; from: Weekday; to: Weekday } | null>(null);
-  const dragProps = (week: number, day: Weekday) => onMove ? {
-    onDragStart: () => setDragFrom({ week, day }),
-    onDrop: () => {
-      if (dragFrom && dragFrom.week === week && dragFrom.day !== day) {
-        const target = plan.weeks.find(w => w.weekNumber === week)?.days[day];
-        if (onAdd && target && isRunSession(target)) {
-          setDropChoice({ week, from: dragFrom.day, to: day });
+  const [dragFrom, setDragFrom] = useState<{ week: number; day: Weekday; pointerId: number } | null>(null);
+  const [overCell, setOverCell] = useState<{ week: number; day: Weekday } | null>(null);
+  const [dropChoice, setDropChoice] = useState<{ fromWeek: number; from: Weekday; toWeek: number; to: Weekday } | null>(null);
+
+  // Pointer-based drag (works for mouse AND touch, unlike native HTML5 drag-and-drop) —
+  // press-and-hold the ⠿ handle on a day, drag over any other day (even a different week's),
+  // release to drop. Cell hit-testing uses elementFromPoint against a data-cellkey marker.
+  useEffect(() => {
+    if (!dragFrom || !onMove) return;
+    const findCell = (x: number, y: number): { week: number; day: Weekday } | null => {
+      const el = document.elementFromPoint(x, y);
+      const cellEl = el?.closest('[data-cellkey]') as HTMLElement | null;
+      if (!cellEl?.dataset.cellkey) return null;
+      const [wk, dy] = cellEl.dataset.cellkey.split('|');
+      return { week: parseInt(wk, 10), day: dy as Weekday };
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerId !== dragFrom.pointerId) return;
+      e.preventDefault();
+      setOverCell(findCell(e.clientX, e.clientY));
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      if (e.pointerId !== dragFrom.pointerId) return;
+      const cell = findCell(e.clientX, e.clientY);
+      if (cell && (cell.week !== dragFrom.week || cell.day !== dragFrom.day)) {
+        const targetSession = plan.weeks.find(w => w.weekNumber === cell.week)?.days[cell.day];
+        if (onAdd && targetSession && isRunSession(targetSession)) {
+          setDropChoice({ fromWeek: dragFrom.week, from: dragFrom.day, toWeek: cell.week, to: cell.day });
         } else {
-          onMove(week, dragFrom.day, day);
+          onMove(dragFrom.week, dragFrom.day, cell.week, cell.day);
         }
       }
       setDragFrom(null);
-    },
+      setOverCell(null);
+    };
+    window.addEventListener('pointermove', onPointerMove, { passive: false });
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+  }, [dragFrom, plan, onMove, onAdd]);
+
+  const dragProps = (week: number, day: Weekday) => onMove ? {
+    onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); e.stopPropagation(); setDragFrom({ week, day, pointerId: e.pointerId }); },
     isDragging: dragFrom?.week === week && dragFrom?.day === day,
+    isOver: !!overCell && overCell.week === week && overCell.day === day && !(dragFrom?.week === week && dragFrom?.day === day),
   } : undefined;
   // any week without distance is treated as a "sessions" plan for the column header
   const anyKm = plan.weeks.some(w => w.totalKm > 0);
 
-  const dropWeek = dropChoice ? plan.weeks.find(w => w.weekNumber === dropChoice.week) : undefined;
-  const addWouldExceedMax = dropChoice && dropWeek
-    ? sessionCount(dropWeek.days[dropChoice.from]) + sessionCount(dropWeek.days[dropChoice.to]) > MAX_SESSIONS_PER_DAY
+  const dropFromWeek = dropChoice ? plan.weeks.find(w => w.weekNumber === dropChoice.fromWeek) : undefined;
+  const dropToWeek = dropChoice ? plan.weeks.find(w => w.weekNumber === dropChoice.toWeek) : undefined;
+  const addWouldExceedMax = dropChoice && dropFromWeek && dropToWeek
+    ? sessionCount(dropFromWeek.days[dropChoice.from]) + sessionCount(dropToWeek.days[dropChoice.to]) > MAX_SESSIONS_PER_DAY
     : false;
 
   return (
@@ -231,7 +275,7 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, o
                   </div>
                 </td>
                 {WEEKDAYS.map(d => (
-                  <td key={d} className="align-top" style={{ minWidth: '7rem' }}>
+                  <td key={d} className="align-top" data-cellkey={`${w.weekNumber}|${d}`} style={{ minWidth: '7rem' }}>
                     <DayCell s={w.days[d]} onClick={onDayClick ? () => onDayClick(w.weekNumber, d) : undefined} drag={dragProps(w.weekNumber, d)} />
                   </td>
                 ))}
@@ -241,7 +285,7 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, o
         </table>
         {onMove && (
           <p className="text-[10px] text-[#475569] mt-1">
-            Tip: drag a session onto another day{onAdd ? ' to swap or add it to that day' : ' to swap them'} (same week). Tap a day for cross-week moves.
+            Tip: press and hold the ⠿ handle, then drag onto another day{onAdd ? ' to swap or add it to that day' : ' to swap them'} — any week.
           </p>
         )}
       </div>
@@ -253,13 +297,13 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, o
             <p className="text-sm text-[#94A3B8] mb-3">{WEEKDAY_LABELS[dropChoice.to]} already has a session — swap it, or add this one alongside it?</p>
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => { onMove?.(dropChoice.week, dropChoice.from, dropChoice.to); setDropChoice(null); }}
+                onClick={() => { onMove?.(dropChoice.fromWeek, dropChoice.from, dropChoice.toWeek, dropChoice.to); setDropChoice(null); }}
                 className="py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">
                 Swap
               </button>
               <button
                 disabled={addWouldExceedMax}
-                onClick={() => { if (addWouldExceedMax) return; onAdd?.(dropChoice.week, dropChoice.from, dropChoice.to); setDropChoice(null); }}
+                onClick={() => { if (addWouldExceedMax) return; onAdd?.(dropChoice.fromWeek, dropChoice.from, dropChoice.toWeek, dropChoice.to); setDropChoice(null); }}
                 className={`py-1.5 rounded-lg border text-xs ${addWouldExceedMax ? 'border-[#334155] text-[#475569] cursor-not-allowed opacity-60' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
                 Add to that day
               </button>
@@ -280,16 +324,21 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, o
             </div>
             <div className="flex flex-col gap-1.5">
               {WEEKDAYS.map(d => (
-                <div key={d} className="flex items-center gap-2">
+                <div key={d} className="flex items-center gap-2" data-cellkey={`${w.weekNumber}|${d}`}>
                   <span className="text-[10px] font-semibold text-[#64748B] uppercase w-8 flex-shrink-0">{WEEKDAY_SHORT[d]}</span>
                   <div className="flex-1 min-w-0">
-                    <DayCell s={w.days[d]} compact onClick={onDayClick ? () => onDayClick(w.weekNumber, d) : undefined} />
+                    <DayCell s={w.days[d]} compact onClick={onDayClick ? () => onDayClick(w.weekNumber, d) : undefined} drag={dragProps(w.weekNumber, d)} />
                   </div>
                 </div>
               ))}
             </div>
           </div>
         ))}
+        {onMove && (
+          <p className="text-[10px] text-[#475569]">
+            Tip: press and hold the ⠿ handle, then drag onto another day{onAdd ? ' to swap or add it to that day' : ' to swap them'} — any week.
+          </p>
+        )}
       </div>
     </>
   );

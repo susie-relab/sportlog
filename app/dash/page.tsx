@@ -5,8 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, subTypeLabel, combinedRunTypeLabel } from '@/types';
 import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak, todayLocalISO } from '@/lib/utils';
-import { PlanRecord, PlanData, Session, Weekday, runPlanDisplayName, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS, movePlanSession, addSessionToDay, sessionCount, sessionParts, MAX_SESSIONS_PER_DAY, WEEKDAY_LABELS } from '@/lib/runPlanGenerator';
-import { sessionColor, sessionTarget, exerciseTypeTag } from '@/components/PlanWeekTable';
+import { PlanRecord, PlanData, Session, Weekday, runPlanDisplayName, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS, movePlanSession, addSessionToDay, sessionParts } from '@/lib/runPlanGenerator';
+import PlanWeekTable, { sessionColor, sessionTarget, exerciseTypeTag } from '@/components/PlanWeekTable';
 import PlanDaySheet from '@/components/PlanDaySheet';
 import Link from 'next/link';
 import Avatar from '@/components/Avatar';
@@ -118,8 +118,6 @@ export default function DashPage() {
   const [detail, setDetail] = useState<DetailSel | null>(null);
   const [showWeek, setShowWeek] = useState(false);
   const [streakModal, setStreakModal] = useState<'day' | 'week' | null>(null);
-  const [dragFrom, setDragFrom] = useState<{ planId: string; week: number; day: Weekday } | null>(null);
-  const [dropChoice, setDropChoice] = useState<{ planId: string; week: number; from: Weekday; to: Weekday } | null>(null);
   const [hoverType, setHoverType] = useState<ExerciseType | null>(null);
 
   const detailPlan = detail ? plans.find(p => p.id === detail.planId) : undefined;
@@ -383,112 +381,32 @@ export default function DashPage() {
         </div>
       )}
 
-      {/* This week's plan — full width; table on desktop, list on mobile */}
+      {/* This week's plan — one PlanWeekTable per active plan, so drag-to-reorder (press and
+          hold the ⠿ handle, works on touch too) and cross-week moves work exactly like the
+          full Training Plan view. */}
       {todayPlanItems.length > 0 && (
         <div className="card mb-5">
           <button onClick={() => setShowWeek(v => !v)} className="text-sm font-semibold text-[#94A3B8] hover:text-white transition-colors uppercase tracking-wide">
             {showWeek ? '▼' : '▶'} This Week&apos;s Plan
           </button>
           {showWeek && (
-            <div className="mt-3">
-              {/* Desktop table */}
-              <div className="hidden lg:block overflow-x-auto">
-                <table className="w-full border-separate" style={{ borderSpacing: '4px' }}>
-                  <thead>
-                    <tr>
-                      <th className="text-left text-xs font-semibold text-[#94A3B8] uppercase tracking-wide px-2 py-1 w-32">Plan</th>
-                      {WEEKDAYS.map(d => <th key={d} className="text-center text-xs font-semibold text-[#94A3B8] uppercase tracking-wide px-1 py-1">{d.slice(0, 3)}</th>)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {todayPlanItems.map(({ plan, today }) => {
-                      const week = plan.plan_data.weeks.find(w => w.weekNumber === today.week);
-                      if (!week) return null;
-                      return (
-                        <tr key={plan.id}>
-                          <td className="align-top px-2 py-2 rounded-lg bg-[#0F172A] border border-[#293548] text-sm font-semibold text-white">{planLabel(plan)}</td>
-                          {WEEKDAYS.map(d => {
-                            const s = week.days[d];
-                            if (s.beforeStart) return <td key={d} />;
-                            const muted = s.type === 'rest' || s.type === 'crosstrain';
-                            const isToday = d === today.day;
-                            const isDragging = dragFrom?.planId === plan.id && dragFrom?.week === today.week && dragFrom?.day === d;
-                            return (
-                              <td key={d} className="align-top">
-                                <button
-                                  onClick={() => setDetail({ planId: plan.id, week: today.week, day: d })}
-                                  draggable
-                                  onDragStart={() => setDragFrom({ planId: plan.id, week: today.week, day: d })}
-                                  onDragOver={e => e.preventDefault()}
-                                  onDrop={e => {
-                                    e.preventDefault();
-                                    if (dragFrom && dragFrom.planId === plan.id && dragFrom.week === today.week && dragFrom.day !== d) {
-                                      if (isRunSession(s)) setDropChoice({ planId: plan.id, week: today.week, from: dragFrom.day, to: d });
-                                      else persistPlanData(plan.id, movePlanSession(plan.plan_data, { week: today.week, day: dragFrom.day }, { week: today.week, day: d }));
-                                    }
-                                    setDragFrom(null);
-                                  }}
-                                  className={`w-full text-left rounded-lg border transition-colors cursor-grab active:cursor-grabbing ${sessionParts(s).length > 1 ? 'p-1 flex flex-col gap-1' : 'p-2'} ${isToday ? 'border-blue-500/50 bg-blue-500/10' : 'border-[#293548] bg-[#0F172A] hover:border-[#475569]'} ${isDragging ? 'opacity-40' : ''}`}>
-                                  {sessionParts(s).map((p, i) => (
-                                    <div key={i} className={sessionParts(s).length > 1 ? 'rounded-md border border-[#293548] bg-[#0B1220] p-1.5' : ''}>
-                                      <span className="w-1.5 h-1.5 rounded-full inline-block mr-1" style={{ background: sessionColor(p) }} />
-                                      <span className={`text-xs font-semibold ${muted ? 'text-[#64748B]' : 'text-white'}`}>{p.title}</span>
-                                      {exerciseTypeTag(p) && <span className="text-[10px] text-[#64748B] ml-1">· {exerciseTypeTag(p)}</span>}
-                                      {sessionTarget(p) && <div className="text-[10px] text-[#64748B] mt-0.5 inline">{sessionTarget(p)}</div>}
-                                      {p.completed && <span className="text-green-400 text-[10px] ml-1">✓</span>}
-                                    </div>
-                                  ))}
-                                </button>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                <p className="text-[10px] text-[#475569] mt-1">Tip: drag a session onto another day to swap or add it to that day.</p>
-              </div>
-
-              {/* Mobile list */}
-              <div className="lg:hidden flex flex-col gap-3">
-                {todayPlanItems.map(({ plan, today }) => {
-                  const week = plan.plan_data.weeks.find(w => w.weekNumber === today.week);
-                  if (!week) return null;
-                  return (
-                    <div key={plan.id}>
-                      <p className="text-[10px] text-[#64748B] uppercase tracking-wide mb-1">{planLabel(plan)} · Week {today.week}</p>
-                      <div className="flex flex-col gap-1">
-                        {WEEKDAYS.map(d => {
-                          const s = week.days[d];
-                          if (s.beforeStart) return null;
-                          const muted = s.type === 'rest' || s.type === 'crosstrain';
-                          const isToday = d === today.day;
-                          const parts = sessionParts(s);
-                          return (
-                            <button key={d} onClick={() => setDetail({ planId: plan.id, week: today.week, day: d })}
-                              className={`flex items-start gap-2 py-1.5 px-2 rounded-lg text-left ${isToday ? 'bg-blue-500/10 border border-blue-500/30' : 'hover:bg-[#0F172A]'}`}>
-                              <span className="text-[10px] font-semibold text-[#64748B] uppercase w-8 flex-shrink-0 pt-0.5">{d.slice(0, 3)}</span>
-                              <div className="flex flex-col gap-1 flex-1 min-w-0">
-                                {parts.map((p, i) => (
-                                  <div key={i} className={`flex items-center gap-2 ${parts.length > 1 ? 'rounded-md border border-[#293548] bg-[#0B1220] px-1.5 py-1' : ''}`}>
-                                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: sessionColor(p) }} />
-                                    <span className={`text-xs truncate flex-1 ${muted ? 'text-[#64748B]' : 'text-white'}`}>
-                                      {p.title}{exerciseTypeTag(p) && <span className="text-[#64748B]"> · {exerciseTypeTag(p)}</span>}
-                                    </span>
-                                    {sessionTarget(p) && <span className="text-[10px] text-[#64748B] flex-shrink-0">{sessionTarget(p)}</span>}
-                                    {p.completed && <span className="text-green-400 text-[10px] flex-shrink-0">✓</span>}
-                                  </div>
-                                ))}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="mt-3 flex flex-col gap-4">
+              {todayPlanItems.map(({ plan, today }) => {
+                const week = plan.plan_data.weeks.find(w => w.weekNumber === today.week);
+                if (!week) return null;
+                return (
+                  <div key={plan.id}>
+                    <p className="text-xs font-semibold text-white mb-1.5">{planLabel(plan)}</p>
+                    <PlanWeekTable
+                      plan={{ weeks: [week] }}
+                      currentWeek={today.week}
+                      onDayClick={(w, d) => setDetail({ planId: plan.id, week: w, day: d })}
+                      onMove={(fromWeek, from, toWeek, to) => persistPlanData(plan.id, movePlanSession(plan.plan_data, { week: fromWeek, day: from }, { week: toWeek, day: to }))}
+                      onAdd={(fromWeek, from, toWeek, to) => persistPlanData(plan.id, addSessionToDay(plan.plan_data, { week: fromWeek, day: from }, { week: toWeek, day: to }))}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -700,36 +618,6 @@ export default function DashPage() {
           onLogAndComplete={(s, partIndex) => router.push(planSessionHref(s, detailPlan.id, detail.week, detail.day, partIndex, true))}
         />
       )}
-
-      {/* Drag-drop onto an occupied day: swap or add? */}
-      {dropChoice && (() => {
-        const dropPlan = plans.find(p => p.id === dropChoice.planId);
-        const dropWeek = dropPlan?.plan_data.weeks.find(w => w.weekNumber === dropChoice.week);
-        const addWouldExceedMax = dropWeek ? sessionCount(dropWeek.days[dropChoice.from]) + sessionCount(dropWeek.days[dropChoice.to]) > MAX_SESSIONS_PER_DAY : false;
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDropChoice(null)} />
-            <div className="relative w-full max-w-xs bg-[#1E293B] border border-[#334155] rounded-2xl p-4">
-              <p className="text-sm text-[#94A3B8] mb-3">{WEEKDAY_LABELS[dropChoice.to]} already has a session — swap it, or add this one alongside it?</p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => { if (dropPlan) persistPlanData(dropPlan.id, movePlanSession(dropPlan.plan_data, { week: dropChoice.week, day: dropChoice.from }, { week: dropChoice.week, day: dropChoice.to })); setDropChoice(null); }}
-                  className="py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-xs hover:border-[#475569]">
-                  Swap
-                </button>
-                <button
-                  disabled={addWouldExceedMax}
-                  onClick={() => { if (addWouldExceedMax || !dropPlan) return; persistPlanData(dropPlan.id, addSessionToDay(dropPlan.plan_data, { week: dropChoice.week, day: dropChoice.from }, { week: dropChoice.week, day: dropChoice.to })); setDropChoice(null); }}
-                  className={`py-1.5 rounded-lg border text-xs ${addWouldExceedMax ? 'border-[#334155] text-[#475569] cursor-not-allowed opacity-60' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
-                  Add to that day
-                </button>
-              </div>
-              {addWouldExceedMax && <p className="text-[10px] text-amber-400/80 mt-1.5">That day already has {MAX_SESSIONS_PER_DAY} sessions — the max per day.</p>}
-              <button onClick={() => setDropChoice(null)} className="text-xs text-[#64748B] hover:text-white py-1 mt-2 w-full text-center">Cancel</button>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Streak drill-down: when did the current streak start, and where were the gaps */}
       {streakModal && (
