@@ -293,8 +293,8 @@ export default function PBsPage() {
     { key: 'distance', label: 'Distance PBs' },
     { key: 'type', label: 'By Type' },
     { key: 'monthly', label: 'Best Months' },
-    { key: 'manual', label: 'Add PB' },
     { key: 'additional', label: '⭐ Additional' },
+    { key: 'manual', label: 'Add PB' },
   ] as const;
 
   if (loading) return <div className="text-[#64748B] text-sm">Loading...</div>;
