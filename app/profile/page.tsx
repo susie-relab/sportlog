@@ -52,7 +52,7 @@ export default function ProfilePage() {
   const toggleFavourite = (key: string) => {
     setFavourites(prev => {
       if (prev.includes(key)) return prev.filter(k => k !== key);
-      if (prev.length >= 5) return prev;
+      if (prev.length >= 15) return prev;
       return [...prev, key];
     });
   };
@@ -188,22 +188,22 @@ export default function ProfilePage() {
       {/* Favourite activities */}
       <div className="card mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-white">Favourite Activities <span className="text-[#64748B] font-normal">(pick up to 5)</span></h2>
+          <h2 className="text-sm font-semibold text-white">Favourite Activities <span className="text-[#64748B] font-normal">(pick up to 15)</span></h2>
           <button onClick={() => setShowFavPicker(v => !v)} className="text-xs text-blue-400 hover:text-blue-300">{showFavPicker ? 'Done' : 'Edit'}</button>
         </div>
         {!showFavPicker ? (
           favItems.length === 0 ? (
             <p className="text-sm text-[#475569]">None yet — tap Edit to choose.</p>
           ) : (
-            <div className="flex flex-col gap-1.5">
+            <div className="grid grid-cols-3 gap-x-3 gap-y-1.5">
               {favItems.map(i => (
-                <div key={i.key} className="text-sm text-white">{i.emoji} {i.label}</div>
+                <div key={i.key} className="text-sm text-white truncate">{i.emoji} {i.label}</div>
               ))}
             </div>
           )
         ) : (
           <>
-            <p className="text-xs text-[#64748B] mb-3">{favourites.length}/5 selected</p>
+            <p className="text-xs text-[#64748B] mb-3">{favourites.length}/15 selected</p>
             <div className="flex flex-col gap-3 max-h-80 overflow-y-auto pr-1">
               {EXERCISE_TYPE_ORDER.map(type => {
                 const items = allItems.filter(i => i.type === type);
@@ -217,7 +217,7 @@ export default function ProfilePage() {
                           <button
                             key={i.key}
                             onClick={() => toggleFavourite(i.key)}
-                            disabled={!active && favourites.length >= 5}
+                            disabled={!active && favourites.length >= 15}
                             className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all disabled:opacity-30 ${active ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
                           >
                             {i.emoji} {i.label}
