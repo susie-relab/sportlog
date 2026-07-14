@@ -129,8 +129,10 @@ export default function AddPage() {
     setSaving(true);
     setError('');
 
-    const distanceKm = distance ? parseFloat(distance) : null;
-    const paceMinKm = paceToDecimal(paceMin, paceSec) ?? calcAutoPace(distance, durationSeconds) ?? null;
+    // Swim distance is entered/shown in metres — convert to km for storage/pace math,
+    // since distance_km (and pace_min_km) are shared across every exercise type.
+    const distanceKm = distance ? (exerciseType === 'swim' ? parseFloat(distance) / 1000 : parseFloat(distance)) : null;
+    const paceMinKm = paceToDecimal(paceMin, paceSec) ?? calcAutoPace(String(distanceKm ?? ''), durationSeconds) ?? null;
 
     const { data: inserted, error: dbErr } = await supabase.from('activities').insert({
       user_id: user!.id,
@@ -597,7 +599,7 @@ export default function AddPage() {
         {/* Distance — always visible */}
         <div>
           <label className="label">Distance (optional)</label>
-          <DistancePicker value={distance} onChange={setDistance} />
+          <DistancePicker value={distance} onChange={setDistance} exerciseType={exerciseType} />
         </div>
 
         {/* More details toggle */}

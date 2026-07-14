@@ -7,7 +7,7 @@ import {
   EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, combinedRunTypeLabel, sportLabelParts, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, SPORT_FOCUS_LABELS, SNOW_STYLE_LABELS, WATER_STYLE_LABELS,
   EXERCISE_TYPE_ORDER, subTypeLabel,
 } from '@/types';
-import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
+import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, formatDistance, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
 import ImageGallery from '@/components/ImageGallery';
 import ShareCard, { ShareStat } from '@/components/ShareCard';
@@ -296,7 +296,7 @@ export default function ActivityLogPage() {
                 )}
                 <div className="text-right flex-shrink-0">
                   <div className="text-sm text-white font-medium">{formatDuration(a.duration_minutes, a.duration_seconds)}</div>
-                  {a.distance_km && <div className="text-xs text-[#64748B]">{a.distance_km} km</div>}
+                  {a.distance_km && <div className="text-xs text-[#64748B]">{formatDistance(a.distance_km, a.exercise_type)}</div>}
                 </div>
                 <span className="text-[#475569] text-xs ml-1">{isOpen ? '▲' : '▼'}</span>
               </div>
@@ -349,7 +349,7 @@ export default function ActivityLogPage() {
                     {a.swim_styles && <Detail label="Swim Style" value={a.swim_styles.split(',').map(s => SWIM_STYLE_LABELS[s as keyof typeof SWIM_STYLE_LABELS] ?? s).join(', ')} />}
                     {a.snow_styles && <Detail label="Snow Style" value={a.snow_styles.split(',').map(s => SNOW_STYLE_LABELS[s as keyof typeof SNOW_STYLE_LABELS] ?? s).join(', ')} />}
                     {a.water_styles && <Detail label="Water Style" value={a.water_styles.split(',').map(s => WATER_STYLE_LABELS[s as keyof typeof WATER_STYLE_LABELS] ?? s).join(', ')} />}
-                    {a.distance_km && <Detail label="Distance" value={`${a.distance_km} km`} />}
+                    {a.distance_km && <Detail label="Distance" value={formatDistance(a.distance_km, a.exercise_type)} />}
                     {a.pace_min_km && (
                       <>
                         <Detail label="Avg Pace" value={formatPaceMinKm(a.pace_min_km)} />
@@ -420,7 +420,7 @@ export default function ActivityLogPage() {
             title={sharing.name}
             icon={EXERCISE_TYPE_ICONS[sharing.exercise_type]}
             availableStats={[
-              sharing.distance_km ? { label: 'Distance', value: `${sharing.distance_km} km` } : null,
+              sharing.distance_km ? { label: 'Distance', value: formatDistance(sharing.distance_km, sharing.exercise_type) } : null,
               { label: 'Duration', value: formatDuration(sharing.duration_minutes, sharing.duration_seconds) },
               sharing.pace_min_km ? { label: 'Pace', value: formatPaceMinKm(sharing.pace_min_km) } : null,
               sharing.pace_min_km ? { label: 'Speed', value: formatSpeedKmh(sharing.pace_min_km) } : null,

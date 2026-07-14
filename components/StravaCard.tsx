@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthProvider';
-import { formatDate, formatDuration, formatPaceMinKm } from '@/lib/utils';
+import { formatDate, formatDuration, formatPaceMinKm, formatDistance } from '@/lib/utils';
 import { EXERCISE_TYPE_LABELS } from '@/types';
 
 interface StravaConnection {
@@ -144,7 +144,7 @@ export default function StravaCard() {
                 <div className="text-sm font-semibold text-white">{d.strava_data.name}</div>
                 <div className="text-xs text-[#94A3B8] mt-1">
                   {EXERCISE_TYPE_LABELS[d.strava_data.exercise_type as keyof typeof EXERCISE_TYPE_LABELS] ?? d.strava_data.exercise_type} · {formatDate(d.strava_data.date)}
-                  {d.strava_data.distance_km ? ` · ${d.strava_data.distance_km} km` : ''}
+                  {d.strava_data.distance_km ? ` · ${formatDistance(d.strava_data.distance_km, d.strava_data.exercise_type)}` : ''}
                   {' · '}{formatDuration(d.strava_data.duration_minutes, d.strava_data.duration_seconds)}
                   {d.strava_data.pace_min_km ? ` · ${formatPaceMinKm(d.strava_data.pace_min_km)}` : ''}
                 </div>

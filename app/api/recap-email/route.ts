@@ -8,7 +8,7 @@
 import { Activity } from '@/types';
 import { PlanRecord } from '@/lib/runPlanGenerator';
 import { recapWithComparison, addDays, upcomingCount } from '@/lib/recap';
-import { formatDuration, localWeekKey, WeekStart, calcWeekStreak } from '@/lib/utils';
+import { formatDuration, formatDistance, localWeekKey, WeekStart, calcWeekStreak } from '@/lib/utils';
 
 // Run on the Node runtime (needs Intl timezone + long-running fetches) and give the
 // cron enough headroom to page users + fetch each one's data + send emails.
@@ -59,7 +59,7 @@ function recapHtml(title: string, range: string, r: Recap, opts: { appUrl: strin
       ${stat(r.km.toFixed(1), 'km', r.kmDelta)}
       ${stat(formatDuration(r.mins), 'Time', r.minsDelta)}
     </tr></table>
-    ${top ? line('#94A3B8', `🏆 Top session: <strong style="color:#fff;">${esc(top.name)}</strong> — ${formatDuration(top.duration_minutes)}${top.distance_km ? ` · ${top.distance_km} km` : ''}`) : ''}
+    ${top ? line('#94A3B8', `🏆 Top session: <strong style="color:#fff;">${esc(top.name)}</strong> — ${formatDuration(top.duration_minutes)}${top.distance_km ? ` · ${formatDistance(top.distance_km, top.exercise_type)}` : ''}`) : ''}
     ${r.planned > 0 ? line('#94A3B8', `Plan sessions: <strong style="color:#fff;">${r.done}/${r.planned}</strong> completed`) : ''}
     ${r.pbs.length > 0 ? line('#FACC15', `⭐ ${r.pbs.length} PB${r.pbs.length > 1 ? 's' : ''} hit!`) : ''}
     ${weekStreak && weekStreak > 1 ? line('#FACC15', `⚡ ${weekStreak}-week streak going!`) : ''}

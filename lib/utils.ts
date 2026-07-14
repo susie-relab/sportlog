@@ -31,6 +31,13 @@ export function formatSpeedKmh(paceMinKm: number): string {
   return `${speed.toFixed(1)} km/h`;
 }
 
+/** Distance display — swims are conventionally measured/thought of in metres (e.g. "1500m"),
+ *  not fractional km, even though distance_km is the column every exercise type shares. */
+export function formatDistance(distanceKm: number, exerciseType?: string): string {
+  if (exerciseType === 'swim') return `${Math.round(distanceKm * 1000)} m`;
+  return `${distanceKm} km`;
+}
+
 /** Today's date in the browser's local timezone, as YYYY-MM-DD. Avoids the
  * UTC off-by-one that `new Date().toISOString()` causes for timezones ahead
  * of UTC (e.g. NZT), where local "today" can already be UTC "tomorrow". */

@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Activity } from '@/types';
 import { PlanRecord } from '@/lib/runPlanGenerator';
-import { formatDuration, localWeekKey, WeekStart, calcWeekStreak } from '@/lib/utils';
+import { formatDuration, formatDistance, localWeekKey, WeekStart, calcWeekStreak } from '@/lib/utils';
 import { addDays, recapFor, recapWithComparison, upcomingCount } from '@/lib/recap';
 
 interface Props {
@@ -52,7 +52,7 @@ export default function RecapCard({ activities, plans, weekStartDay, todayISO }:
           <div className="stat-card"><div className="stat-value">{r.km.toFixed(1)}</div><div className="stat-label">km<Delta pct={r.kmDelta} /></div></div>
           <div className="stat-card"><div className="stat-value">{formatDuration(r.mins)}</div><div className="stat-label">Time<Delta pct={r.minsDelta} /></div></div>
         </div>
-        {r.topActivity && <p className="text-xs text-[#94A3B8] mb-1">🏆 Top session: <span className="text-white font-medium">{r.topActivity.name}</span> — {formatDuration(r.topActivity.duration_minutes)}{r.topActivity.distance_km ? ` · ${r.topActivity.distance_km} km` : ''}</p>}
+        {r.topActivity && <p className="text-xs text-[#94A3B8] mb-1">🏆 Top session: <span className="text-white font-medium">{r.topActivity.name}</span> — {formatDuration(r.topActivity.duration_minutes)}{r.topActivity.distance_km ? ` · ${formatDistance(r.topActivity.distance_km, r.topActivity.exercise_type)}` : ''}</p>}
         {r.planned > 0 && <p className="text-xs text-[#94A3B8] mb-1">Plan sessions: {r.done}/{r.planned} completed</p>}
         {r.pbs.length > 0 && <p className="text-xs text-yellow-400 mb-1">⭐ {r.pbs.length} PB{r.pbs.length > 1 ? 's' : ''} hit!</p>}
         {weekStreak > 1 && <p className="text-xs text-yellow-400/90 mb-1">⚡ {weekStreak}-week streak going!</p>}
@@ -77,7 +77,7 @@ export default function RecapCard({ activities, plans, weekStartDay, todayISO }:
           <div className="stat-card"><div className="stat-value">{r.km.toFixed(1)}</div><div className="stat-label">km<Delta pct={r.kmDelta} /></div></div>
           <div className="stat-card"><div className="stat-value">{formatDuration(r.mins)}</div><div className="stat-label">Time<Delta pct={r.minsDelta} /></div></div>
         </div>
-        {r.topActivity && <p className="text-xs text-[#94A3B8] mb-1">🏆 Top session: <span className="text-white font-medium">{r.topActivity.name}</span> — {formatDuration(r.topActivity.duration_minutes)}{r.topActivity.distance_km ? ` · ${r.topActivity.distance_km} km` : ''}</p>}
+        {r.topActivity && <p className="text-xs text-[#94A3B8] mb-1">🏆 Top session: <span className="text-white font-medium">{r.topActivity.name}</span> — {formatDuration(r.topActivity.duration_minutes)}{r.topActivity.distance_km ? ` · ${formatDistance(r.topActivity.distance_km, r.topActivity.exercise_type)}` : ''}</p>}
         {r.planned > 0 && <p className="text-xs text-[#94A3B8] mb-1">Plan sessions: {r.done}/{r.planned} completed</p>}
         {r.pbs.length > 0 && <p className="text-xs text-yellow-400 mb-1">⭐ {r.pbs.length} PB{r.pbs.length > 1 ? 's' : ''} hit!</p>}
         <Link href="/activity-log" className="text-xs text-blue-400 hover:text-blue-300 mt-1 inline-block">View in Activity Log →</Link>

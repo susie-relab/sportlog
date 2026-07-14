@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
-import { formatDate, todayLocalISO, openDatePicker } from '@/lib/utils';
+import { formatDate, todayLocalISO, openDatePicker, formatDistance } from '@/lib/utils';
 import ImageUploader from '@/components/ImageUploader';
 import ImageGallery from '@/components/ImageGallery';
 
@@ -331,7 +331,7 @@ export default function NotesPage() {
                     </>}
                 <div className="flex gap-3 mt-2 text-xs text-[#475569]">
                   <span>{item.duration_minutes}m</span>
-                  {item.distance_km ? <span>{item.distance_km} km</span> : null}
+                  {item.distance_km ? <span>{formatDistance(item.distance_km, item.exercise_type)}</span> : null}
                   {item.pace_min_km ? <span>{Math.floor(item.pace_min_km)}:{String(Math.round((item.pace_min_km % 1) * 60)).padStart(2, '0')}/km</span> : null}
                 </div>
                 {editActId !== item.id && (

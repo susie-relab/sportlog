@@ -48,7 +48,11 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
   const [mins, setMins] = useState(String(activity.duration_minutes % 60 || ''));
   const [secs, setSecs] = useState(String(activity.duration_seconds || ''));
   const [effort, setEffort] = useState<number | null>(activity.effort);
-  const [distance, setDistance] = useState(activity.distance_km ? String(activity.distance_km) : '');
+  // Swims are entered/shown in metres, everything else in km — distance_km itself always
+  // stays in km in the database regardless.
+  const [distance, setDistance] = useState(activity.distance_km
+    ? (activity.exercise_type === 'swim' ? String(Math.round(activity.distance_km * 1000)) : String(activity.distance_km))
+    : '');
   const [notes, setNotes] = useState(activity.notes || '');
   const [intensityMins, setIntensityMins] = useState(activity.intensity_minutes ? String(activity.intensity_minutes) : '');
   const [paceMin, setPaceMin] = useState(activity.pace_min_km ? String(Math.floor(activity.pace_min_km)) : '');
@@ -92,6 +96,8 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
     setSaving(true);
     setError('');
 
+    const distanceKm = distance ? (exerciseType === 'swim' ? parseFloat(distance) / 1000 : parseFloat(distance)) : null;
+
     const { data, error: dbErr } = await supabase
       .from('activities')
       .update({
@@ -109,10 +115,10 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
         duration_minutes: durationMinutes,
         duration_seconds: durationExtraSeconds,
         effort,
-        distance_km: distance ? parseFloat(distance) : null,
+        distance_km: distanceKm,
         notes: notes || null,
         intensity_minutes: intensityMins ? parseInt(intensityMins) : null,
-        pace_min_km: paceToDecimal(paceMin, paceSec) ?? calcAutoPace(distance, durationTotalSeconds) ?? null,
+        pace_min_km: paceToDecimal(paceMin, paceSec) ?? calcAutoPace(String(distanceKm ?? ''), durationTotalSeconds) ?? null,
         max_pace_min_km: paceToDecimal(maxPaceMin, maxPaceSec) ?? null,
         max_hr: maxHr ? parseInt(maxHr) : null,
         avg_hr: avgHr ? parseInt(avgHr) : null,
@@ -462,7 +468,7 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
           {/* Distance */}
           <div>
             <label className="label">Distance (optional)</label>
-            <DistancePicker value={distance} onChange={setDistance} />
+            <DistancePicker value={distance} onChange={setDistance} exerciseType={exerciseType} />
           </div>
 
           {/* More details toggle */}

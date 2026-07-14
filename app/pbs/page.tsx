@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, RunType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, RUN_TYPE_LABELS, REST_BREAK_RUN_TYPES, subTypeLabel, activityEmoji } from '@/types';
-import { formatPaceMinKm, formatDuration, formatDate, openDatePicker } from '@/lib/utils';
+import { formatPaceMinKm, formatDuration, formatDate, openDatePicker, formatDistance } from '@/lib/utils';
 import ShareCard, { ShareStat } from '@/components/ShareCard';
 import EditActivityModal from '@/components/EditActivityModal';
 import { PB_SHARE_ICON } from '@/lib/shareIcons';
@@ -213,7 +213,7 @@ export default function PBsPage() {
     pbFeed.push({
       key: `star-${a.id}`, kind: 'starred', isManual: !a.pb_auto,
       title: a.name, subtitle: a.pb_description, date: a.date,
-      stat: [a.distance_km ? `${a.distance_km} km` : null, a.pace_min_km ? formatPaceMinKm(a.pace_min_km) : null, formatDuration(a.duration_minutes, a.duration_seconds)].filter(Boolean).join(' · '),
+      stat: [a.distance_km ? formatDistance(a.distance_km, a.exercise_type) : null, a.pace_min_km ? formatPaceMinKm(a.pace_min_km) : null, formatDuration(a.duration_minutes, a.duration_seconds)].filter(Boolean).join(' · '),
       activity: a, auto: a.pb_auto,
     });
   }
@@ -232,7 +232,7 @@ export default function PBsPage() {
       pbFeed.push({
         key: `dist-${pb.km}`, kind: 'distance', isManual: false,
         title: `${pb.label} PB`, date: pb.activity.date,
-        stat: [formatPaceMinKm(pb.activity.pace_min_km!), pb.activity.distance_km ? `${pb.activity.distance_km} km` : null].filter(Boolean).join(' · '),
+        stat: [formatPaceMinKm(pb.activity.pace_min_km!), pb.activity.distance_km ? formatDistance(pb.activity.distance_km, pb.activity.exercise_type) : null].filter(Boolean).join(' · '),
         activity: pb.activity,
       });
     }
@@ -240,7 +240,7 @@ export default function PBsPage() {
   for (const pb of exerciseTypePBs) {
     if (!pb) continue;
     const label = EXERCISE_TYPE_LABELS[pb.type];
-    if (pb.longestDist) pbFeed.push({ key: `etype-${pb.type}-dist`, kind: 'type', isManual: false, title: `${label} — Longest Distance`, date: pb.longestDist.date, stat: `${pb.longestDist.distance_km} km`, activity: pb.longestDist });
+    if (pb.longestDist) pbFeed.push({ key: `etype-${pb.type}-dist`, kind: 'type', isManual: false, title: `${label} — Longest Distance`, date: pb.longestDist.date, stat: formatDistance(pb.longestDist.distance_km!, pb.type), activity: pb.longestDist });
     if (pb.longestTime) pbFeed.push({ key: `etype-${pb.type}-time`, kind: 'type', isManual: false, title: `${label} — Longest Time`, date: pb.longestTime.date, stat: formatDuration(pb.longestTime.duration_minutes, pb.longestTime.duration_seconds), activity: pb.longestTime });
     if (pb.bestPace) pbFeed.push({ key: `etype-${pb.type}-pace`, kind: 'type', isManual: false, title: `${label} — Best Pace`, date: pb.bestPace.date, stat: formatPaceMinKm(pb.bestPace.pace_min_km!), activity: pb.bestPace });
     if (pb.maxPace) pbFeed.push({ key: `etype-${pb.type}-maxpace`, kind: 'type', isManual: false, title: `${label} — Max Pace`, date: pb.maxPace.date, stat: formatPaceMinKm(pb.maxPace.max_pace_min_km!), activity: pb.maxPace });
@@ -256,7 +256,7 @@ export default function PBsPage() {
   for (const pb of subtypePBs) {
     if (!pb) continue;
     const label = `${pb.emoji} ${pb.label}`;
-    if (pb.longestDist) pbFeed.push({ key: `subtype-${pb.key}-dist`, kind: 'type', isManual: false, title: `${label} — Longest Distance`, date: pb.longestDist.date, stat: `${pb.longestDist.distance_km} km`, activity: pb.longestDist });
+    if (pb.longestDist) pbFeed.push({ key: `subtype-${pb.key}-dist`, kind: 'type', isManual: false, title: `${label} — Longest Distance`, date: pb.longestDist.date, stat: formatDistance(pb.longestDist.distance_km!, pb.longestDist.exercise_type), activity: pb.longestDist });
     if (pb.longestTime) pbFeed.push({ key: `subtype-${pb.key}-time`, kind: 'type', isManual: false, title: `${label} — Longest Time`, date: pb.longestTime.date, stat: formatDuration(pb.longestTime.duration_minutes, pb.longestTime.duration_seconds), activity: pb.longestTime });
     if (pb.bestPace) pbFeed.push({ key: `subtype-${pb.key}-pace`, kind: 'type', isManual: false, title: `${label} — Best Pace`, date: pb.bestPace.date, stat: formatPaceMinKm(pb.bestPace.pace_min_km!), activity: pb.bestPace });
     if (pb.maxPace) pbFeed.push({ key: `subtype-${pb.key}-maxpace`, kind: 'type', isManual: false, title: `${label} — Max Pace`, date: pb.maxPace.date, stat: formatPaceMinKm(pb.maxPace.max_pace_min_km!), activity: pb.maxPace });
@@ -468,7 +468,7 @@ export default function PBsPage() {
                     <select className="input" value={ovActivityId} onChange={e => setOvActivityId(e.target.value)}>
                       <option value="">No linked activity</option>
                       {activities.slice().sort((a, b) => b.date.localeCompare(a.date)).map(a => (
-                        <option key={a.id} value={a.id}>{formatDate(a.date)} — {a.name}{a.distance_km ? ` (${a.distance_km}km)` : ''}</option>
+                        <option key={a.id} value={a.id}>{formatDate(a.date)} — {a.name}{a.distance_km ? ` (${formatDistance(a.distance_km, a.exercise_type)})` : ''}</option>
                       ))}
                     </select>
                     <input className="input" placeholder="Note (optional) — e.g. 1km split during a 3km run" value={ovNote} onChange={e => setOvNote(e.target.value)} />
@@ -496,7 +496,7 @@ export default function PBsPage() {
                   {pb!.longestDist && (
                     <button onClick={() => setEditingActivity(pb!.longestDist)} className="flex justify-between text-sm w-full hover:bg-white/5 rounded px-1 -mx-1">
                       <span className="text-[#64748B]">Longest Distance</span>
-                      <span className="text-blue-400 font-medium">{pb!.longestDist.distance_km} km</span>
+                      <span className="text-blue-400 font-medium">{formatDistance(pb!.longestDist.distance_km!, pb!.type)}</span>
                     </button>
                   )}
                   {pb!.longestTime && (
@@ -571,7 +571,7 @@ export default function PBsPage() {
                     {pb!.longestDist && (
                       <button onClick={() => setEditingActivity(pb!.longestDist)} className="flex justify-between text-sm w-full hover:bg-white/5 rounded px-1 -mx-1">
                         <span className="text-[#64748B]">Longest Distance</span>
-                        <span className="text-blue-400 font-medium">{pb!.longestDist.distance_km} km</span>
+                        <span className="text-blue-400 font-medium">{formatDistance(pb!.longestDist.distance_km!, pb!.longestDist.exercise_type)}</span>
                       </button>
                     )}
                     {pb!.longestTime && (
@@ -729,7 +729,7 @@ export default function PBsPage() {
           title={sharing.pb_description || sharing.name}
           icon={PB_SHARE_ICON}
           availableStats={[
-            sharing.distance_km ? { label: 'Distance', value: `${sharing.distance_km} km` } : null,
+            sharing.distance_km ? { label: 'Distance', value: formatDistance(sharing.distance_km, sharing.exercise_type) } : null,
             { label: 'Duration', value: formatDuration(sharing.duration_minutes, sharing.duration_seconds) },
             sharing.pace_min_km ? { label: 'Pace', value: formatPaceMinKm(sharing.pace_min_km) } : null,
             sharing.avg_hr ? { label: 'Avg HR', value: `${sharing.avg_hr} bpm` } : null,
