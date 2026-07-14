@@ -260,7 +260,13 @@ export default function ProfilePage() {
       <div className="card mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-white">Favourite Activities <span className="text-[#64748B] font-normal">(pick up to 15)</span></h2>
-          <button onClick={() => setShowFavPicker(v => !v)} className="text-xs text-blue-400 hover:text-blue-300">{showFavPicker ? 'Done' : 'Edit'}</button>
+          <button
+            onClick={() => showFavPicker ? saveFavourites() : setShowFavPicker(true)}
+            disabled={saving}
+            className="text-xs text-blue-400 hover:text-blue-300"
+          >
+            {showFavPicker ? 'Done' : 'Edit'}
+          </button>
         </div>
         {!showFavPicker ? (
           favItems.length === 0 ? (

@@ -90,19 +90,26 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
     if (!draft.some(t => t.key === activeKey)) setActiveKey(draft[0]?.key ?? null);
   };
   const removeTile = (key: string) => setDraft(prev => prev.filter(t => t.key !== key));
-  const addTile = (key: string, metric: YearTotalTile['metric']) => {
-    setDraft(prev => [...prev, { key, metric }]);
+  // Adds a new tab, or updates the metric of one already in the draft — same picker modal
+  // handles both, since tapping an existing tab opens it straight to the metric step.
+  const setTileMetric = (key: string, metric: YearTotalTile['metric']) => {
+    setDraft(prev => prev.some(t => t.key === key)
+      ? prev.map(t => t.key === key ? { ...t, metric } : t)
+      : [...prev, { key, metric }]);
     setPickedKey(null);
     setSearch('');
   };
 
   // Drag-to-reorder for the edit-mode tab strip — press and hold a tab (not its remove
   // button) then drag over another to swap positions, same interaction as the Profile
-  // favourites picker.
+  // favourites picker. A press-release with no drag in between is treated as a tap, opening
+  // that tab's metric editor instead.
+  const dragMovedRef = useRef(false);
   const handleDragPointerDown = (key: string) => (e: React.PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('button')) return;
     e.preventDefault();
     draggingKeyRef.current = key;
+    dragMovedRef.current = false;
     setDraggingKey(key);
     window.addEventListener('pointermove', handleDragPointerMove);
     window.addEventListener('pointerup', handleDragPointerUp);
@@ -113,6 +120,7 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
     const overKey = (el?.closest('[data-tile-key]') as HTMLElement | null)?.dataset.tileKey;
     if (!overKey || overKey === dragKey) return;
+    dragMovedRef.current = true;
     setDraft(prev => {
       const from = prev.findIndex(t => t.key === dragKey);
       const to = prev.findIndex(t => t.key === overKey);
@@ -124,10 +132,13 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
     });
   };
   const handleDragPointerUp = () => {
+    const key = draggingKeyRef.current;
+    const moved = dragMovedRef.current;
     draggingKeyRef.current = null;
     setDraggingKey(null);
     window.removeEventListener('pointermove', handleDragPointerMove);
     window.removeEventListener('pointerup', handleDragPointerUp);
+    if (key && !moved) setPickedKey(key);
   };
 
   const activeTile = tiles.find(t => t.key === activeKey) ?? tiles[0] ?? null;
@@ -139,6 +150,7 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
 
   const usedKeys = new Set(draft.map(t => t.key));
   const pickableItems = allFavouriteItems().filter(i => !usedKeys.has(i.key) && i.label.toLowerCase().includes(search.toLowerCase()));
+  const isEditingExistingTile = pickedKey !== null && draft.some(t => t.key === pickedKey);
 
   return (
     <div className="card mb-5">
@@ -157,7 +169,7 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
 
       {editing ? (
         <>
-          <p className="text-xs text-[#475569] mb-2">Drag to reorder</p>
+          <p className="text-xs text-[#475569] mb-2">Tap a tab to edit it, drag to reorder</p>
           <div className="flex flex-wrap gap-3">
             {draft.map(tile => {
               const item = registry.get(tile.key);
@@ -226,11 +238,15 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
                     </h3>
                     <p className="text-sm text-[#94A3B8] mb-4">What should this tab total? Used for both the Year and Month figures.</p>
                     <div className="flex flex-col gap-2">
-                      <button onClick={() => addTile(pickedKey, 'distance')} className="btn-secondary text-sm py-2.5">Total distance (km)</button>
-                      <button onClick={() => addTile(pickedKey, 'count')} className="btn-secondary text-sm py-2.5">Activity count</button>
-                      <button onClick={() => addTile(pickedKey, 'both')} className="btn-secondary text-sm py-2.5">Both</button>
+                      <button onClick={() => setTileMetric(pickedKey, 'distance')} className="btn-secondary text-sm py-2.5">Total distance (km)</button>
+                      <button onClick={() => setTileMetric(pickedKey, 'count')} className="btn-secondary text-sm py-2.5">Activity count</button>
+                      <button onClick={() => setTileMetric(pickedKey, 'both')} className="btn-secondary text-sm py-2.5">Both</button>
                     </div>
-                    <button onClick={() => setPickedKey('')} className="text-sm text-[#64748B] hover:text-white py-1 mt-3">← Back</button>
+                    {isEditingExistingTile ? (
+                      <button onClick={() => setPickedKey(null)} className="text-sm text-[#64748B] hover:text-white py-1 mt-3">Close</button>
+                    ) : (
+                      <button onClick={() => setPickedKey('')} className="text-sm text-[#64748B] hover:text-white py-1 mt-3">← Back</button>
+                    )}
                   </>
                 )}
               </div>
