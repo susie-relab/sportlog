@@ -23,8 +23,19 @@ const outfit = Outfit({
   display: "swap",
 });
 
+// A malformed APP_URL env var (missing protocol, stray whitespace, etc.) would otherwise
+// throw at build time via `new URL()` and fail the entire production build — fall back to
+// the known-good default instead of letting one bad env var take the whole site down.
+function safeMetadataBase(): URL {
+  try {
+    return new URL(process.env.APP_URL || "https://sportlogrun.vercel.app");
+  } catch {
+    return new URL("https://sportlogrun.vercel.app");
+  }
+}
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL || "https://sportlogrun.vercel.app"),
+  metadataBase: safeMetadataBase(),
   title: "SportLog — Exercise Tracker",
   description: "Personal exercise and run tracker",
   manifest: "/manifest.json",
