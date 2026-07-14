@@ -19,9 +19,9 @@ export default function FavouritesCard({ favourites, activities }: Props) {
       {favItems.length > 0 && (
         <div className="mb-3">
           <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-2">Favourite Activities</p>
-          <div className="flex flex-col gap-1">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1">
             {favItems.map(i => (
-              <div key={i.key} className="text-sm text-white">{i.emoji} {i.label}</div>
+              <div key={i.key} className="text-sm text-white truncate">{i.emoji} {i.label}</div>
             ))}
           </div>
         </div>

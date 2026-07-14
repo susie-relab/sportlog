@@ -69,7 +69,7 @@ const SUBTYPE_EMOJI_OVERRIDES: Record<string, string> = {
   // Fitness Training subtypes
   boxing: '🥊',
   jump_rope: '🪢',
-  dance: '🧑🏽‍🩰',
+  dance: '💃',
   skateboard: '🛹',
   rock_climbing: '🧗',
   trampoline: '🤸',
@@ -225,13 +225,13 @@ export const COMPANION_EMOJI: Record<Companion, string> = {
 export type WeatherCondition = 'rainy' | 'sunny' | 'windy' | 'cloudy' | 'foggy' | 'snowy' | 'stormy' | 'freezing' | 'cold' | 'hot' | 'humid' | 'dusty';
 export const CONDITION_LABELS: Record<WeatherCondition, string> = {
   rainy: 'Rainy', sunny: 'Sunny', windy: 'Windy', cloudy: 'Cloudy', foggy: 'Foggy', snowy: 'Snowy',
-  stormy: 'Stormy', freezing: 'Freezing', cold: 'Cold', hot: 'Hot', humid: 'Humid', dusty: 'Dusty',
+  stormy: 'Stormy', dusty: 'Dusty', freezing: 'Freezing', cold: 'Cold', hot: 'Hot', humid: 'Humid',
 };
 // Plain glyph icons (no smiley/photographic-style faces) so they read as simple sketch-style
 // doodles rather than emoji reactions.
 export const CONDITION_EMOJI: Record<WeatherCondition, string> = {
   rainy: '🌧️', sunny: '☀️', windy: '💨', cloudy: '☁️', foggy: '🌫️', snowy: '🌨️',
-  stormy: '⛈️', freezing: '🧊', cold: '❄️', hot: '🌡️', humid: '💧', dusty: '🌪️',
+  stormy: '⛈️', dusty: '🌪️', freezing: '🧊', cold: '❄️', hot: '🌡️', humid: '💧',
 };
 
 export const SPORT_SUB_LABELS: Record<SportSubType, string> = {

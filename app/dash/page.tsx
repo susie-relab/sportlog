@@ -332,9 +332,12 @@ export default function DashPage() {
         </button>
       </div>
 
-      <YearTotalsCard activities={activities} config={user?.user_metadata?.year_total_tiles} onSave={saveYearTotalTiles} />
+      {/* This Year — full width on mobile; moves beside Today's Plan on desktop (see grid below) */}
+      <div className="lg:hidden">
+        <YearTotalsCard activities={activities} config={user?.user_metadata?.year_total_tiles} onSave={saveYearTotalTiles} />
+      </div>
 
-      {/* Desktop: today's plan + last-week/favourites side by side instead of one long column */}
+      {/* Desktop: today's plan + this year side by side instead of one long column */}
       <div className="lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start">
       <div>
       {/* Today's Plan / what's next */}
@@ -403,9 +406,8 @@ export default function DashPage() {
 
       </div>
 
-      <div>
-      <LastWeekSummaryCard activities={activities} plans={plans} weekStartDay={weekStartPref} todayISO={todayISO} />
-      <FavouritesCard favourites={user?.user_metadata?.favourite_activities ?? []} activities={activities} />
+      <div className="hidden lg:block">
+      <YearTotalsCard activities={activities} config={user?.user_metadata?.year_total_tiles} onSave={saveYearTotalTiles} />
       </div>
       </div>
 
@@ -440,6 +442,9 @@ export default function DashPage() {
           )}
         </div>
       )}
+
+      <LastWeekSummaryCard activities={activities} plans={plans} weekStartDay={weekStartPref} todayISO={todayISO} />
+      <FavouritesCard favourites={user?.user_metadata?.favourite_activities ?? []} activities={activities} />
 
       {/* 14-day snapshot — sits directly above the 14-Day Activity Mix chart below */}
       <h2 className="text-sm font-semibold text-[#64748B] uppercase tracking-wide mb-3">Last 14 Days</h2>
