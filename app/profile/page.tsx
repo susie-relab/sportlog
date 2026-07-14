@@ -11,6 +11,9 @@ import { uploadImages, deleteImage } from '@/lib/images';
 import { openDatePicker, calcAge } from '@/lib/utils';
 import { Activity, EXERCISE_TYPE_ORDER, EXERCISE_TYPE_LABELS, allFavouriteItems, topActivityCounts, FavouriteItem } from '@/types';
 
+// Quick-jump year list for the Birthday field — newest-first, ~100 years back.
+const BIRTH_YEAR_OPTIONS = Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i);
+
 export default function ProfilePage() {
   const { user } = useAuth();
   const [username, setUsername] = useState('');
@@ -225,7 +228,19 @@ export default function ProfilePage() {
         <h2 className="text-sm font-semibold text-white mb-3">Display Name</h2>
         <input className="input mb-3" placeholder="Enter a username" value={username} onChange={e => setUsername(e.target.value)} />
         <h2 className="text-sm font-semibold text-white mb-3">Birthday <span className="text-[#64748B] font-normal">(optional)</span></h2>
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-2 mb-3">
+          <select
+            className="input w-28 flex-shrink-0"
+            value={birthday ? birthday.slice(0, 4) : ''}
+            onChange={e => {
+              const y = e.target.value;
+              const monthDay = birthday ? birthday.slice(4) : '-01-01';
+              setBirthday(y ? `${y}${monthDay}` : '');
+            }}
+          >
+            <option value="">Year</option>
+            {BIRTH_YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
           <input type="date" className="input flex-1" value={birthday} onClick={openDatePicker} onChange={e => setBirthday(e.target.value)} />
           {birthday && <span className="text-sm text-[#94A3B8] whitespace-nowrap">Age: {calcAge(birthday)}</span>}
         </div>
