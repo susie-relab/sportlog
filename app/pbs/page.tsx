@@ -76,6 +76,13 @@ export default function PBsPage() {
   const [manualDuration, setManualDuration] = useState('');
   const [activeTab, setActiveTab] = useState<'starred' | 'distance' | 'type' | 'monthly' | 'manual'>('starred');
   const [starredFilter, setStarredFilter] = useState<'all' | 'manual' | 'additional'>('all');
+  const [typeSearch, setTypeSearch] = useState('');
+  const [collapsedTypeSections, setCollapsedTypeSections] = useState<Set<'exercise' | 'run' | 'subtype'>>(new Set());
+  const toggleTypeSection = (key: 'exercise' | 'run' | 'subtype') => setCollapsedTypeSections(prev => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
   const [sharing, setSharing] = useState<Activity | null>(null);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
 
@@ -145,6 +152,7 @@ export default function PBsPage() {
   // elapsed pace misleading), and folds in any manual hide/override for that bucket.
   const bestPaceByDist = DISTANCE_PB_KM.map(km => {
     const matching = activities.filter(a =>
+      a.exercise_type === 'run' &&
       a.distance_km !== undefined && a.distance_km !== null &&
       Math.abs(a.distance_km - km) / km < 0.02 &&
       a.pace_min_km && !hasRestBreaks(a)
@@ -487,9 +495,18 @@ export default function PBsPage() {
       {/* By Type */}
       {activeTab === 'type' && (
         <div className="flex flex-col gap-4">
+          <input
+            className="input"
+            placeholder="Search sport / subtype PBs…"
+            value={typeSearch}
+            onChange={e => setTypeSearch(e.target.value)}
+          />
+
           <div>
-            <h2 className="text-sm text-[#94A3B8] font-semibold uppercase tracking-wide mb-3">By Exercise Type</h2>
-            {exerciseTypePBs.map(pb => (
+            <button onClick={() => toggleTypeSection('exercise')} className="flex items-center gap-1.5 text-sm text-[#94A3B8] font-semibold uppercase tracking-wide mb-3 hover:text-white transition-colors">
+              {collapsedTypeSections.has('exercise') ? '▶' : '▼'} By Exercise Type
+            </button>
+            {!collapsedTypeSections.has('exercise') && exerciseTypePBs.filter(pb => !typeSearch || EXERCISE_TYPE_LABELS[pb!.type].toLowerCase().includes(typeSearch.toLowerCase())).map(pb => (
               <div key={pb!.type} className="card mb-3">
                 <h3 className="font-semibold text-white mb-3">{EXERCISE_TYPE_LABELS[pb!.type]}</h3>
                 <div className="grid grid-cols-1 gap-2">
@@ -529,10 +546,12 @@ export default function PBsPage() {
           </div>
 
           <div>
-            <h2 className="text-sm text-[#94A3B8] font-semibold uppercase tracking-wide mb-3">By Run Type</h2>
-            {runTypePBs.length === 0 ? (
+            <button onClick={() => toggleTypeSection('run')} className="flex items-center gap-1.5 text-sm text-[#94A3B8] font-semibold uppercase tracking-wide mb-3 hover:text-white transition-colors">
+              {collapsedTypeSections.has('run') ? '▶' : '▼'} By Run Type
+            </button>
+            {collapsedTypeSections.has('run') ? null : runTypePBs.length === 0 ? (
               <div className="card text-[#64748B] text-sm">No runs logged yet.</div>
-            ) : runTypePBs.map(pb => (
+            ) : runTypePBs.filter(pb => !typeSearch || RUN_TYPE_LABELS[pb!.type].toLowerCase().includes(typeSearch.toLowerCase())).map(pb => (
               <div key={pb!.type} className="card mb-3">
                 <h3 className="font-semibold text-white mb-3">{RUN_TYPE_LABELS[pb!.type]}</h3>
                 <div className="grid grid-cols-1 gap-2">
@@ -563,8 +582,10 @@ export default function PBsPage() {
 
           {subtypePBs.length > 0 && (
             <div>
-              <h2 className="text-sm text-[#94A3B8] font-semibold uppercase tracking-wide mb-3">By Subtype</h2>
-              {subtypePBs.map(pb => (
+              <button onClick={() => toggleTypeSection('subtype')} className="flex items-center gap-1.5 text-sm text-[#94A3B8] font-semibold uppercase tracking-wide mb-3 hover:text-white transition-colors">
+                {collapsedTypeSections.has('subtype') ? '▶' : '▼'} By Subtype
+              </button>
+              {!collapsedTypeSections.has('subtype') && subtypePBs.filter(pb => !typeSearch || pb!.label.toLowerCase().includes(typeSearch.toLowerCase())).map(pb => (
                 <div key={pb!.key} className="card mb-3">
                   <h3 className="font-semibold text-white mb-3">{pb!.emoji} {pb!.label}</h3>
                   <div className="grid grid-cols-1 gap-2">

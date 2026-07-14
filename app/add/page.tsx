@@ -542,20 +542,17 @@ export default function AddPage() {
 
         {/* Companions & conditions — universal tags, shown regardless of exercise type */}
         <TagToggleGrid
-          label="Who with"
-          options={Object.keys(COMPANION_LABELS) as Companion[]}
-          labels={COMPANION_LABELS}
-          emoji={COMPANION_EMOJI}
-          selected={companions}
-          onToggle={toggleCompanion}
-        />
-        <TagToggleGrid
-          label="Conditions"
-          options={Object.keys(CONDITION_LABELS) as WeatherCondition[]}
-          labels={CONDITION_LABELS}
-          emoji={CONDITION_EMOJI}
-          selected={conditions}
-          onToggle={toggleCondition}
+          label="Select all that apply"
+          items={[
+            ...(Object.keys(COMPANION_LABELS) as Companion[]).map(key => ({
+              key, label: COMPANION_LABELS[key], emoji: COMPANION_EMOJI[key],
+              active: companions.includes(key), onToggle: () => toggleCompanion(key),
+            })),
+            ...(Object.keys(CONDITION_LABELS) as WeatherCondition[]).map(key => ({
+              key, label: CONDITION_LABELS[key], emoji: CONDITION_EMOJI[key],
+              active: conditions.includes(key), onToggle: () => toggleCondition(key),
+            })),
+          ]}
         />
 
         {/* Duration */}

@@ -219,7 +219,7 @@ export const COMPANION_LABELS: Record<Companion, string> = {
   friends: 'With Friend/s', family: 'With Fam', kids: 'With Kid/s', pets: 'With Pet/s',
 };
 export const COMPANION_EMOJI: Record<Companion, string> = {
-  friends: '🧑‍🤝‍🧑', family: '👪', kids: '🧒', pets: '🐾',
+  friends: '👫', family: '👪', kids: '🧒', pets: '🐾',
 };
 
 export type WeatherCondition = 'rainy' | 'sunny' | 'windy' | 'cloudy' | 'foggy' | 'snowy' | 'stormy' | 'freezing' | 'cold' | 'hot' | 'humid' | 'dusty';
@@ -227,9 +227,11 @@ export const CONDITION_LABELS: Record<WeatherCondition, string> = {
   rainy: 'Rainy', sunny: 'Sunny', windy: 'Windy', cloudy: 'Cloudy', foggy: 'Foggy', snowy: 'Snowy',
   stormy: 'Stormy', freezing: 'Freezing', cold: 'Cold', hot: 'Hot', humid: 'Humid', dusty: 'Dusty',
 };
+// Plain glyph icons (no smiley/photographic-style faces) so they read as simple sketch-style
+// doodles rather than emoji reactions.
 export const CONDITION_EMOJI: Record<WeatherCondition, string> = {
   rainy: '🌧️', sunny: '☀️', windy: '💨', cloudy: '☁️', foggy: '🌫️', snowy: '🌨️',
-  stormy: '⛈️', freezing: '🥶', cold: '🧊', hot: '🥵', humid: '💧', dusty: '🌪️',
+  stormy: '⛈️', freezing: '🧊', cold: '❄️', hot: '🌡️', humid: '💧', dusty: '🌪️',
 };
 
 export const SPORT_SUB_LABELS: Record<SportSubType, string> = {
