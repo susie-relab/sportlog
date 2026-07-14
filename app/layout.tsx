@@ -24,13 +24,19 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.APP_URL || "https://sportlogrun.app.nz"),
   title: "SportLog — Exercise Tracker",
   description: "Personal exercise and run tracker",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    title: "SportLog",
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#0F172A',
 };
 
 export default function RootLayout({
