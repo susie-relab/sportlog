@@ -6,6 +6,7 @@ import { Plus, LayoutDashboard, List, Footprints, TrendingUp, Award, BookOpen, T
 import { useAuth } from './AuthProvider';
 import { useDirtyForm } from './DirtyFormContext';
 import AccountSwitcher from './AccountSwitcher';
+import SportLogRunMark from './SportLogRunMark';
 
 const mainTabs = [
   { href: '/add', label: 'Add', icon: Plus },
@@ -49,9 +50,8 @@ export default function Nav() {
     <>
       {/* Desktop sidebar */}
       <nav className="hidden md:flex flex-col w-56 min-h-screen bg-[#1E293B] border-r border-[#334155] p-4 fixed top-0 left-0">
-        <div className="mb-8 mt-2 flex flex-col items-start gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="SportLogRun" className="w-20 h-20 rounded-2xl" />
+        <div className="mb-8 mt-2 flex flex-col items-start gap-1">
+          <SportLogRunMark size={100} />
           <p className="text-xs text-[#64748B] font-medium" style={{ fontFamily: 'var(--font-body)' }}>Exercise Tracker</p>
         </div>
         <div className="flex flex-col gap-1 flex-1">

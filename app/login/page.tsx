@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import SportLogRunMark from '@/components/SportLogRunMark';
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'request'>('login');
@@ -52,8 +53,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#0F172A] p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8 flex flex-col items-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="SportLogRun" className="w-32 h-32 rounded-3xl mb-3" />
+          <SportLogRunMark size={180} />
           <p className="text-[#64748B] text-sm mt-1 font-medium">Exercise Tracker</p>
         </div>
 

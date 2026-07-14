@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
+import { Plus_Jakarta_Sans, Outfit, Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import AuthProvider from "@/components/AuthProvider";
@@ -20,6 +20,22 @@ const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-display",
   weight: ["400", "600", "700", "800"],
+  display: "swap",
+});
+
+// Wordmark font — used only by <SportLogRunMark /> (the "Sport / Log / Run" diagonal logotype)
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-wordmark",
+  weight: ["700"],
+  display: "swap",
+});
+
+// Small-caps mono accent — used by <SportLogRunMark /> for "NZ MADE" / the site URL
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-wordmark-mono",
+  weight: ["500"],
   display: "swap",
 });
 
@@ -56,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`h-full ${jakarta.variable} ${outfit.variable}`}>
+    <html lang="en" className={`h-full ${jakarta.variable} ${outfit.variable} ${bricolage.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-full bg-[#0F172A] text-[#F1F5F9]">
         <AuthProvider>
           <ThemeApplier />
