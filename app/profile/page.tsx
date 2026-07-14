@@ -43,7 +43,11 @@ export default function ProfilePage() {
     if (user?.user_metadata?.birthday) setBirthday(user.user_metadata.birthday);
     setAvatarUrl(user?.user_metadata?.avatar_url ?? null);
     setAvatarColor(user?.user_metadata?.avatar_color ?? null);
-    setFavourites(user?.user_metadata?.favourite_activities ?? []);
+    // Drop any stale key that no longer resolves to a real item (e.g. from a since-renamed
+    // or since-split taxonomy) as soon as we load, so the "X/15 selected" count always
+    // matches what's actually shown/re-orderable below.
+    const validKeys = new Set(allFavouriteItems().map(i => i.key));
+    setFavourites((user?.user_metadata?.favourite_activities ?? []).filter((k: string) => validKeys.has(k)));
   }, [user]);
 
   useEffect(() => {
