@@ -14,6 +14,7 @@ import {
   Companion, COMPANION_LABELS, COMPANION_EMOJI, WeatherCondition, CONDITION_LABELS, CONDITION_EMOJI,
 } from '@/types';
 import TagToggleGrid from '@/components/TagToggleGrid';
+import { COMPANION_ICON_OVERRIDES } from '@/lib/companionIcons';
 import DistancePicker from '@/components/DistancePicker';
 import ScrollFieldPicker from '@/components/ScrollFieldPicker';
 import ImageUploader from '@/components/ImageUploader';
@@ -545,7 +546,7 @@ export default function AddPage() {
           label="Select all that apply"
           items={[
             ...(Object.keys(COMPANION_LABELS) as Companion[]).map(key => ({
-              key, label: COMPANION_LABELS[key], emoji: COMPANION_EMOJI[key],
+              key, label: COMPANION_LABELS[key], emoji: COMPANION_EMOJI[key], doodle: COMPANION_ICON_OVERRIDES[key],
               active: companions.includes(key), onToggle: () => toggleCompanion(key),
             })),
             ...(Object.keys(CONDITION_LABELS) as WeatherCondition[]).map(key => ({

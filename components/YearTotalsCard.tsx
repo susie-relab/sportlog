@@ -15,6 +15,21 @@ interface Props {
   onSave: (tiles: YearTotalTile[]) => void;
 }
 
+// Hand-drawn pencil for the edit trigger, matching the doodle style used everywhere else
+// in this card instead of a plain emoji.
+function PencilDoodle({ size = 16, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M4 20v-4L15 5a3 3 0 0 1 4 4L8 20Z" />
+      <path d="M13 7 17 11" />
+    </svg>
+  );
+}
+
 function baseType(key: string): ExerciseType {
   const sep = key.indexOf(':');
   return (sep === -1 ? key : key.slice(0, sep)) as ExerciseType;
@@ -166,7 +181,9 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
             <button onClick={save} className="text-xs text-blue-400 hover:text-blue-300 font-semibold">Save</button>
           </div>
         ) : (
-          <button onClick={startEditing} aria-label="Edit This Year tabs" className="text-[#64748B] hover:text-white transition-colors text-sm">✏️</button>
+          <button onClick={startEditing} aria-label="Edit This Year tabs" className="text-[#64748B] hover:text-white transition-colors">
+            <PencilDoodle />
+          </button>
         )}
       </div>
 
@@ -257,7 +274,7 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
           )}
         </>
       ) : !activeTile ? (
-        <p className="text-sm text-[#475569]">No sports selected — tap ✏️ to add one.</p>
+        <p className="text-sm text-[#475569] flex items-center gap-1">No sports selected — tap <PencilDoodle size={14} /> to add one.</p>
       ) : (
         <>
           {/* Tab strip — one doodle icon per configured sport/subtype, scrolls horizontally if it overflows */}
