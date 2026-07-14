@@ -6,6 +6,7 @@ import { useAuth } from '@/components/AuthProvider';
 import Avatar, { AVATAR_COLORS, AvatarColorKey } from '@/components/Avatar';
 import Toast from '@/components/Toast';
 import AccountSwitcher from '@/components/AccountSwitcher';
+import StravaCard from '@/components/StravaCard';
 import { uploadImages, deleteImage } from '@/lib/images';
 import { openDatePicker, calcAge } from '@/lib/utils';
 import { Activity, EXERCISE_TYPE_ORDER, EXERCISE_TYPE_LABELS, allFavouriteItems, topActivityCounts, FavouriteItem } from '@/types';
@@ -187,6 +188,8 @@ export default function ProfilePage() {
         <h2 className="text-sm font-semibold text-white mb-3">Switch Profile</h2>
         <AccountSwitcher />
       </div>
+
+      <StravaCard />
 
       {/* Display name + age */}
       <div className="card mb-6">

@@ -221,3 +221,41 @@ create index if not exists training_plans_user on training_plans(user_id, create
 -- Migration: optional distance/duration on manual PBs.
 -- alter table manual_pbs add column if not exists distance_km numeric(8,2);
 -- alter table manual_pbs add column if not exists duration_minutes integer;
+
+-- Migration: Strava sync — one connected Strava account per user, a marker on
+-- activities imported from Strava (so re-syncing never double-imports), and a review
+-- queue for incoming Strava activities that look like they might already be logged.
+-- alter table activities add column if not exists strava_activity_id bigint;
+-- create unique index if not exists activities_user_strava_activity_id_key
+--   on activities(user_id, strava_activity_id) where strava_activity_id is not null;
+--
+-- create table if not exists strava_connections (
+--   user_id uuid primary key references auth.users(id) on delete cascade,
+--   strava_athlete_id bigint not null,
+--   access_token text not null,
+--   refresh_token text not null,
+--   expires_at bigint not null,
+--   last_synced_at timestamptz,
+--   created_at timestamptz default now()
+-- );
+-- alter table strava_connections enable row level security;
+-- create policy "Users can manage their own strava connection"
+--   on strava_connections for all
+--   using (auth.uid() = user_id)
+--   with check (auth.uid() = user_id);
+--
+-- create table if not exists strava_pending_duplicates (
+--   id uuid default gen_random_uuid() primary key,
+--   user_id uuid references auth.users(id) on delete cascade not null,
+--   strava_activity_id bigint not null,
+--   strava_data jsonb not null,
+--   matched_activity_id uuid references activities(id) on delete set null,
+--   status text not null default 'pending' check (status in ('pending', 'saved', 'skipped', 'replaced')),
+--   created_at timestamptz default now(),
+--   unique (user_id, strava_activity_id)
+-- );
+-- alter table strava_pending_duplicates enable row level security;
+-- create policy "Users can manage their own strava duplicate review queue"
+--   on strava_pending_duplicates for all
+--   using (auth.uid() = user_id)
+--   with check (auth.uid() = user_id);
