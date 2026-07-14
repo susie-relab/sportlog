@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import {
   Activity, ExerciseType, EXERCISE_TYPE_COLORS, YearTotalTile, DEFAULT_YEAR_TOTAL_TILES, MAX_YEAR_TOTAL_TILES,
@@ -14,14 +14,12 @@ interface Props {
   onSave: (tiles: YearTotalTile[]) => void;
 }
 
-function tileValue(tile: YearTotalTile, periodActivities: Activity[]): number {
-  const matches = periodActivities.filter(a => activityMatchesFavouriteKey(a, tile.key));
-  return tile.metric === 'distance' ? matches.reduce((s, a) => s + (a.distance_km || 0), 0) : matches.length;
-}
-
 function displayValue(tile: YearTotalTile, periodActivities: Activity[]): string {
-  const value = tileValue(tile, periodActivities);
-  return tile.metric === 'distance' ? `${value.toFixed(1)} km` : String(value);
+  const matches = periodActivities.filter(a => activityMatchesFavouriteKey(a, tile.key));
+  const km = matches.reduce((s, a) => s + (a.distance_km || 0), 0);
+  if (tile.metric === 'distance') return `${km.toFixed(1)} km`;
+  if (tile.metric === 'count') return String(matches.length);
+  return `${km.toFixed(1)} km | ${matches.length}`;
 }
 
 function baseType(key: string): ExerciseType {
@@ -55,6 +53,8 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
   const [pickedKey, setPickedKey] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [activeKey, setActiveKey] = useState<string | null>(tiles[0]?.key ?? null);
+  const [draggingKey, setDraggingKey] = useState<string | null>(null);
+  const draggingKeyRef = useRef<string | null>(null);
 
   const registry = useMemo(() => new Map(allFavouriteItems().map(i => [i.key, i] as [string, FavouriteItem])), []);
   const year = new Date().getFullYear();
@@ -81,6 +81,40 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
     setDraft(prev => [...prev, { key, metric }]);
     setPickedKey(null);
     setSearch('');
+  };
+
+  // Drag-to-reorder for the edit-mode tab strip — press and hold a tab (not its remove
+  // button) then drag over another to swap positions, same interaction as the Profile
+  // favourites picker.
+  const handleDragPointerDown = (key: string) => (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    e.preventDefault();
+    draggingKeyRef.current = key;
+    setDraggingKey(key);
+    window.addEventListener('pointermove', handleDragPointerMove);
+    window.addEventListener('pointerup', handleDragPointerUp);
+  };
+  const handleDragPointerMove = (e: PointerEvent) => {
+    const dragKey = draggingKeyRef.current;
+    if (!dragKey) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const overKey = (el?.closest('[data-tile-key]') as HTMLElement | null)?.dataset.tileKey;
+    if (!overKey || overKey === dragKey) return;
+    setDraft(prev => {
+      const from = prev.findIndex(t => t.key === dragKey);
+      const to = prev.findIndex(t => t.key === overKey);
+      if (from === -1 || to === -1) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  };
+  const handleDragPointerUp = () => {
+    draggingKeyRef.current = null;
+    setDraggingKey(null);
+    window.removeEventListener('pointermove', handleDragPointerMove);
+    window.removeEventListener('pointerup', handleDragPointerUp);
   };
 
   const activeTile = tiles.find(t => t.key === activeKey) ?? tiles[0] ?? null;
@@ -110,11 +144,18 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
 
       {editing ? (
         <>
+          <p className="text-xs text-[#475569] mb-2">Drag to reorder</p>
           <div className="flex flex-wrap gap-3">
             {draft.map(tile => {
               const item = registry.get(tile.key);
               return (
-                <div key={tile.key} className="relative">
+                <div
+                  key={tile.key}
+                  data-tile-key={tile.key}
+                  onPointerDown={handleDragPointerDown(tile.key)}
+                  className={`relative select-none cursor-grab active:cursor-grabbing transition-opacity ${draggingKey === tile.key ? 'opacity-40' : ''}`}
+                  style={{ touchAction: 'none' }}
+                >
                   <div
                     title={item?.label ?? tile.key}
                     aria-label={item?.label ?? tile.key}
@@ -170,10 +211,11 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
                       <TabDoodle tileKey={pickedKey} className="text-[#94A3B8]" />
                       {registry.get(pickedKey)?.label}
                     </h3>
-                    <p className="text-sm text-[#94A3B8] mb-4">Total distance or activity count — used for both the Year and Month figures.</p>
+                    <p className="text-sm text-[#94A3B8] mb-4">What should this tab total? Used for both the Year and Month figures.</p>
                     <div className="flex flex-col gap-2">
                       <button onClick={() => addTile(pickedKey, 'distance')} className="btn-secondary text-sm py-2.5">Total distance (km)</button>
                       <button onClick={() => addTile(pickedKey, 'count')} className="btn-secondary text-sm py-2.5">Activity count</button>
+                      <button onClick={() => addTile(pickedKey, 'both')} className="btn-secondary text-sm py-2.5">Both</button>
                     </div>
                     <button onClick={() => setPickedKey('')} className="text-sm text-[#64748B] hover:text-white py-1 mt-3">← Back</button>
                   </>

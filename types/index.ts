@@ -410,7 +410,7 @@ export function topActivityCounts(activities: Activity[], months = 3) {
  *  e.g. "bike", or "type:subtype", e.g. "sport:football") plus which metric to total. */
 export interface YearTotalTile {
   key: string;
-  metric: 'distance' | 'count';
+  metric: 'distance' | 'count' | 'both';
 }
 
 export const DEFAULT_YEAR_TOTAL_TILES: YearTotalTile[] = [
