@@ -139,7 +139,12 @@ export default function ImportPage() {
       const dateStr = row['Date'] || row['date'] || row['Start Time'] || '';
       const durationStr = row['Time'] || row['Moving Time'] || row['Elapsed Time'] || row['duration'] || '';
       const distRaw = row['Distance'] || row['distance'] || '';
-      const distKm = distRaw ? (parseFloat(distRaw.replace(/[^0-9.]/g, '')) || null) : null;
+      const distParsed = distRaw ? parseFloat(distRaw.replace(/[^0-9.]/g, '')) || null : null;
+      // Garmin's CSV export gives swim distance in metres, unlike every other activity
+      // type (km) — without this, a 2800m swim would get stored as 2800 distance_km.
+      const distKm = distParsed && guessExerciseType(row['Activity Type'] || row['activity_type'] || '') === 'swim'
+        ? distParsed / 1000
+        : distParsed;
       const avgPaceStr = row['Avg Pace'] || row['Average Pace'] || '';
       const maxPaceStr = row['Best Pace'] || row['Max Pace'] || '';
       const avgHrRaw = parseInt(row['Avg HR'] || row['Average Heart Rate'] || '');

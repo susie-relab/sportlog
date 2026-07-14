@@ -6,7 +6,8 @@ import {
   activityMatchesFavouriteKey, allFavouriteItems, FavouriteItem,
 } from '@/types';
 import { EXERCISE_TYPE_ICONS } from '@/lib/shareIcons';
-import { todayLocalISO } from '@/lib/utils';
+import { SUBTYPE_ICON_OVERRIDES } from '@/lib/subtypeIcons';
+import { todayLocalISO, formatDistance } from '@/lib/utils';
 
 interface Props {
   activities: Activity[];
@@ -14,22 +15,34 @@ interface Props {
   onSave: (tiles: YearTotalTile[]) => void;
 }
 
-function displayValue(tile: YearTotalTile, periodActivities: Activity[]): string {
-  const matches = periodActivities.filter(a => activityMatchesFavouriteKey(a, tile.key));
-  const km = matches.reduce((s, a) => s + (a.distance_km || 0), 0);
-  if (tile.metric === 'distance') return `${km.toFixed(1)} km`;
-  if (tile.metric === 'count') return String(matches.length);
-  return `${km.toFixed(1)} km | ${matches.length}`;
-}
-
 function baseType(key: string): ExerciseType {
   const sep = key.indexOf(':');
   return (sep === -1 ? key : key.slice(0, sep)) as ExerciseType;
 }
 
-/** The tab's line-art "doodle" icon — one per exercise type (shared by every subtype
- *  tab of that type), reusing the same icon set as the share cards. */
+function displayValue(tile: YearTotalTile, periodActivities: Activity[]): string {
+  const matches = periodActivities.filter(a => activityMatchesFavouriteKey(a, tile.key));
+  const kmSum = matches.reduce((s, a) => s + (a.distance_km || 0), 0);
+  // Round before formatting — summing many decimal distance_km values leaves floating-point
+  // dust (e.g. 35.599999999999994) that formatDistance doesn't clean up on its own.
+  const km = Math.round(kmSum * 1000) / 1000;
+  const dist = formatDistance(km, baseType(tile.key));
+  if (tile.metric === 'distance') return dist;
+  if (tile.metric === 'count') return String(matches.length);
+  return `${dist} | ${matches.length}`;
+}
+
+function subtypeOf(key: string): string {
+  const sep = key.indexOf(':');
+  return sep === -1 ? '' : key.slice(sep + 1);
+}
+
+/** One per exercise type (shared by every subtype tab of that type), unless the specific
+ *  subtype has its own override (e.g. Golf gets a club + ball instead of the generic
+ *  Sport trophy). */
 function TabDoodle({ tileKey, size = 20, className }: { tileKey: string; size?: number; className?: string }) {
+  const Override = SUBTYPE_ICON_OVERRIDES[subtypeOf(tileKey)];
+  if (Override) return <Override size={size} className={className} />;
   const Icon = EXERCISE_TYPE_ICONS[baseType(tileKey)];
   return <Icon size={size} className={className} />;
 }

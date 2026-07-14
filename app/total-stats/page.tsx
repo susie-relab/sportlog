@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, subTypeLabel, RUN_TYPE_LABELS } from '@/types';
-import { formatDuration, formatPaceMinKm } from '@/lib/utils';
+import { formatDuration, formatPaceMinKm, formatDistance } from '@/lib/utils';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
@@ -206,6 +206,10 @@ export default function TotalStatsPage() {
 
   const totalActivities = activities.length;
   const totalKm = activities.reduce((s, a) => s + (a.distance_km || 0), 0);
+  // Swim distance is shown in metres everywhere else in the app — match that here too,
+  // since km summed across many swims (a few hundred metres each) reads as tiny/confusing.
+  const totalDistLabel = filterType === 'swim' ? 'Total m' : 'Total km';
+  const totalDistValue = filterType === 'swim' ? String(Math.round(totalKm * 1000)) : totalKm.toFixed(1);
   const totalMinutes = activities.reduce((s, a) => s + a.duration_minutes, 0);
   const totalIntensity = activities.reduce((s, a) => s + (a.intensity_minutes || 0), 0);
   const avgDuration = totalActivities > 0 ? Math.round(totalMinutes / totalActivities) : 0;
@@ -304,8 +308,8 @@ export default function TotalStatsPage() {
           <div className="stat-label">Activities</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{totalKm.toFixed(1)}</div>
-          <div className="stat-label">Total km</div>
+          <div className="stat-value">{totalDistValue}</div>
+          <div className="stat-label">{totalDistLabel}</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{formatDuration(totalMinutes)}</div>
@@ -355,7 +359,7 @@ export default function TotalStatsPage() {
                       <span className="text-sm font-bold" style={{ color }}>{count}</span>
                     </div>
                     <span className="text-xs text-[#64748B]">
-                      {dist.toFixed(1)} km · {hours > 0 ? `${hours}h ` : ''}{remainMins}m
+                      {formatDistance(dist, type)} · {hours > 0 ? `${hours}h ` : ''}{remainMins}m
                     </span>
                   </div>
                 </div>
@@ -431,7 +435,7 @@ export default function TotalStatsPage() {
               <BarChart data={weeklyDistance} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                 <XAxis dataKey="week" tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} axisLine={false} width={28} />
-                <Tooltip contentStyle={TooltipStyle} formatter={(v) => [`${v} km`, 'Distance']} />
+                <Tooltip contentStyle={TooltipStyle} formatter={(v) => [formatDistance(Number(v), filterType === 'all' ? undefined : filterType), 'Distance']} />
                 <Bar dataKey="value" fill="#60A5FA" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
