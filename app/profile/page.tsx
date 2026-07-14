@@ -27,6 +27,8 @@ export default function ProfilePage() {
   const [showFavPicker, setShowFavPicker] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [draggingKey, setDraggingKey] = useState<string | null>(null);
+  const draggingKeyRef = useRef<string | null>(null);
 
   const flash = (text: string, ok: boolean) => {
     setMsg({ text, ok });
@@ -50,14 +52,41 @@ export default function ProfilePage() {
   const allItems = allFavouriteItems();
   const favItems = favourites.map(k => allItems.find(i => i.key === k)).filter(Boolean) as FavouriteItem[];
 
-  const moveFavourite = (index: number, dir: 'up' | 'down') => {
+  // Drag-to-reorder for the favourites "Order" grid — the whole card is the drag handle
+  // (not just an arrow button), and items can be dropped into any row/column, not just
+  // swapped with an immediate neighbour.
+  const handleDragPointerDown = (key: string) => (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button')) return; // let the remove (✕) button work normally
+    e.preventDefault();
+    draggingKeyRef.current = key;
+    setDraggingKey(key);
+    window.addEventListener('pointermove', handleDragPointerMove);
+    window.addEventListener('pointerup', handleDragPointerUp);
+  };
+
+  const handleDragPointerMove = (e: PointerEvent) => {
+    const dragKey = draggingKeyRef.current;
+    if (!dragKey) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const target = el?.closest('[data-fav-key]') as HTMLElement | null;
+    const overKey = target?.dataset.favKey;
+    if (!overKey || overKey === dragKey) return;
     setFavourites(prev => {
-      const to = dir === 'up' ? index - 1 : index + 1;
-      if (to < 0 || to >= prev.length) return prev;
+      const from = prev.indexOf(dragKey);
+      const to = prev.indexOf(overKey);
+      if (from === -1 || to === -1) return prev;
       const next = [...prev];
-      [next[index], next[to]] = [next[to], next[index]];
+      next.splice(from, 1);
+      next.splice(to, 0, dragKey);
       return next;
     });
+  };
+
+  const handleDragPointerUp = () => {
+    draggingKeyRef.current = null;
+    setDraggingKey(null);
+    window.removeEventListener('pointermove', handleDragPointerMove);
+    window.removeEventListener('pointerup', handleDragPointerUp);
   };
 
   const toggleFavourite = (key: string) => {
@@ -223,33 +252,22 @@ export default function ProfilePage() {
           <>
             <p className="text-xs text-[#64748B] mb-3">{favourites.length}/15 selected</p>
             {favItems.length > 0 && (
-              <div className="flex flex-col gap-1 mb-4">
-                <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-1">Order <span className="font-normal">(shown in this order)</span></p>
-                {favItems.map((i, idx) => {
-                  // favItems drops any stale/unresolved keys, so its index can drift from
-                  // favourites' real index — always resolve the true index before moving.
-                  const trueIndex = favourites.indexOf(i.key);
-                  return (
-                    <div key={i.key} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[#334155]">
-                      <div className="flex flex-col flex-shrink-0">
-                        <button
-                          onClick={() => moveFavourite(trueIndex, 'up')}
-                          disabled={idx === 0}
-                          className="text-[#64748B] hover:text-white disabled:opacity-20 disabled:hover:text-[#64748B] leading-none text-xs px-0.5"
-                          aria-label="Move up"
-                        >▲</button>
-                        <button
-                          onClick={() => moveFavourite(trueIndex, 'down')}
-                          disabled={idx === favItems.length - 1}
-                          className="text-[#64748B] hover:text-white disabled:opacity-20 disabled:hover:text-[#64748B] leading-none text-xs px-0.5"
-                          aria-label="Move down"
-                        >▼</button>
-                      </div>
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-1">Order <span className="font-normal">(shown in this order — drag to reorder)</span></p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {favItems.map(i => (
+                    <div
+                      key={i.key}
+                      data-fav-key={i.key}
+                      onPointerDown={handleDragPointerDown(i.key)}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border select-none cursor-grab active:cursor-grabbing transition-opacity ${draggingKey === i.key ? 'opacity-40 border-blue-500' : 'border-[#334155]'}`}
+                      style={{ touchAction: 'none' }}
+                    >
                       <span className="text-sm text-white truncate flex-1">{i.emoji} {i.label}</span>
                       <button onClick={() => toggleFavourite(i.key)} aria-label={`Remove ${i.label}`} className="text-[#475569] hover:text-red-400 text-xs px-1 flex-shrink-0">✕</button>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             )}
             <div className="flex flex-col gap-3 max-h-80 overflow-y-auto pr-1">
