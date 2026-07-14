@@ -1,6 +1,6 @@
 {
   "name": "SportLogRun",
-  "short_name": "SportLog",
+  "short_name": "SportLogRun",
   "description": "Personal exercise and run tracker",
   "start_url": "/",
   "display": "standalone",

@@ -36,11 +36,11 @@ function safeMetadataBase(): URL {
 
 export const metadata: Metadata = {
   metadataBase: safeMetadataBase(),
-  title: "SportLog — Exercise Tracker",
+  title: "SportLogRun — Exercise Tracker",
   description: "Personal exercise and run tracker",
   manifest: "/manifest.json",
   appleWebApp: {
-    title: "SportLog",
+    title: "SportLogRun",
   },
 };
 
