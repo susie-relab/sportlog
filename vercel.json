@@ -2,6 +2,6 @@
   "crons": [
     { "path": "/api/recap-email", "schedule": "0 18 * * *" },
     { "path": "/api/birthday-email", "schedule": "0 20 * * *" },
-    { "path": "/api/strava/sync", "schedule": "0 19 * * *" }
+    { "path": "/api/strava/sync", "schedule": "0 8 * * *" }
   ]
 }
