@@ -6,6 +6,7 @@ import {
   Activity, ExerciseType,
   EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, combinedRunTypeLabel, sportLabelParts, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, SPORT_FOCUS_LABELS, SNOW_STYLE_LABELS, WATER_STYLE_LABELS,
   EXERCISE_TYPE_ORDER, subTypeLabel,
+  Companion, COMPANION_EMOJI, WeatherCondition, CONDITION_EMOJI,
 } from '@/types';
 import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, formatDistance, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
@@ -298,6 +299,12 @@ export default function ActivityLogPage() {
                   <div className="text-sm text-white font-medium">{formatDuration(a.duration_minutes, a.duration_seconds)}</div>
                   {a.distance_km && <div className="text-xs text-[#64748B]">{formatDistance(a.distance_km, a.exercise_type)}</div>}
                 </div>
+                {(a.companions || a.conditions) && (
+                  <span className="text-sm flex-shrink-0" title="With / Conditions">
+                    {(a.companions?.split(',') as Companion[] | undefined)?.map(k => COMPANION_EMOJI[k]).join('')}
+                    {(a.conditions?.split(',') as WeatherCondition[] | undefined)?.map(k => CONDITION_EMOJI[k]).join('')}
+                  </span>
+                )}
                 <span className="text-[#475569] text-xs ml-1">{isOpen ? '▲' : '▼'}</span>
               </div>
 

@@ -212,6 +212,26 @@ export type BikeSubType = 'mtb' | 'road' | 'mixed_terrain' | 'commute' | 'electr
 export type StretchSubType = 'pilates' | 'flexibility' | 'physio';
 export type WalkSubType = 'multi_day' | 'stroll' | 'speed' | 'urban' | 'bush' | 'mountain' | 'farm' | 'road' | 'track_oval' | 'treadmill' | 'beach' | 'push_buggy';
 
+// --- Companions & conditions — universal tags, apply to any exercise type ---
+
+export type Companion = 'friends' | 'family' | 'kids' | 'pets';
+export const COMPANION_LABELS: Record<Companion, string> = {
+  friends: 'With Friend/s', family: 'With Fam', kids: 'With Kid/s', pets: 'With Pet/s',
+};
+export const COMPANION_EMOJI: Record<Companion, string> = {
+  friends: '🧑‍🤝‍🧑', family: '👪', kids: '🧒', pets: '🐾',
+};
+
+export type WeatherCondition = 'rainy' | 'sunny' | 'windy' | 'cloudy' | 'foggy' | 'snowy' | 'stormy' | 'freezing' | 'cold' | 'hot' | 'humid' | 'dusty';
+export const CONDITION_LABELS: Record<WeatherCondition, string> = {
+  rainy: 'Rainy', sunny: 'Sunny', windy: 'Windy', cloudy: 'Cloudy', foggy: 'Foggy', snowy: 'Snowy',
+  stormy: 'Stormy', freezing: 'Freezing', cold: 'Cold', hot: 'Hot', humid: 'Humid', dusty: 'Dusty',
+};
+export const CONDITION_EMOJI: Record<WeatherCondition, string> = {
+  rainy: '🌧️', sunny: '☀️', windy: '💨', cloudy: '☁️', foggy: '🌫️', snowy: '🌨️',
+  stormy: '⛈️', freezing: '🥶', cold: '🧊', hot: '🥵', humid: '💧', dusty: '🌪️',
+};
+
 export const SPORT_SUB_LABELS: Record<SportSubType, string> = {
   football: 'Football', tennis: 'Tennis', netball: 'Netball', volleyball: 'Volleyball',
   golf: 'Golf', turbo_touch: 'Turbo Touch', padel: 'Padel', touch_rugby: 'Touch Rugby',
@@ -446,6 +466,8 @@ export interface Activity {
   swim_styles?: string; // comma-joined SwimStyle keys — multi-select, like sub_type for hiit
   snow_styles?: string; // comma-joined SnowStyle keys — multi-select, like swim_styles
   water_styles?: string; // comma-joined WaterStyle keys — multi-select, like swim_styles
+  companions?: string; // comma-joined Companion keys — multi-select, applies to any exercise type
+  conditions?: string; // comma-joined WeatherCondition keys — multi-select, applies to any exercise type
   duration_minutes: number;
   duration_seconds?: number; // leftover seconds (0-59) on top of duration_minutes
   effort: number;

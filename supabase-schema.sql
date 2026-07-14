@@ -263,3 +263,8 @@ create index if not exists training_plans_user on training_plans(user_id, create
 -- Migration: store the connected Strava athlete's display name so the Profile
 -- card can show "Connected as <name>" instead of just an athlete ID.
 -- alter table strava_connections add column if not exists strava_athlete_name text;
+
+-- Migration: companions & weather conditions — universal tags on any activity
+-- (comma-joined keys, same pattern as swim_styles/snow_styles/water_styles).
+-- alter table activities add column if not exists companions text;
+-- alter table activities add column if not exists conditions text;

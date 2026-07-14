@@ -9,10 +9,12 @@ import {
   SportSubType, SportFocus, SportStyle, GymSubType, WaterSubType, WaterStyle, SnowSubType, SnowStyle, SwimSubType, SwimFocus, SwimStyle, FitnessSubType, BikeSubType, StretchSubType, WalkSubType,
   SPORT_SUB_LABELS, SPORT_FOCUS_LABELS, SPORT_STYLE_LABELS, GYM_SUB_LABELS, WATER_SUB_LABELS, WATER_STYLE_LABELS, SNOW_SUB_LABELS, SNOW_STYLE_LABELS, SWIM_SUB_LABELS, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
   suggestedMaxHr, suggestedAvgHr,
+  Companion, COMPANION_LABELS, COMPANION_EMOJI, WeatherCondition, CONDITION_LABELS, CONDITION_EMOJI,
 } from '@/types';
 import DistancePicker from './DistancePicker';
 import ScrollFieldPicker from './ScrollFieldPicker';
 import ImageUploader from './ImageUploader';
+import TagToggleGrid from './TagToggleGrid';
 import { openDatePicker, calcAge } from '@/lib/utils';
 import { revertCompletedActivity } from '@/lib/runPlanGenerator';
 import { useAuth } from './AuthProvider';
@@ -43,6 +45,8 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
   const [swimStyles, setSwimStyles] = useState<string[]>(activity.swim_styles ? activity.swim_styles.split(',') : []);
   const [snowStyles, setSnowStyles] = useState<string[]>(activity.snow_styles ? activity.snow_styles.split(',') : []);
   const [waterStyles, setWaterStyles] = useState<string[]>(activity.water_styles ? activity.water_styles.split(',') : []);
+  const [companions, setCompanions] = useState<Companion[]>(activity.companions ? activity.companions.split(',') as Companion[] : []);
+  const [conditions, setConditions] = useState<WeatherCondition[]>(activity.conditions ? activity.conditions.split(',') as WeatherCondition[] : []);
   const [showMore, setShowMore] = useState(false);
   const [hours, setHours] = useState(String(Math.floor(activity.duration_minutes / 60) || ''));
   const [mins, setMins] = useState(String(activity.duration_minutes % 60 || ''));
@@ -84,6 +88,9 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
     return Math.round((totalDurationSeconds / 60 / dist) * 1000) / 1000;
   };
 
+  const toggleCompanion = (key: Companion) => setCompanions(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+  const toggleCondition = (key: WeatherCondition) => setConditions(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+
   const accentColor = exerciseType === 'run' && runType
     ? RUN_TYPE_COLORS[runType]
     : EXERCISE_TYPE_COLORS[exerciseType];
@@ -112,6 +119,8 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
         swim_styles: exerciseType === 'swim' ? swimStyles.join(',') || null : null,
         snow_styles: exerciseType === 'snow' ? snowStyles.join(',') || null : null,
         water_styles: exerciseType === 'water' ? waterStyles.join(',') || null : null,
+        companions: companions.join(',') || null,
+        conditions: conditions.join(',') || null,
         duration_minutes: durationMinutes,
         duration_seconds: durationExtraSeconds,
         effort,
@@ -435,6 +444,24 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
               </div>
             </div>
           )}
+
+          {/* Companions & conditions — universal tags, shown regardless of exercise type */}
+          <TagToggleGrid
+            label="Who with"
+            options={Object.keys(COMPANION_LABELS) as Companion[]}
+            labels={COMPANION_LABELS}
+            emoji={COMPANION_EMOJI}
+            selected={companions}
+            onToggle={toggleCompanion}
+          />
+          <TagToggleGrid
+            label="Conditions"
+            options={Object.keys(CONDITION_LABELS) as WeatherCondition[]}
+            labels={CONDITION_LABELS}
+            emoji={CONDITION_EMOJI}
+            selected={conditions}
+            onToggle={toggleCondition}
+          />
 
           {/* Duration */}
           <div>
