@@ -2,15 +2,15 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
-import { Activity, ExerciseType, RunType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, RUN_TYPE_LABELS, REST_BREAK_RUN_TYPES } from '@/types';
+import { Activity, ExerciseType, RunType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, RUN_TYPE_LABELS, REST_BREAK_RUN_TYPES, subTypeLabel, activityEmoji } from '@/types';
 import { formatPaceMinKm, formatDuration, formatDate, openDatePicker } from '@/lib/utils';
 import ShareCard, { ShareStat } from '@/components/ShareCard';
 import EditActivityModal from '@/components/EditActivityModal';
 import { PB_SHARE_ICON } from '@/lib/shareIcons';
 import { DISTANCE_PB_KM, DISTANCE_LABELS } from '@/lib/pbDetect';
 
-const EXERCISE_TYPES: ExerciseType[] = ['run', 'walk', 'sport', 'hiit', 'stretch', 'bike', 'swim', 'solo_fitness'];
-const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy', 'treadmill'];
+const EXERCISE_TYPES: ExerciseType[] = ['run', 'walk', 'sport', 'hiit', 'stretch', 'bike', 'swim', 'solo_fitness', 'water', 'snow'];
+const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy', 'treadmill', 'beach', 'track', 'road', 'urban', 'cross_country', 'mountain'];
 
 const hasRestBreaks = (a: Activity) => !!a.run_type && REST_BREAK_RUN_TYPES.includes(a.run_type);
 
@@ -182,6 +182,29 @@ export default function PBsPage() {
     };
   }).filter(Boolean);
 
+  // By exact subtype (e.g. Football, Tennis, MTB, Boxing...) — pulled from Activity.sub_type,
+  // which can be comma-joined for multi-select subtypes. Generalizes the by-run-type PB
+  // breakdown to every exercise type's subtypes, not just Run.
+  const subtypeKeys = new Set<string>();
+  for (const a of activities) {
+    if (!a.sub_type) continue;
+    a.sub_type.split(',').map(s => s.trim()).filter(Boolean).forEach(k => subtypeKeys.add(k));
+  }
+  const subtypePBs = Array.from(subtypeKeys).map(key => {
+    const typeActs = activities.filter(a => a.sub_type?.split(',').map(s => s.trim()).includes(key));
+    if (typeActs.length === 0) return null;
+    return {
+      key,
+      label: subTypeLabel(key),
+      emoji: activityEmoji(typeActs[0].exercise_type, key),
+      longestDist: typeActs.filter(a => a.distance_km).sort((a, b) => (b.distance_km || 0) - (a.distance_km || 0))[0],
+      longestTime: typeActs.sort((a, b) => b.duration_minutes - a.duration_minutes)[0],
+      bestPace: typeActs.filter(a => a.pace_min_km && !hasRestBreaks(a)).sort((a, b) => a.pace_min_km! - b.pace_min_km!)[0],
+      maxPace: typeActs.filter(a => a.max_pace_min_km).sort((a, b) => a.max_pace_min_km! - b.max_pace_min_km!)[0],
+      maxHr: typeActs.filter(a => a.max_hr).sort((a, b) => b.max_hr! - a.max_hr!)[0],
+    };
+  }).filter(Boolean).sort((a, b) => a!.label.localeCompare(b!.label));
+
   // Unified "All PBs" feed — every starred activity, every distance-bucket PB, every
   // by-type/by-run-type metric, and every manually-added PB, so nothing lives only in
   // its own tab. Sorted newest-first by whatever date each entry is tied to.
@@ -229,6 +252,15 @@ export default function PBsPage() {
     if (pb.longestDist) pbFeed.push({ key: `rtype-${pb.type}-dist`, kind: 'type', isManual: false, title: `${label} Run — Longest Distance`, date: pb.longestDist.date, stat: `${pb.longestDist.distance_km} km`, activity: pb.longestDist });
     if (pb.longestTime) pbFeed.push({ key: `rtype-${pb.type}-time`, kind: 'type', isManual: false, title: `${label} Run — Longest Time`, date: pb.longestTime.date, stat: formatDuration(pb.longestTime.duration_minutes, pb.longestTime.duration_seconds), activity: pb.longestTime });
     if (pb.bestPace) pbFeed.push({ key: `rtype-${pb.type}-pace`, kind: 'type', isManual: false, title: `${label} Run — Best Pace`, date: pb.bestPace.date, stat: formatPaceMinKm(pb.bestPace.pace_min_km!), activity: pb.bestPace });
+  }
+  for (const pb of subtypePBs) {
+    if (!pb) continue;
+    const label = `${pb.emoji} ${pb.label}`;
+    if (pb.longestDist) pbFeed.push({ key: `subtype-${pb.key}-dist`, kind: 'type', isManual: false, title: `${label} — Longest Distance`, date: pb.longestDist.date, stat: `${pb.longestDist.distance_km} km`, activity: pb.longestDist });
+    if (pb.longestTime) pbFeed.push({ key: `subtype-${pb.key}-time`, kind: 'type', isManual: false, title: `${label} — Longest Time`, date: pb.longestTime.date, stat: formatDuration(pb.longestTime.duration_minutes, pb.longestTime.duration_seconds), activity: pb.longestTime });
+    if (pb.bestPace) pbFeed.push({ key: `subtype-${pb.key}-pace`, kind: 'type', isManual: false, title: `${label} — Best Pace`, date: pb.bestPace.date, stat: formatPaceMinKm(pb.bestPace.pace_min_km!), activity: pb.bestPace });
+    if (pb.maxPace) pbFeed.push({ key: `subtype-${pb.key}-maxpace`, kind: 'type', isManual: false, title: `${label} — Max Pace`, date: pb.maxPace.date, stat: formatPaceMinKm(pb.maxPace.max_pace_min_km!), activity: pb.maxPace });
+    if (pb.maxHr) pbFeed.push({ key: `subtype-${pb.key}-maxhr`, kind: 'type', isManual: false, title: `${label} — Max HR`, date: pb.maxHr.date, stat: `${pb.maxHr.max_hr} bpm`, activity: pb.maxHr });
   }
   for (const pb of manualPBs) {
     pbFeed.push({
@@ -348,7 +380,9 @@ export default function PBsPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-base flex-shrink-0">⭐</span>
-                    <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ color: FEED_KIND_COLOR[item.kind], background: `${FEED_KIND_COLOR[item.kind]}22` }}>{FEED_KIND_LABEL[item.kind]}</span>
+                    {item.kind !== 'type' && (
+                      <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ color: FEED_KIND_COLOR[item.kind], background: `${FEED_KIND_COLOR[item.kind]}22` }}>{FEED_KIND_LABEL[item.kind]}</span>
+                    )}
                     <span className="font-semibold text-white">{item.title}</span>
                     {item.auto && <span className="text-[9px] uppercase font-bold text-blue-300 bg-blue-500/10 border border-blue-500/30 px-1.5 py-0.5 rounded flex-shrink-0">Auto</span>}
                   </div>
@@ -526,6 +560,49 @@ export default function PBsPage() {
               </div>
             ))}
           </div>
+
+          {subtypePBs.length > 0 && (
+            <div>
+              <h2 className="text-sm text-[#94A3B8] font-semibold uppercase tracking-wide mb-3">By Subtype</h2>
+              {subtypePBs.map(pb => (
+                <div key={pb!.key} className="card mb-3">
+                  <h3 className="font-semibold text-white mb-3">{pb!.emoji} {pb!.label}</h3>
+                  <div className="grid grid-cols-1 gap-2">
+                    {pb!.longestDist && (
+                      <button onClick={() => setEditingActivity(pb!.longestDist)} className="flex justify-between text-sm w-full hover:bg-white/5 rounded px-1 -mx-1">
+                        <span className="text-[#64748B]">Longest Distance</span>
+                        <span className="text-blue-400 font-medium">{pb!.longestDist.distance_km} km</span>
+                      </button>
+                    )}
+                    {pb!.longestTime && (
+                      <button onClick={() => setEditingActivity(pb!.longestTime)} className="flex justify-between text-sm w-full hover:bg-white/5 rounded px-1 -mx-1">
+                        <span className="text-[#64748B]">Longest Time</span>
+                        <span className="text-blue-400 font-medium">{formatDuration(pb!.longestTime.duration_minutes, pb!.longestTime.duration_seconds)}</span>
+                      </button>
+                    )}
+                    {pb!.bestPace && (
+                      <button onClick={() => setEditingActivity(pb!.bestPace)} className="flex justify-between text-sm w-full hover:bg-white/5 rounded px-1 -mx-1">
+                        <span className="text-[#64748B]">Best Pace</span>
+                        <span className="text-blue-400 font-medium">{formatPaceMinKm(pb!.bestPace.pace_min_km!)}</span>
+                      </button>
+                    )}
+                    {pb!.maxPace && (
+                      <button onClick={() => setEditingActivity(pb!.maxPace)} className="flex justify-between text-sm w-full hover:bg-white/5 rounded px-1 -mx-1">
+                        <span className="text-[#64748B]">Max Pace</span>
+                        <span className="text-blue-400 font-medium">{formatPaceMinKm(pb!.maxPace.max_pace_min_km!)}</span>
+                      </button>
+                    )}
+                    {pb!.maxHr && (
+                      <button onClick={() => setEditingActivity(pb!.maxHr)} className="flex justify-between text-sm w-full hover:bg-white/5 rounded px-1 -mx-1">
+                        <span className="text-[#64748B]">Max HR</span>
+                        <span className="text-blue-400 font-medium">{pb!.maxHr.max_hr} bpm</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
