@@ -31,30 +31,39 @@ export async function GET(request: Request) {
       body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code, grant_type: 'authorization_code' }),
     });
     if (!tokenRes.ok) return Response.redirect(`${appUrl}/profile?strava=error`, 302);
-    const tokenData = (await tokenRes.json()) as StravaTokens & { athlete: { id: number } };
+    const tokenData = (await tokenRes.json()) as StravaTokens & { athlete: { id: number; firstname?: string; lastname?: string } };
+    const athleteName = [tokenData.athlete.firstname, tokenData.athlete.lastname].filter(Boolean).join(' ') || null;
 
     const adminHeaders = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' };
-    await fetch(`${supabaseUrl}/rest/v1/strava_connections`, {
+    const insertRes = await fetch(`${supabaseUrl}/rest/v1/strava_connections`, {
       method: 'POST',
       headers: adminHeaders,
       body: JSON.stringify({
         user_id: userId,
         strava_athlete_id: tokenData.athlete.id,
+        strava_athlete_name: athleteName,
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
         expires_at: tokenData.expires_at,
       }),
     });
+    if (!insertRes.ok) {
+      const detail = await insertRes.text();
+      console.error('Strava connection insert failed:', insertRes.status, detail);
+      return Response.redirect(`${appUrl}/profile?strava=error&reason=${encodeURIComponent(detail.slice(0, 200))}`, 302);
+    }
 
     // Kick off an immediate first import so the user sees activities right away.
     await syncStravaForUser(supabaseUrl, serviceKey, {
-      user_id: userId, strava_athlete_id: tokenData.athlete.id,
+      user_id: userId, strava_athlete_id: tokenData.athlete.id, strava_athlete_name: athleteName,
       access_token: tokenData.access_token, refresh_token: tokenData.refresh_token,
       expires_at: tokenData.expires_at, last_synced_at: null,
     });
 
     return Response.redirect(`${appUrl}/profile?strava=connected`, 302);
-  } catch {
-    return Response.redirect(`${appUrl}/profile?strava=error`, 302);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.error('Strava callback failed:', reason);
+    return Response.redirect(`${appUrl}/profile?strava=error&reason=${encodeURIComponent(reason.slice(0, 200))}`, 302);
   }
 }

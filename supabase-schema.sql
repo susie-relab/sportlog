@@ -259,3 +259,7 @@ create index if not exists training_plans_user on training_plans(user_id, create
 --   on strava_pending_duplicates for all
 --   using (auth.uid() = user_id)
 --   with check (auth.uid() = user_id);
+
+-- Migration: store the connected Strava athlete's display name so the Profile
+-- card can show "Connected as <name>" instead of just an athlete ID.
+-- alter table strava_connections add column if not exists strava_athlete_name text;

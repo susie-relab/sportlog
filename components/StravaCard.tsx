@@ -8,6 +8,7 @@ import { EXERCISE_TYPE_LABELS } from '@/types';
 interface StravaConnection {
   user_id: string;
   strava_athlete_id: number;
+  strava_athlete_name: string | null;
   last_synced_at: string | null;
 }
 
@@ -51,7 +52,10 @@ export default function StravaCard() {
     const status = params.get('strava');
     if (status === 'connected') setMsg('Strava connected! Importing your activities…');
     else if (status === 'denied') setMsg('Strava connection was cancelled.');
-    else if (status === 'error') setMsg('Something went wrong connecting to Strava.');
+    else if (status === 'error') {
+      const reason = params.get('reason');
+      setMsg(reason ? `Something went wrong connecting to Strava: ${reason}` : 'Something went wrong connecting to Strava.');
+    }
     if (status) {
       window.history.replaceState({}, '', window.location.pathname);
       setTimeout(() => load(), status === 'connected' ? 3000 : 0);
@@ -119,7 +123,7 @@ export default function StravaCard() {
       ) : (
         <>
           <p className="text-xs text-[#64748B] mb-3">
-            Connected · Athlete #{connection.strava_athlete_id}
+            ✅ Connected as {connection.strava_athlete_name || `Athlete #${connection.strava_athlete_id}`}
             {connection.last_synced_at && <> · Last synced {formatDate(connection.last_synced_at.slice(0, 10))}</>}
           </p>
           <div className="flex gap-2">

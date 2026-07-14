@@ -108,6 +108,7 @@ export function findDuplicateMatch(candidate: ReturnType<typeof stravaToActivity
 export interface StravaConnectionRow {
   user_id: string;
   strava_athlete_id: number;
+  strava_athlete_name?: string | null;
   access_token: string;
   refresh_token: string;
   expires_at: number;
