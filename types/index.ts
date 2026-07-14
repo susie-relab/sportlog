@@ -412,7 +412,7 @@ export function allFavouriteItems(): FavouriteItem[] {
 /** An activity's subtype keys — run_type/run_type_modifier for runs, the (possibly
  *  comma-joined) sub_type for everything else. Shared by top-N counts and by the
  *  This Year totals tile matcher below. */
-function activitySubKeys(a: Activity): string[] {
+export function activitySubKeys(a: Activity): string[] {
   return a.exercise_type === 'run'
     ? [a.run_type, a.run_type_modifier].filter(Boolean) as string[]
     : (a.sub_type ? a.sub_type.split(',').map(s => s.trim()).filter(Boolean) : []);

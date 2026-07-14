@@ -541,21 +541,6 @@ export default function AddPage() {
           </div>
         )}
 
-        {/* Companions & conditions — universal tags, shown regardless of exercise type */}
-        <TagToggleGrid
-          label="Select all that apply"
-          items={[
-            ...(Object.keys(COMPANION_LABELS) as Companion[]).map(key => ({
-              key, label: COMPANION_LABELS[key], emoji: COMPANION_EMOJI[key], doodle: COMPANION_ICON_OVERRIDES[key],
-              active: companions.includes(key), onToggle: () => toggleCompanion(key),
-            })),
-            ...(Object.keys(CONDITION_LABELS) as WeatherCondition[]).map(key => ({
-              key, label: CONDITION_LABELS[key], emoji: CONDITION_EMOJI[key],
-              active: conditions.includes(key), onToggle: () => toggleCondition(key),
-            })),
-          ]}
-        />
-
         {/* Duration */}
         <div>
           <label className="label">Duration *</label>
@@ -639,6 +624,23 @@ export default function AddPage() {
 
         {showMore && (
           <>
+            {/* Companions & conditions — universal tags, shown regardless of exercise type.
+                Two groups (not one flat list) so companions always keep their own top row,
+                never sharing it with conditions regardless of the column count at this width. */}
+            <TagToggleGrid
+              label="Select all that apply"
+              groups={[
+                (Object.keys(COMPANION_LABELS) as Companion[]).map(key => ({
+                  key, label: COMPANION_LABELS[key], emoji: COMPANION_EMOJI[key], doodle: COMPANION_ICON_OVERRIDES[key],
+                  active: companions.includes(key), onToggle: () => toggleCompanion(key),
+                })),
+                (Object.keys(CONDITION_LABELS) as WeatherCondition[]).map(key => ({
+                  key, label: CONDITION_LABELS[key], emoji: CONDITION_EMOJI[key],
+                  active: conditions.includes(key), onToggle: () => toggleCondition(key),
+                })),
+              ]}
+            />
+
             {/* Pace */}
             <div>
               <label className="label">Average Pace <span className="text-[#64748B]">min/km</span></label>

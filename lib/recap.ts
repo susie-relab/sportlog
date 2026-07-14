@@ -1,5 +1,9 @@
-import { Activity } from '@/types';
+import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_EMOJI, activityEmoji, subTypeLabel, activitySubKeys, REST_BREAK_RUN_TYPES } from '@/types';
 import { PlanRecord, todaysSession, isRunSession, sessionParts } from '@/lib/runPlanGenerator';
+
+function topN<T>(counts: Map<T, number>, n: number): [T, number][] {
+  return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, n);
+}
 
 export function addDays(dateISO: string, n: number): string {
   const [y, m, d] = dateISO.split('-').map(Number);
@@ -39,7 +43,29 @@ export function recapFor(activities: Activity[], plans: PlanRecord[], start: str
   const topActivity = inRange.length
     ? [...inRange].sort((a, b) => (b.duration_minutes - a.duration_minutes) || ((b.distance_km || 0) - (a.distance_km || 0)))[0]
     : null;
-  return { count: inRange.length, km, mins, pbs, planned, done, topActivity };
+
+  const typeCounts = new Map<ExerciseType, number>();
+  const subtypeCounts = new Map<string, number>(); // key = `${exercise_type}:${subKey}`
+  for (const a of inRange) {
+    typeCounts.set(a.exercise_type, (typeCounts.get(a.exercise_type) || 0) + 1);
+    for (const sk of activitySubKeys(a)) {
+      const key = `${a.exercise_type}:${sk}`;
+      subtypeCounts.set(key, (subtypeCounts.get(key) || 0) + 1);
+    }
+  }
+  const topTypes = topN(typeCounts, 2).map(([type, count]) => ({ type, label: EXERCISE_TYPE_LABELS[type], emoji: EXERCISE_TYPE_EMOJI[type], count }));
+  const topSubtypes = topN(subtypeCounts, 2).map(([key, count]) => {
+    const [type, subKey] = key.split(':') as [ExerciseType, string];
+    return { key, label: subTypeLabel(subKey), emoji: activityEmoji(type, subKey), count };
+  });
+
+  const intensityMins = inRange.reduce((s, a) => s + (a.intensity_minutes || 0), 0);
+  const maxHrActs = inRange.filter(a => a.max_hr);
+  const maxHr = maxHrActs.length ? Math.max(...maxHrActs.map(a => a.max_hr!)) : null;
+  const paceActs = inRange.filter(a => a.pace_min_km && !(a.run_type && REST_BREAK_RUN_TYPES.includes(a.run_type)));
+  const bestPace = paceActs.length ? Math.min(...paceActs.map(a => a.pace_min_km!)) : null;
+
+  return { count: inRange.length, km, mins, pbs, planned, done, topActivity, topTypes, topSubtypes, intensityMins, maxHr, bestPace };
 }
 
 /** Percentage change of `current` vs `prev`, rounded, or null when there's no

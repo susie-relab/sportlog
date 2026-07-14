@@ -8,7 +8,7 @@
 import { Activity } from '@/types';
 import { PlanRecord } from '@/lib/runPlanGenerator';
 import { recapWithComparison, addDays, upcomingCount } from '@/lib/recap';
-import { formatDuration, formatDistance, localWeekKey, WeekStart, calcWeekStreak } from '@/lib/utils';
+import { formatDuration, formatDistance, formatPaceMinKm, localWeekKey, WeekStart, calcWeekStreak } from '@/lib/utils';
 
 // Run on the Node runtime (needs Intl timezone + long-running fetches) and give the
 // cron enough headroom to page users + fetch each one's data + send emails.
@@ -60,6 +60,12 @@ function recapHtml(title: string, range: string, r: Recap, opts: { appUrl: strin
       ${stat(formatDuration(r.mins), 'Time', r.minsDelta)}
     </tr></table>
     ${top ? line('#94A3B8', `🏆 Top session: <strong style="color:#fff;">${esc(top.name)}</strong> — ${formatDuration(top.duration_minutes)}${top.distance_km ? ` · ${formatDistance(top.distance_km, top.exercise_type)}` : ''}`) : ''}
+    ${(r.topTypes.length > 0 || r.topSubtypes.length > 0) ? line('#94A3B8', esc([...r.topTypes.map(t => `${t.emoji} ${t.label}`), ...r.topSubtypes.map(t => `${t.emoji} ${t.label}`)].join(', '))) : ''}
+    ${(r.maxHr || r.bestPace || r.intensityMins > 0) ? line('#94A3B8', esc([
+      r.maxHr ? `❤️ ${r.maxHr} bpm` : null,
+      r.bestPace ? `⚡ ${formatPaceMinKm(r.bestPace)}` : null,
+      r.intensityMins > 0 ? `🔥 ${r.intensityMins}m intensity` : null,
+    ].filter(Boolean).join(' · '))) : ''}
     ${r.planned > 0 ? line('#94A3B8', `Plan sessions: <strong style="color:#fff;">${r.done}/${r.planned}</strong> completed`) : ''}
     ${r.pbs.length > 0 ? line('#FACC15', `⭐ ${r.pbs.length} PB${r.pbs.length > 1 ? 's' : ''} hit!`) : ''}
     ${weekStreak && weekStreak > 1 ? line('#FACC15', `⚡ ${weekStreak}-week streak going!`) : ''}

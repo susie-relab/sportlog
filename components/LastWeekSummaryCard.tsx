@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Activity } from '@/types';
 import { PlanRecord } from '@/lib/runPlanGenerator';
-import { formatDuration, localWeekKey, WeekStart } from '@/lib/utils';
+import { formatDuration, formatPaceMinKm, localWeekKey, WeekStart } from '@/lib/utils';
 import { addDays, recapFor } from './RecapCard';
 
 interface Props {
@@ -29,6 +29,22 @@ export default function LastWeekSummaryCard({ activities, plans, weekStartDay, t
         <div className="stat-card"><div className="stat-value">{r.km.toFixed(1)}</div><div className="stat-label">km</div></div>
         <div className="stat-card"><div className="stat-value">{formatDuration(r.mins)}</div><div className="stat-label">Time</div></div>
       </div>
+      {(r.topTypes.length > 0 || r.topSubtypes.length > 0) && (
+        <p className="text-xs text-[#94A3B8] mb-1 truncate">
+          {r.topTypes.map(t => `${t.emoji} ${t.label}`).join(', ')}
+          {r.topTypes.length > 0 && r.topSubtypes.length > 0 ? ' · ' : ''}
+          {r.topSubtypes.map(t => `${t.emoji} ${t.label}`).join(', ')}
+        </p>
+      )}
+      {(r.maxHr || r.bestPace || r.intensityMins > 0) && (
+        <p className="text-xs text-[#94A3B8] mb-1 truncate">
+          {[
+            r.maxHr ? `❤️ ${r.maxHr} bpm` : null,
+            r.bestPace ? `⚡ ${formatPaceMinKm(r.bestPace)}` : null,
+            r.intensityMins > 0 ? `🔥 ${r.intensityMins}m intensity` : null,
+          ].filter(Boolean).join(' · ')}
+        </p>
+      )}
       {r.planned > 0 && <p className="text-xs text-[#94A3B8] mb-1">Plan sessions: {r.done}/{r.planned} completed</p>}
       {r.pbs.length > 0 && <p className="text-xs text-yellow-400 mb-1">⭐ {r.pbs.length} PB{r.pbs.length > 1 ? 's' : ''} hit!</p>}
       <Link href="/activity-log" className="text-xs text-blue-400 hover:text-blue-300 mt-1 inline-block">View in Activity Log →</Link>
