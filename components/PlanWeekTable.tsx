@@ -172,9 +172,6 @@ function DayCell({ s, onClick, compact, drag }: {
           );
         })}
       </button>
-      {drag && !drag.isDragging && (
-        <span className="absolute top-1 right-1 text-[#475569]/70 text-xs pointer-events-none leading-none">⠿</span>
-      )}
       {drag?.isOver && (
         <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-[#0B1220]/85 pointer-events-none">
           <span className="text-[11px] font-bold text-emerald-300 px-2 py-1 rounded-md bg-emerald-500/15 border border-emerald-500/40">
@@ -310,11 +307,11 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, o
   return (
     <>
       {/* Desktop: full week × day table */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full border-separate" style={{ borderSpacing: '4px' }}>
+      <div className="hidden md:block">
+        <table className="w-full table-fixed border-separate" style={{ borderSpacing: '4px' }}>
           <thead>
             <tr>
-              <th className="text-left text-xs font-semibold text-[#94A3B8] uppercase tracking-wide px-2 py-2 w-32">Week &amp; {anyKm ? 'Total (km)' : 'Sessions'}</th>
+              <th className="text-left text-xs font-semibold text-[#94A3B8] uppercase tracking-wide px-2 py-2 w-28">Week &amp; {anyKm ? 'Total (km)' : 'Sessions'}</th>
               {WEEKDAYS.map(d => (
                 <th key={d} className="text-center text-xs font-semibold text-[#94A3B8] uppercase tracking-wide px-1 py-2">{WEEKDAY_SHORT[d]}</th>
               ))}
@@ -323,7 +320,7 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, o
           <tbody>
             {plan.weeks.map(w => (
               <tr key={w.weekNumber} className={currentWeek === w.weekNumber ? 'ring-1 ring-blue-500/40' : ''}>
-                <td className="align-top px-2 py-2 rounded-lg bg-[#0F172A] border border-[#293548]" style={{ minWidth: '8rem' }}>
+                <td className="align-top px-2 py-2 rounded-lg bg-[#0F172A] border border-[#293548]">
                   <div className="flex flex-col gap-1">
                     <span className="text-sm font-bold text-white">Week {w.weekNumber}</span>
                     <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded self-start" style={{ background: PHASE_COLORS[w.phase] + '22', color: PHASE_COLORS[w.phase] }}>{w.weekNumber === 0 ? 'Lead-in' : w.phase}</span>
@@ -332,7 +329,7 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, o
                   </div>
                 </td>
                 {WEEKDAYS.map(d => (
-                  <td key={d} className="align-top" data-cellkey={`${w.weekNumber}|${d}`} style={{ minWidth: '7rem' }}>
+                  <td key={d} className="align-top" data-cellkey={`${w.weekNumber}|${d}`}>
                     <DayCell s={w.days[d]} onClick={onDayClick ? () => onDayClick(w.weekNumber, d) : undefined} drag={dragProps(w.weekNumber, d)} />
                   </td>
                 ))}
