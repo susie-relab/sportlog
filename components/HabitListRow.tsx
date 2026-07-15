@@ -72,8 +72,14 @@ export default function HabitListRow({ habit, logs, onIncrement, onDecrement, on
   const handlePointerMove = (e: PointerEvent) => {
     if (!draggingRef.current) return;
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-    const overId = (el?.closest('[data-habit-key]') as HTMLElement | null)?.dataset.habitKey;
-    if (overId && overId !== habit.id) dragMovedRef.current = true;
+    const overRow = el?.closest('[data-habit-key]') as HTMLElement | null;
+    // Highlight whichever row is currently under the pointer so it's clear where the
+    // dragged habit will land, clearing any previous highlight first.
+    document.querySelectorAll('[data-habit-key]').forEach(r => r.classList.remove('ring-2', 'ring-blue-400', 'ring-inset'));
+    if (overRow && overRow.dataset.habitKey !== habit.id) {
+      dragMovedRef.current = true;
+      overRow.classList.add('ring-2', 'ring-blue-400', 'ring-inset');
+    }
   };
   const handlePointerUp = (e: PointerEvent) => {
     const moved = dragMovedRef.current;
@@ -81,6 +87,7 @@ export default function HabitListRow({ habit, logs, onIncrement, onDecrement, on
     setDragging(false);
     window.removeEventListener('pointermove', handlePointerMove);
     window.removeEventListener('pointerup', handlePointerUp);
+    document.querySelectorAll('[data-habit-key]').forEach(r => r.classList.remove('ring-2', 'ring-blue-400', 'ring-inset'));
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
     const overId = (el?.closest('[data-habit-key]') as HTMLElement | null)?.dataset.habitKey;
     if (moved && overId && overId !== habit.id) onReorder(overId);

@@ -55,13 +55,34 @@ export default function HabitsPage() {
 
   useEffect(() => { load(); }, [user]);
 
-  // Every selectable category — the fixed built-ins plus any the user has created — in a
-  // stable order: fixed first, then custom ones in creation order.
-  const allCategoryDefs = useMemo(() => [
-    ...HABIT_CATEGORY_ORDER.map(key => ({ key, label: HABIT_CATEGORY_LABELS[key], emoji: HABIT_CATEGORY_EMOJI[key] })),
-    ...customCategories.map(c => ({ key: c.id, label: c.name, emoji: c.emoji })),
-  ], [customCategories]);
+  // Every selectable category — the fixed built-ins plus any the user has created — reordered
+  // by the user's saved drag order (user_metadata.habit_category_order), falling back to
+  // fixed-then-custom-by-creation-order for any category not yet in that preference.
+  const categoryOrderPref: string[] = user?.user_metadata?.habit_category_order || [];
+  const allCategoryDefs = useMemo(() => {
+    const base = [
+      ...HABIT_CATEGORY_ORDER.map(key => ({ key, label: HABIT_CATEGORY_LABELS[key], emoji: HABIT_CATEGORY_EMOJI[key] })),
+      ...customCategories.map(c => ({ key: c.id, label: c.name, emoji: c.emoji })),
+    ];
+    if (categoryOrderPref.length === 0) return base;
+    const byKey = new Map(base.map(d => [d.key, d]));
+    const ordered = categoryOrderPref.map(k => byKey.get(k)).filter((d): d is typeof base[number] => !!d);
+    const remaining = base.filter(d => !categoryOrderPref.includes(d.key));
+    return [...ordered, ...remaining];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customCategories, JSON.stringify(categoryOrderPref)]);
   const categoryDefByKey = useMemo(() => new Map(allCategoryDefs.map(d => [d.key, d])), [allCategoryDefs]);
+
+  const reorderCategories = (fromKey: string, toKey: string) => {
+    const allKeys = allCategoryDefs.map(d => d.key);
+    const from = allKeys.indexOf(fromKey);
+    const to = allKeys.indexOf(toKey);
+    if (from === -1 || to === -1) return;
+    const reordered = [...allKeys];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    supabase.auth.updateUser({ data: { ...user?.user_metadata, habit_category_order: reordered } });
+  };
 
   const categoriesWithHabits = useMemo(() => {
     const present = new Set(habits.map(h => h.category));
@@ -296,26 +317,12 @@ export default function HabitsPage() {
         <>
           <HabitMonthCalendar habits={habits} logs={logs} onCycle={cycleHabitLog} />
 
-          {/* Category tab strip — browser-tab style: line divider between tabs, underline on the active one */}
-          <div className="flex overflow-x-auto mb-4 -mx-1 px-1 divide-x divide-[#334155] border-b border-[#334155]">
-            {categoriesWithHabits.map(cat => {
-              const def = categoryDefByKey.get(cat);
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                    activeCategory === cat ? 'border-blue-500 text-white' : 'border-transparent text-[#94A3B8] hover:text-white'
-                  }`}
-                >
-                  {def?.emoji} {def?.label}
-                </button>
-              );
-            })}
-          </div>
-
           <div className="mb-5">
             <HabitTabBox
+              categories={categoriesWithHabits.map(k => categoryDefByKey.get(k)!)}
+              activeCategory={activeCategory}
+              onSelectCategory={setActiveCategory}
+              onReorderCategory={reorderCategories}
               categoryLabel={categoryDefByKey.get(activeCategory)?.label || ''}
               habits={habitsInCategory}
               logsByHabit={logsByHabit}

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import {
   Habit, HabitLog, HabitFrequencyType, HabitColorKey,
@@ -8,7 +8,13 @@ import {
 import { todayLocalISO } from '@/lib/utils';
 import { getMonthDays, completionPctInRange, completionRatio, habitDayStats } from '@/lib/habitStats';
 
+interface CategoryDef { key: string; label: string; emoji: string }
+
 interface Props {
+  categories: CategoryDef[];
+  activeCategory: string;
+  onSelectCategory: (key: string) => void;
+  onReorderCategory: (fromKey: string, toKey: string) => void;
   categoryLabel: string;
   habits: Habit[];
   logsByHabit: Map<string, HabitLog[]>;
@@ -128,9 +134,10 @@ export function FrequencyFields({
  *  showing the selected habit's repeat/target, overview %, a streak/completion stats grid,
  *  and a circular-day history calendar. The pencil opens an edit panel to add a habit or
  *  reorder/edit existing ones (including frequency and day-of-week schedule). */
-export default function HabitTabBox({ categoryLabel, habits, logsByHabit, selectedHabitId, onSelectHabit, onCreateHabit, onMoveHabit, onUpdateHabit, onIncrementToday, onDecrementToday }: Props) {
+export default function HabitTabBox({ categories, activeCategory, onSelectCategory, onReorderCategory, categoryLabel, habits, logsByHabit, selectedHabitId, onSelectHabit, onCreateHabit, onMoveHabit, onUpdateHabit, onIncrementToday, onDecrementToday }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const categoryDragRef = useRef<{ fromKey: string; moved: boolean } | null>(null);
 
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState<HabitColorKey>('blue');
@@ -187,6 +194,40 @@ export default function HabitTabBox({ categoryLabel, habits, logsByHabit, select
     setEditTarget(String(h.target_per_period));
   };
 
+  // Press-and-hold drag to reorder category tabs — a tap (no movement) selects the category
+  // instead. The row currently under the pointer gets a ring highlight so it's clear where
+  // the dragged tab will land, cleared again on drop.
+  const handleCategoryPointerDown = (key: string) => (e: React.PointerEvent) => {
+    e.preventDefault();
+    categoryDragRef.current = { fromKey: key, moved: false };
+    window.addEventListener('pointermove', handleCategoryPointerMove);
+    window.addEventListener('pointerup', handleCategoryPointerUp);
+  };
+  const handleCategoryPointerMove = (e: PointerEvent) => {
+    const drag = categoryDragRef.current;
+    if (!drag) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const overEl = el?.closest('[data-category-key]') as HTMLElement | null;
+    document.querySelectorAll('[data-category-key]').forEach(t => t.classList.remove('ring-2', 'ring-blue-400', 'ring-inset'));
+    if (overEl && overEl.dataset.categoryKey !== drag.fromKey) {
+      drag.moved = true;
+      overEl.classList.add('ring-2', 'ring-blue-400', 'ring-inset');
+    }
+  };
+  const handleCategoryPointerUp = (e: PointerEvent) => {
+    const drag = categoryDragRef.current;
+    categoryDragRef.current = null;
+    window.removeEventListener('pointermove', handleCategoryPointerMove);
+    window.removeEventListener('pointerup', handleCategoryPointerUp);
+    document.querySelectorAll('[data-category-key]').forEach(t => t.classList.remove('ring-2', 'ring-blue-400', 'ring-inset'));
+    if (!drag) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const overEl = el?.closest('[data-category-key]') as HTMLElement | null;
+    const toKey = overEl?.dataset.categoryKey;
+    if (drag.moved && toKey && toKey !== drag.fromKey) onReorderCategory(drag.fromKey, toKey);
+    else onSelectCategory(drag.fromKey);
+  };
+
   const saveEditing = (habitId: string) => {
     if (!editName.trim()) return;
     onUpdateHabit(habitId, {
@@ -211,6 +252,29 @@ export default function HabitTabBox({ categoryLabel, habits, logsByHabit, select
       >
         <PencilIcon />
       </button>
+
+      <div className="flex overflow-x-auto mb-3 pr-10 -mx-1 px-1">
+        {categories.map((c, i) => {
+          const active = activeCategory === c.key;
+          const nextActive = i < categories.length - 1 && categories[i + 1].key === activeCategory;
+          return (
+            <button
+              key={c.key}
+              data-category-key={c.key}
+              onPointerDown={handleCategoryPointerDown(c.key)}
+              className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-r transition-colors select-none ${
+                active ? 'text-white' : 'text-[#94A3B8] hover:text-white'
+              } ${active || nextActive ? 'border-r-blue-500' : 'border-r-[#334155]'} ${
+                i === 0 ? `border-l ${active ? 'border-l-blue-500' : 'border-l-[#334155]'}` : ''
+              }`}
+              style={{ touchAction: 'none' }}
+            >
+              {c.emoji} {c.label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="border-b border-[#334155] mb-3" />
 
       <div className="flex overflow-x-auto mb-4 pr-10 -mx-1 px-1">
         {habits.map((h, i) => {
