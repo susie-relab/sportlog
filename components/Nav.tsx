@@ -2,7 +2,7 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Plus, LayoutDashboard, List, Footprints, TrendingUp, Award, BookOpen, Target, Upload, Download, LogOut, HelpCircle, User } from 'lucide-react';
+import { Plus, LayoutDashboard, List, Footprints, TrendingUp, Award, BookOpen, Target, CheckCircle2, Upload, Download, LogOut, HelpCircle, User } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { useDirtyForm } from './DirtyFormContext';
 import AccountSwitcher from './AccountSwitcher';
@@ -15,6 +15,7 @@ const mainTabs = [
   { href: '/total-stats', label: 'Stats', icon: TrendingUp },
   { href: '/dash', label: 'Dash', icon: LayoutDashboard },
   { href: '/training-plan', label: 'Plan', icon: Target },
+  { href: '/habits', label: 'Habits', icon: CheckCircle2 },
   { href: '/pbs', label: "PB's", icon: Award },
   { href: '/notes', label: 'Notes', icon: BookOpen },
 ];

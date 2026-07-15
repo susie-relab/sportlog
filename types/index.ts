@@ -506,3 +506,62 @@ export interface Activity {
   date: string;
   created_at: string;
 }
+
+// --- Habit tracker ---
+
+export type HabitCategory = 'health' | 'nutrition' | 'lifestyle' | 'self_care' | 'sleep' | 'phone_use' | 'spiritual' | 'custom';
+
+export const HABIT_CATEGORY_LABELS: Record<HabitCategory, string> = {
+  health: 'Health', nutrition: 'Nutrition', lifestyle: 'Lifestyle', self_care: 'Self-Care', sleep: 'Sleep',
+  phone_use: 'Phone Use', spiritual: 'Spiritual', custom: 'Custom',
+};
+export const HABIT_CATEGORY_EMOJI: Record<HabitCategory, string> = {
+  health: '😁', nutrition: '🥑', lifestyle: '🌱', self_care: '🧽', sleep: '😴',
+  phone_use: '📵', spiritual: '🙏', custom: '⭐',
+};
+export const HABIT_CATEGORY_ORDER: HabitCategory[] = ['health', 'nutrition', 'lifestyle', 'self_care', 'sleep', 'phone_use', 'spiritual', 'custom'];
+
+export const HABIT_COLORS = {
+  blue: '#60A5FA', teal: '#2DD4BF', green: '#4ADE80', lime: '#A3E635',
+  yellow: '#FACC15', orange: '#FB923C', red: '#F87171', pink: '#F472B6',
+  purple: '#C084FC', slate: '#94A3B8',
+} as const;
+export type HabitColorKey = keyof typeof HABIT_COLORS;
+
+export type HabitFrequencyType = 'daily' | 'weekly' | 'custom_days';
+
+export interface Habit {
+  id: string;
+  user_id: string;
+  name: string;
+  category: HabitCategory;
+  color: string; // hex
+  frequency_type: HabitFrequencyType;
+  frequency_days?: string | null; // comma-joined weekday keys ('mon,wed,fri'), null = every applicable day
+  target_per_period: number; // times per day (daily) or per week (weekly)
+  sort_order: number;
+  archived: boolean;
+  created_at: string;
+}
+
+export interface HabitLog {
+  id: string;
+  habit_id: string;
+  user_id: string;
+  date: string; // YYYY-MM-DD
+  count: number;
+}
+
+const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+export type HabitWeekday = typeof WEEKDAY_KEYS[number];
+const JS_DAY_TO_WEEKDAY_KEY: HabitWeekday[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+/** Whether a habit is scheduled on a given local date — true for 'daily'/'weekly' (frequency_days
+ *  unset means every day), or checked against frequency_days for 'custom_days'. */
+export function isHabitScheduledOn(habit: Habit, dateISO: string): boolean {
+  if (habit.frequency_type !== 'custom_days' || !habit.frequency_days) return true;
+  const [y, m, d] = dateISO.split('-').map(Number);
+  const jsDay = new Date(y, m - 1, d).getDay();
+  const key = JS_DAY_TO_WEEKDAY_KEY[jsDay];
+  return habit.frequency_days.split(',').map(s => s.trim()).includes(key);
+}

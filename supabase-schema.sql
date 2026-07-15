@@ -268,3 +268,39 @@ create index if not exists training_plans_user on training_plans(user_id, create
 -- (comma-joined keys, same pattern as swim_styles/snow_styles/water_styles).
 -- alter table activities add column if not exists companions text;
 -- alter table activities add column if not exists conditions text;
+
+-- Migration: habit tracker — user-created habits + one log row per habit per day.
+-- create table if not exists habits (
+--   id uuid default gen_random_uuid() primary key,
+--   user_id uuid references auth.users(id) on delete cascade not null,
+--   name text not null,
+--   category text not null,               -- 'health' | 'lifestyle' | 'self_care' | 'sleep' | 'phone_use' | 'spiritual' | 'custom'
+--   color text not null,                  -- hex, user-editable
+--   frequency_type text not null default 'daily',  -- 'daily' | 'weekly' | 'custom_days'
+--   frequency_days text,                  -- comma-joined weekday keys ('mon,wed,fri'), null = every applicable day
+--   target_per_period integer not null default 1,  -- times per day (daily) or per week (weekly)
+--   sort_order integer not null default 0,
+--   archived boolean not null default false,
+--   created_at timestamptz default now()
+-- );
+-- alter table habits enable row level security;
+-- create policy "Users can manage their own habits"
+--   on habits for all
+--   using (auth.uid() = user_id)
+--   with check (auth.uid() = user_id);
+-- create index if not exists habits_user on habits(user_id, sort_order);
+--
+-- create table if not exists habit_logs (
+--   id uuid default gen_random_uuid() primary key,
+--   habit_id uuid references habits(id) on delete cascade not null,
+--   user_id uuid references auth.users(id) on delete cascade not null,
+--   date date not null,
+--   count integer not null default 0,     -- completions logged that day
+--   unique (habit_id, date)
+-- );
+-- alter table habit_logs enable row level security;
+-- create policy "Users can manage their own habit logs"
+--   on habit_logs for all
+--   using (auth.uid() = user_id)
+--   with check (auth.uid() = user_id);
+-- create index if not exists habit_logs_habit_date on habit_logs(habit_id, date);
