@@ -2,19 +2,22 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import {
-  Habit, HabitLog, HabitCategory, HabitFrequencyType, HabitColorKey,
-  HABIT_CATEGORY_LABELS, HABIT_COLORS, isHabitScheduledOn,
+  Habit, HabitLog, HabitFrequencyType, HabitColorKey,
+  HABIT_COLORS, HABIT_FREQUENCY_LABELS, isHabitScheduledOn,
 } from '@/types';
 import { todayLocalISO } from '@/lib/utils';
-import { getMonthDays, completionPctInRange, completionRatio } from '@/lib/habitStats';
+import { getMonthDays, completionPctInRange, completionRatio, habitDayStats } from '@/lib/habitStats';
 
 interface Props {
-  category: HabitCategory;
+  categoryLabel: string;
   habits: Habit[];
   logsByHabit: Map<string, HabitLog[]>;
   selectedHabitId: string | null;
   onSelectHabit: (id: string) => void;
-  onCreateHabit: (fields: { name: string; color: string; frequency_type: HabitFrequencyType; frequency_days: string | null; target_per_period: number }) => void;
+  onCreateHabit: (fields: {
+    name: string; color: string; frequency_type: HabitFrequencyType;
+    frequency_days: string | null; frequency_interval_days: number | null; target_per_period: number;
+  }) => void;
   onMoveHabit: (id: string, direction: 'up' | 'down') => void;
   onUpdateHabit: (id: string, patch: Partial<Habit>) => void;
 }
@@ -23,6 +26,8 @@ const WEEKDAY_OPTIONS = [
   { key: 'mon', label: 'M' }, { key: 'tue', label: 'T' }, { key: 'wed', label: 'W' },
   { key: 'thu', label: 'T' }, { key: 'fri', label: 'F' }, { key: 'sat', label: 'S' }, { key: 'sun', label: 'S' },
 ];
+
+const FREQUENCY_ORDER: HabitFrequencyType[] = ['daily', 'every_n_days', 'weekly', 'fortnightly', 'monthly', 'custom_days'];
 
 function hexToRgba(hex: string, alpha: number): string {
   const m = hex.replace('#', '');
@@ -42,17 +47,86 @@ function PencilIcon() {
 }
 
 function frequencyLabel(habit: Habit): string {
-  if (habit.frequency_type === 'weekly') return 'Weekly';
   if (habit.frequency_type === 'custom_days' && habit.frequency_days) {
     return habit.frequency_days.split(',').map(k => k[0].toUpperCase() + k.slice(1, 3)).join(', ');
   }
-  return 'Every day';
+  if (habit.frequency_type === 'every_n_days') return `Every ${habit.frequency_interval_days || 2} days`;
+  return HABIT_FREQUENCY_LABELS[habit.frequency_type];
+}
+
+export function targetUnitLabel(frequency: HabitFrequencyType, intervalDays: string): string {
+  switch (frequency) {
+    case 'every_n_days': return `${intervalDays || 2} days`;
+    case 'weekly': return 'week';
+    case 'fortnightly': return 'fortnight';
+    case 'monthly': return 'month';
+    default: return 'day';
+  }
+}
+
+/** Frequency + goal-amount picker shared by the "add a habit" and per-habit "edit" forms. */
+export function FrequencyFields({
+  frequency, setFrequency, days, setDays, intervalDays, setIntervalDays, target, setTarget,
+}: {
+  frequency: HabitFrequencyType; setFrequency: (f: HabitFrequencyType) => void;
+  days: string[]; setDays: (updater: (prev: string[]) => string[]) => void;
+  intervalDays: string; setIntervalDays: (v: string) => void;
+  target: string; setTarget: (v: string) => void;
+}) {
+  return (
+    <>
+      <div>
+        <label className="label">Frequency</label>
+        <div className="flex flex-wrap gap-1.5">
+          {FREQUENCY_ORDER.map(f => (
+            <button
+              key={f}
+              onClick={() => setFrequency(f)}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${frequency === f ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
+            >
+              {HABIT_FREQUENCY_LABELS[f]}
+            </button>
+          ))}
+        </div>
+      </div>
+      {frequency === 'every_n_days' && (
+        <div>
+          <label className="label">Every how many days</label>
+          <input type="number" className="input" min="2" value={intervalDays} onChange={e => setIntervalDays(e.target.value)} />
+        </div>
+      )}
+      {frequency === 'custom_days' && (
+        <div>
+          <label className="label">Which days</label>
+          <div className="flex gap-1.5">
+            {WEEKDAY_OPTIONS.map(d => {
+              const active = days.includes(d.key);
+              return (
+                <button
+                  key={d.key}
+                  onClick={() => setDays(prev => active ? prev.filter(k => k !== d.key) : [...prev, d.key])}
+                  className={`w-9 h-9 rounded-lg text-xs font-semibold border transition-all ${active ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
+                >
+                  {d.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      <div>
+        <label className="label">Goal amount (per {targetUnitLabel(frequency, intervalDays)})</label>
+        <input type="number" className="input" min="1" value={target} onChange={e => setTarget(e.target.value)} />
+      </div>
+    </>
+  );
 }
 
 /** Per-category box: tab-switch between the category's habits (like YearTotalsCard),
- *  showing the selected habit's repeat/target, overview %, and a circular-day history
- *  calendar. The pencil opens an edit panel to add a habit or reorder/edit existing ones. */
-export default function HabitTabBox({ category, habits, logsByHabit, selectedHabitId, onSelectHabit, onCreateHabit, onMoveHabit, onUpdateHabit }: Props) {
+ *  showing the selected habit's repeat/target, overview %, a streak/completion stats grid,
+ *  and a circular-day history calendar. The pencil opens an edit panel to add a habit or
+ *  reorder/edit existing ones (including frequency and day-of-week schedule). */
+export default function HabitTabBox({ categoryLabel, habits, logsByHabit, selectedHabitId, onSelectHabit, onCreateHabit, onMoveHabit, onUpdateHabit }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -60,12 +134,14 @@ export default function HabitTabBox({ category, habits, logsByHabit, selectedHab
   const [newColor, setNewColor] = useState<HabitColorKey>('blue');
   const [newFrequency, setNewFrequency] = useState<HabitFrequencyType>('daily');
   const [newDays, setNewDays] = useState<string[]>([]);
+  const [newInterval, setNewInterval] = useState('2');
   const [newTarget, setNewTarget] = useState('1');
 
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState<HabitColorKey>('blue');
   const [editFrequency, setEditFrequency] = useState<HabitFrequencyType>('daily');
   const [editDays, setEditDays] = useState<string[]>([]);
+  const [editInterval, setEditInterval] = useState('2');
   const [editTarget, setEditTarget] = useState('1');
 
   const todayISO = todayLocalISO();
@@ -79,9 +155,10 @@ export default function HabitTabBox({ category, habits, logsByHabit, selectedHab
 
   const monthPct = selected ? completionPctInRange(selected, logs, `${year}-${String(month0 + 1).padStart(2, '0')}-01`, todayISO) : 0;
   const yearPct = selected ? completionPctInRange(selected, logs, `${year}-01-01`, todayISO) : 0;
+  const dayStats = selected ? habitDayStats(selected, logs, todayISO) : null;
 
   const resetNewForm = () => {
-    setNewName(''); setNewColor('blue'); setNewFrequency('daily'); setNewDays([]); setNewTarget('1');
+    setNewName(''); setNewColor('blue'); setNewFrequency('daily'); setNewDays([]); setNewInterval('2'); setNewTarget('1');
   };
 
   const submitNew = () => {
@@ -91,6 +168,7 @@ export default function HabitTabBox({ category, habits, logsByHabit, selectedHab
       color: HABIT_COLORS[newColor],
       frequency_type: newFrequency,
       frequency_days: newFrequency === 'custom_days' ? (newDays.join(',') || null) : null,
+      frequency_interval_days: newFrequency === 'every_n_days' ? (parseInt(newInterval) || 2) : null,
       target_per_period: parseInt(newTarget) || 1,
     });
     resetNewForm();
@@ -103,6 +181,7 @@ export default function HabitTabBox({ category, habits, logsByHabit, selectedHab
     setEditColor(colorKey);
     setEditFrequency(h.frequency_type);
     setEditDays(h.frequency_days ? h.frequency_days.split(',') : []);
+    setEditInterval(String(h.frequency_interval_days || 2));
     setEditTarget(String(h.target_per_period));
   };
 
@@ -113,6 +192,7 @@ export default function HabitTabBox({ category, habits, logsByHabit, selectedHab
       color: HABIT_COLORS[editColor],
       frequency_type: editFrequency,
       frequency_days: editFrequency === 'custom_days' ? (editDays.join(',') || null) : null,
+      frequency_interval_days: editFrequency === 'every_n_days' ? (parseInt(editInterval) || 2) : null,
       target_per_period: parseInt(editTarget) || 1,
     });
     setExpandedId(null);
@@ -130,19 +210,25 @@ export default function HabitTabBox({ category, habits, logsByHabit, selectedHab
         <PencilIcon />
       </button>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-1 mb-4 pr-10 -mx-1 px-1">
-        {habits.map(h => (
-          <button
-            key={h.id}
-            onClick={() => onSelectHabit(h.id)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-              selected.id === h.id ? 'bg-[#293548] border-blue-500 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
-            }`}
-          >
-            <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: h.color }} />
-            {h.name}
-          </button>
-        ))}
+      <div className="flex overflow-x-auto mb-4 pr-10 -mx-1 px-1">
+        {habits.map((h, i) => {
+          const active = selected.id === h.id;
+          const nextActive = i < habits.length - 1 && habits[i + 1].id === selected.id;
+          return (
+            <button
+              key={h.id}
+              onClick={() => onSelectHabit(h.id)}
+              className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-r transition-colors ${
+                active ? 'text-white' : 'text-[#94A3B8] hover:text-white'
+              } ${active || nextActive ? 'border-r-blue-500' : 'border-r-[#334155]'} ${
+                i === 0 ? `border-l ${active ? 'border-l-blue-500' : 'border-l-[#334155]'}` : ''
+              }`}
+            >
+              <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: h.color }} />
+              {h.name}
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex items-start justify-between mb-4">
@@ -152,7 +238,7 @@ export default function HabitTabBox({ category, habits, logsByHabit, selectedHab
         </div>
         <div className="text-right">
           <p className="text-xs text-[#64748B] mb-0.5">Target</p>
-          <p className="text-sm font-medium text-white">{selected.target_per_period}{selected.frequency_type === 'weekly' ? '/week' : '/day'}</p>
+          <p className="text-sm font-medium text-white">{selected.target_per_period} / {targetUnitLabel(selected.frequency_type, String(selected.frequency_interval_days || 2))}</p>
         </div>
       </div>
 
@@ -162,6 +248,17 @@ export default function HabitTabBox({ category, habits, logsByHabit, selectedHab
         <span>Month <span className="text-white font-semibold">{monthPct}%</span></span>
         <span>Year <span className="text-white font-semibold">{yearPct}%</span></span>
       </div>
+
+      {dayStats && (
+        <div className="grid grid-cols-2 gap-2 mb-5">
+          <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.currentStreak}</p><p className="text-xs text-[#64748B]">Current Streak</p></div>
+          <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.longestStreak}</p><p className="text-xs text-[#64748B]">Longest Streak</p></div>
+          <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysCompleted}</p><p className="text-xs text-[#64748B]">Days Completed</p></div>
+          <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysFailed}</p><p className="text-xs text-[#64748B]">Days Failed</p></div>
+          <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysSkipped}</p><p className="text-xs text-[#64748B]">Days Skipped</p></div>
+          <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysStacked}</p><p className="text-xs text-[#64748B]">Days Stacked</p></div>
+        </div>
+      )}
 
       <p className="text-xs font-medium text-[#64748B] uppercase tracking-wide mb-2">History</p>
       <div className="flex flex-wrap gap-1.5">
@@ -194,7 +291,7 @@ export default function HabitTabBox({ category, habits, logsByHabit, selectedHab
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowEdit(false); setExpandedId(null); }} />
           <div className="relative w-full md:max-w-md max-h-[85vh] flex flex-col bg-[#1E293B] border border-[#334155] rounded-t-2xl md:rounded-2xl p-5 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">Edit {HABIT_CATEGORY_LABELS[category]}</h3>
+              <h3 className="text-lg font-bold text-white">Edit {categoryLabel}</h3>
               <button onClick={() => { setShowEdit(false); setExpandedId(null); }} className="p-1 rounded-lg hover:bg-[#334155] text-[#94A3B8]"><X size={18} /></button>
             </div>
 
@@ -236,43 +333,12 @@ export default function HabitTabBox({ category, habits, logsByHabit, selectedHab
                           ))}
                         </div>
                       </div>
-                      <div>
-                        <label className="label">Frequency</label>
-                        <div className="flex gap-1.5">
-                          {(['daily', 'weekly', 'custom_days'] as HabitFrequencyType[]).map(f => (
-                            <button
-                              key={f}
-                              onClick={() => setEditFrequency(f)}
-                              className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium border transition-all ${editFrequency === f ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
-                            >
-                              {f === 'daily' ? 'Daily' : f === 'weekly' ? 'Weekly' : 'Days'}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      {editFrequency === 'custom_days' && (
-                        <div>
-                          <label className="label">Which days</label>
-                          <div className="flex gap-1.5">
-                            {WEEKDAY_OPTIONS.map(d => {
-                              const active = editDays.includes(d.key);
-                              return (
-                                <button
-                                  key={d.key}
-                                  onClick={() => setEditDays(prev => active ? prev.filter(k => k !== d.key) : [...prev, d.key])}
-                                  className={`w-8 h-8 rounded-lg text-xs font-semibold border transition-all ${active ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
-                                >
-                                  {d.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      <div>
-                        <label className="label">Times per {editFrequency === 'weekly' ? 'week' : 'day'}</label>
-                        <input type="number" className="input" min="1" value={editTarget} onChange={e => setEditTarget(e.target.value)} />
-                      </div>
+                      <FrequencyFields
+                        frequency={editFrequency} setFrequency={setEditFrequency}
+                        days={editDays} setDays={setEditDays}
+                        intervalDays={editInterval} setIntervalDays={setEditInterval}
+                        target={editTarget} setTarget={setEditTarget}
+                      />
                       <button onClick={() => saveEditing(h.id)} className="btn-primary w-full">Save</button>
                     </div>
                   )}
@@ -280,7 +346,7 @@ export default function HabitTabBox({ category, habits, logsByHabit, selectedHab
               ))}
             </div>
 
-            <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-2">Add a Habit to {HABIT_CATEGORY_LABELS[category]}</p>
+            <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-2">Add a Habit to {categoryLabel}</p>
             <div className="flex flex-col gap-3">
               <input className="input" placeholder="Habit name" value={newName} onChange={e => setNewName(e.target.value)} />
               <div>
@@ -297,43 +363,12 @@ export default function HabitTabBox({ category, habits, logsByHabit, selectedHab
                   ))}
                 </div>
               </div>
-              <div>
-                <label className="label">Frequency</label>
-                <div className="flex gap-1.5">
-                  {(['daily', 'weekly', 'custom_days'] as HabitFrequencyType[]).map(f => (
-                    <button
-                      key={f}
-                      onClick={() => setNewFrequency(f)}
-                      className={`flex-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${newFrequency === f ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
-                    >
-                      {f === 'daily' ? 'Daily' : f === 'weekly' ? 'Weekly' : 'Specific Days'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {newFrequency === 'custom_days' && (
-                <div>
-                  <label className="label">Which days</label>
-                  <div className="flex gap-1.5">
-                    {WEEKDAY_OPTIONS.map(d => {
-                      const active = newDays.includes(d.key);
-                      return (
-                        <button
-                          key={d.key}
-                          onClick={() => setNewDays(prev => active ? prev.filter(k => k !== d.key) : [...prev, d.key])}
-                          className={`w-9 h-9 rounded-lg text-xs font-semibold border transition-all ${active ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
-                        >
-                          {d.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              <div>
-                <label className="label">Times per {newFrequency === 'weekly' ? 'week' : 'day'}</label>
-                <input type="number" className="input" min="1" value={newTarget} onChange={e => setNewTarget(e.target.value)} />
-              </div>
+              <FrequencyFields
+                frequency={newFrequency} setFrequency={setNewFrequency}
+                days={newDays} setDays={setNewDays}
+                intervalDays={newInterval} setIntervalDays={setNewInterval}
+                target={newTarget} setTarget={setNewTarget}
+              />
               <button onClick={submitNew} className="btn-primary w-full">+ Add Habit</button>
             </div>
           </div>

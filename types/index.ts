@@ -509,17 +509,30 @@ export interface Activity {
 
 // --- Habit tracker ---
 
-export type HabitCategory = 'health' | 'nutrition' | 'lifestyle' | 'self_care' | 'sleep' | 'phone_use' | 'spiritual' | 'custom';
+// The app's built-in categories. Users can also create their own on the fly (see
+// HabitCategoryRow below) — a habit's `category` column holds either one of these fixed
+// keys or a habit_categories.id, so it's typed as a plain string, not this union.
+export type HabitCategory = 'health' | 'nutrition' | 'lifestyle' | 'self_care' | 'sleep' | 'phone_use' | 'spiritual';
 
 export const HABIT_CATEGORY_LABELS: Record<HabitCategory, string> = {
   health: 'Health', nutrition: 'Nutrition', lifestyle: 'Lifestyle', self_care: 'Self-Care', sleep: 'Sleep',
-  phone_use: 'Phone Use', spiritual: 'Spiritual', custom: 'Custom',
+  phone_use: 'Phone Use', spiritual: 'Spiritual',
 };
 export const HABIT_CATEGORY_EMOJI: Record<HabitCategory, string> = {
   health: '😁', nutrition: '🥑', lifestyle: '🌱', self_care: '🧽', sleep: '😴',
-  phone_use: '📵', spiritual: '🙏', custom: '⭐',
+  phone_use: '📵', spiritual: '🙏',
 };
-export const HABIT_CATEGORY_ORDER: HabitCategory[] = ['health', 'nutrition', 'lifestyle', 'self_care', 'sleep', 'phone_use', 'spiritual', 'custom'];
+export const HABIT_CATEGORY_ORDER: HabitCategory[] = ['health', 'nutrition', 'lifestyle', 'self_care', 'sleep', 'phone_use', 'spiritual'];
+
+/** A user-created habit category (unlimited, in addition to the fixed ones above). */
+export interface HabitCategoryRow {
+  id: string;
+  user_id: string;
+  name: string;
+  emoji: string;
+  sort_order: number;
+  created_at: string;
+}
 
 export const HABIT_COLORS = {
   blue: '#60A5FA', teal: '#2DD4BF', green: '#4ADE80', lime: '#A3E635',
@@ -528,17 +541,23 @@ export const HABIT_COLORS = {
 } as const;
 export type HabitColorKey = keyof typeof HABIT_COLORS;
 
-export type HabitFrequencyType = 'daily' | 'weekly' | 'custom_days';
+export type HabitFrequencyType = 'daily' | 'every_n_days' | 'weekly' | 'fortnightly' | 'monthly' | 'custom_days';
+
+export const HABIT_FREQUENCY_LABELS: Record<HabitFrequencyType, string> = {
+  daily: 'Daily', every_n_days: 'Every N Days', weekly: 'Weekly', fortnightly: 'Fortnightly',
+  monthly: 'Monthly', custom_days: 'Specific Days',
+};
 
 export interface Habit {
   id: string;
   user_id: string;
   name: string;
-  category: HabitCategory;
+  category: string; // a HabitCategory key, or a habit_categories.id for user-created categories
   color: string; // hex
   frequency_type: HabitFrequencyType;
-  frequency_days?: string | null; // comma-joined weekday keys ('mon,wed,fri'), null = every applicable day
-  target_per_period: number; // times per day (daily) or per week (weekly)
+  frequency_days?: string | null; // comma-joined weekday keys ('mon,wed,fri'), only used for 'custom_days'
+  frequency_interval_days?: number | null; // e.g. 2 for "every 2 days" — only used for 'every_n_days'
+  target_per_period: number; // the goal amount for whichever period frequency_type defines
   sort_order: number;
   archived: boolean;
   created_at: string;

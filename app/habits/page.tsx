@@ -3,58 +3,68 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import {
-  Habit, HabitLog, HabitCategory, HabitFrequencyType,
+  Habit, HabitLog, HabitCategoryRow, HabitFrequencyType,
   HABIT_CATEGORY_LABELS, HABIT_CATEGORY_EMOJI, HABIT_CATEGORY_ORDER, HABIT_COLORS, HabitColorKey,
 } from '@/types';
 import { HABIT_PRESETS, HabitPreset } from '@/lib/habitPresets';
 import { todayLocalISO } from '@/lib/utils';
 import HabitListRow from '@/components/HabitListRow';
 import HabitMonthCalendar from '@/components/HabitMonthCalendar';
-import HabitTabBox from '@/components/HabitTabBox';
-
-const WEEKDAY_OPTIONS: { key: string; label: string }[] = [
-  { key: 'mon', label: 'M' }, { key: 'tue', label: 'T' }, { key: 'wed', label: 'W' },
-  { key: 'thu', label: 'T' }, { key: 'fri', label: 'F' }, { key: 'sat', label: 'S' }, { key: 'sun', label: 'S' },
-];
+import HabitTabBox, { FrequencyFields } from '@/components/HabitTabBox';
 
 export default function HabitsPage() {
   const { user } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<HabitLog[]>([]);
+  const [customCategories, setCustomCategories] = useState<HabitCategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState<HabitCategory>('health');
+  const [activeCategory, setActiveCategory] = useState<string>('health');
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
 
   const [showAdd, setShowAdd] = useState(false);
   const [addStep, setAddStep] = useState<'presets' | 'custom'>('presets');
   const [customName, setCustomName] = useState('');
-  const [customCategory, setCustomCategory] = useState<HabitCategory>('health');
+  const [customCategory, setCustomCategory] = useState<string>('health');
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryEmoji, setNewCategoryEmoji] = useState('⭐');
   const [customColor, setCustomColor] = useState<HabitColorKey>('blue');
   const [customFrequency, setCustomFrequency] = useState<HabitFrequencyType>('daily');
   const [customDays, setCustomDays] = useState<string[]>([]);
+  const [customInterval, setCustomInterval] = useState('2');
   const [customTarget, setCustomTarget] = useState('1');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const load = async () => {
     if (!user) return;
-    const [{ data: h }, { data: l }] = await Promise.all([
+    const [{ data: h }, { data: l }, { data: c }] = await Promise.all([
       supabase.from('habits').select('*').eq('user_id', user.id).eq('archived', false).order('sort_order'),
       // A year back is enough range for streaks/best-streak and the month calendar without
       // pulling someone's entire multi-year history on every load.
       supabase.from('habit_logs').select('*').eq('user_id', user.id).gte('date', todayLocalISO().slice(0, 4) + '-01-01'),
+      supabase.from('habit_categories').select('*').eq('user_id', user.id).order('sort_order'),
     ]);
     setHabits((h as Habit[]) || []);
     setLogs((l as HabitLog[]) || []);
+    setCustomCategories((c as HabitCategoryRow[]) || []);
     setLoading(false);
   };
 
   useEffect(() => { load(); }, [user]);
 
+  // Every selectable category — the fixed built-ins plus any the user has created — in a
+  // stable order: fixed first, then custom ones in creation order.
+  const allCategoryDefs = useMemo(() => [
+    ...HABIT_CATEGORY_ORDER.map(key => ({ key, label: HABIT_CATEGORY_LABELS[key], emoji: HABIT_CATEGORY_EMOJI[key] })),
+    ...customCategories.map(c => ({ key: c.id, label: c.name, emoji: c.emoji })),
+  ], [customCategories]);
+  const categoryDefByKey = useMemo(() => new Map(allCategoryDefs.map(d => [d.key, d])), [allCategoryDefs]);
+
   const categoriesWithHabits = useMemo(() => {
     const present = new Set(habits.map(h => h.category));
-    return HABIT_CATEGORY_ORDER.filter(c => present.has(c));
-  }, [habits]);
+    return allCategoryDefs.filter(d => present.has(d.key)).map(d => d.key);
+  }, [habits, allCategoryDefs]);
 
   useEffect(() => {
     if (categoriesWithHabits.length > 0 && !categoriesWithHabits.includes(activeCategory)) {
@@ -83,13 +93,34 @@ export default function HabitsPage() {
   const resetAddForm = () => {
     setAddStep('presets');
     setCustomName(''); setCustomCategory('health'); setCustomColor('blue');
-    setCustomFrequency('daily'); setCustomDays([]); setCustomTarget('1');
+    setCustomFrequency('daily'); setCustomDays([]); setCustomInterval('2'); setCustomTarget('1');
+    setShowAddCategory(false); setNewCategoryName(''); setNewCategoryEmoji('⭐');
     setError('');
   };
 
   const closeAdd = () => { setShowAdd(false); resetAddForm(); };
 
-  const createHabit = async (fields: { name: string; category: HabitCategory; color: string; frequency_type: HabitFrequencyType; frequency_days: string | null; target_per_period: number }) => {
+  const createCategory = async () => {
+    if (!user || !newCategoryName.trim()) return;
+    const { data } = await supabase.from('habit_categories').insert({
+      user_id: user.id,
+      name: newCategoryName.trim(),
+      emoji: newCategoryEmoji || '⭐',
+      sort_order: customCategories.length,
+    }).select().single();
+    if (data) {
+      const row = data as HabitCategoryRow;
+      setCustomCategories(prev => [...prev, row]);
+      setCustomCategory(row.id); // immediately select the new category for the habit being created
+      setNewCategoryName(''); setNewCategoryEmoji('⭐');
+      setShowAddCategory(false);
+    }
+  };
+
+  const createHabit = async (fields: {
+    name: string; category: string; color: string; frequency_type: HabitFrequencyType;
+    frequency_days: string | null; frequency_interval_days: number | null; target_per_period: number;
+  }) => {
     if (!user) return;
     setSaving(true);
     setError('');
@@ -100,6 +131,7 @@ export default function HabitsPage() {
       color: fields.color,
       frequency_type: fields.frequency_type,
       frequency_days: fields.frequency_days,
+      frequency_interval_days: fields.frequency_interval_days,
       target_per_period: fields.target_per_period,
       sort_order: habits.length,
       archived: false,
@@ -115,7 +147,7 @@ export default function HabitsPage() {
 
   const addPreset = (preset: HabitPreset) => createHabit({
     name: preset.name, category: preset.category, color: preset.color,
-    frequency_type: 'daily', frequency_days: null, target_per_period: preset.target_per_period,
+    frequency_type: 'daily', frequency_days: null, frequency_interval_days: null, target_per_period: preset.target_per_period,
   });
 
   const submitCustom = () => {
@@ -127,6 +159,7 @@ export default function HabitsPage() {
       color: HABIT_COLORS[customColor],
       frequency_type: customFrequency,
       frequency_days: customFrequency === 'custom_days' ? (customDays.join(',') || null) : null,
+      frequency_interval_days: customFrequency === 'every_n_days' ? (parseInt(customInterval) || 2) : null,
       target_per_period: target,
     });
   };
@@ -197,24 +230,27 @@ export default function HabitsPage() {
         <>
           <HabitMonthCalendar habits={habits} logs={logs} onCycle={cycleHabitLog} />
 
-          {/* Category tab strip */}
-          <div className="flex gap-1.5 overflow-x-auto pb-1 mb-4 -mx-1 px-1">
-            {categoriesWithHabits.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  activeCategory === cat ? 'bg-[#293548] border-blue-500 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
-                }`}
-              >
-                {HABIT_CATEGORY_EMOJI[cat]} {HABIT_CATEGORY_LABELS[cat]}
-              </button>
-            ))}
+          {/* Category tab strip — browser-tab style: line divider between tabs, underline on the active one */}
+          <div className="flex overflow-x-auto mb-4 -mx-1 px-1 divide-x divide-[#334155] border-b border-[#334155]">
+            {categoriesWithHabits.map(cat => {
+              const def = categoryDefByKey.get(cat);
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                    activeCategory === cat ? 'border-blue-500 text-white' : 'border-transparent text-[#94A3B8] hover:text-white'
+                  }`}
+                >
+                  {def?.emoji} {def?.label}
+                </button>
+              );
+            })}
           </div>
 
           <div className="mb-5">
             <HabitTabBox
-              category={activeCategory}
+              categoryLabel={categoryDefByKey.get(activeCategory)?.label || ''}
               habits={habitsInCategory}
               logsByHabit={logsByHabit}
               selectedHabitId={selectedHabitId}
@@ -232,7 +268,7 @@ export default function HabitsPage() {
                 habit={habit}
                 logs={logsByHabit.get(habit.id) || []}
                 onCycle={date => cycleHabitLog(habit, date)}
-                onSelect={() => setSelectedHabitId(habit.id)}
+                onUpdateHabit={patch => updateHabit(habit.id, patch)}
               />
             ))}
           </div>
@@ -285,17 +321,57 @@ export default function HabitsPage() {
                   <div>
                     <label className="label">Category</label>
                     <div className="flex flex-wrap gap-1.5">
-                      {HABIT_CATEGORY_ORDER.map(cat => (
+                      {allCategoryDefs.map(def => (
                         <button
-                          key={cat}
-                          onClick={() => setCustomCategory(cat)}
-                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${customCategory === cat ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
+                          key={def.key}
+                          onClick={() => setCustomCategory(def.key)}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${customCategory === def.key ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
                         >
-                          {HABIT_CATEGORY_EMOJI[cat]} {HABIT_CATEGORY_LABELS[cat]}
+                          {def.emoji} {def.label}
                         </button>
                       ))}
+                      <button
+                        onClick={() => setShowAddCategory(true)}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-dashed border-[#334155] text-[#94A3B8] hover:border-[#475569] hover:text-white transition-all"
+                      >
+                        + Add
+                      </button>
                     </div>
                   </div>
+
+                  {showAddCategory && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={() => setShowAddCategory(false)}>
+                      <div className="absolute inset-0 bg-black/70" />
+                      <div className="relative w-full max-w-xs bg-[#1E293B] border border-[#334155] rounded-2xl p-4" onClick={e => e.stopPropagation()}>
+                        <h4 className="text-sm font-bold text-white mb-3">New Category</h4>
+                        <div className="flex flex-col gap-3">
+                          <div>
+                            <label className="label">Name</label>
+                            <input className="input" placeholder="e.g. Finances" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="label">Emoji</label>
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {['⭐', '🎯', '💡', '🎨', '🎵', '📚', '🏠', '🚗', '💰', '🎮', '🐶', '🌟', '🔥', '✨', '🧠', '🧺'].map(e => (
+                                <button
+                                  key={e}
+                                  onClick={() => setNewCategoryEmoji(e)}
+                                  className={`w-8 h-8 rounded-lg text-base flex items-center justify-center border transition-all ${newCategoryEmoji === e ? 'border-blue-500 bg-blue-500/20' : 'border-[#334155] hover:border-[#475569]'}`}
+                                >
+                                  {e}
+                                </button>
+                              ))}
+                            </div>
+                            <input className="input" maxLength={4} value={newCategoryEmoji} onChange={e => setNewCategoryEmoji(e.target.value)} />
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={createCategory} disabled={!newCategoryName.trim()} className="btn-primary flex-1 disabled:opacity-50">Add Category</button>
+                            <button onClick={() => setShowAddCategory(false)} className="text-sm text-[#64748B] hover:text-white px-3">Cancel</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label className="label">Colour</label>
                     <div className="flex flex-wrap gap-2">
@@ -310,43 +386,12 @@ export default function HabitsPage() {
                       ))}
                     </div>
                   </div>
-                  <div>
-                    <label className="label">Frequency</label>
-                    <div className="flex gap-1.5">
-                      {(['daily', 'weekly', 'custom_days'] as HabitFrequencyType[]).map(f => (
-                        <button
-                          key={f}
-                          onClick={() => setCustomFrequency(f)}
-                          className={`flex-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${customFrequency === f ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
-                        >
-                          {f === 'daily' ? 'Daily' : f === 'weekly' ? 'Weekly' : 'Specific Days'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {customFrequency === 'custom_days' && (
-                    <div>
-                      <label className="label">Which days</label>
-                      <div className="flex gap-1.5">
-                        {WEEKDAY_OPTIONS.map(d => {
-                          const active = customDays.includes(d.key);
-                          return (
-                            <button
-                              key={d.key}
-                              onClick={() => setCustomDays(prev => active ? prev.filter(k => k !== d.key) : [...prev, d.key])}
-                              className={`w-9 h-9 rounded-lg text-xs font-semibold border transition-all ${active ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
-                            >
-                              {d.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  <div>
-                    <label className="label">Times per {customFrequency === 'weekly' ? 'week' : 'day'}</label>
-                    <input type="number" className="input" min="1" value={customTarget} onChange={e => setCustomTarget(e.target.value)} />
-                  </div>
+                  <FrequencyFields
+                    frequency={customFrequency} setFrequency={setCustomFrequency}
+                    days={customDays} setDays={setCustomDays}
+                    intervalDays={customInterval} setIntervalDays={setCustomInterval}
+                    target={customTarget} setTarget={setCustomTarget}
+                  />
                   {error && <p className="text-red-400 text-sm">{error}</p>}
                   <button onClick={submitCustom} disabled={saving} className="btn-primary w-full mt-1">{saving ? 'Saving...' : 'Save Habit'}</button>
                   <button onClick={() => setAddStep('presets')} className="text-sm text-[#64748B] hover:text-white py-1">← Back</button>

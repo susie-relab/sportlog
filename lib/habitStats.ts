@@ -98,3 +98,85 @@ export function completionPctInRange(habit: Habit, logs: HabitLog[], startISO: s
   }
   return scheduled > 0 ? Math.round((done / scheduled) * 100) : 0;
 }
+
+/** The current goal period's inclusive [start, end] date range for a habit, based on its
+ *  frequency_type — e.g. just today for 'daily', the calendar week for 'weekly', a rolling
+ *  window for 'every_n_days', etc. Anchored to `todayISO`. */
+export function currentPeriodRange(habit: Habit, todayISO: string): [string, string] {
+  switch (habit.frequency_type) {
+    case 'weekly': {
+      const days = getWeekDays(todayISO);
+      return [days[0], days[6]];
+    }
+    case 'fortnightly':
+      return [addDaysISO(todayISO, -13), todayISO];
+    case 'monthly': {
+      const year = Number(todayISO.slice(0, 4));
+      const month0 = Number(todayISO.slice(5, 7)) - 1;
+      const days = getMonthDays(year, month0);
+      return [days[0], days[days.length - 1]];
+    }
+    case 'every_n_days': {
+      const n = habit.frequency_interval_days || 2;
+      return [addDaysISO(todayISO, -(n - 1)), todayISO];
+    }
+    default: // daily & custom_days — a single day's goal
+      return [todayISO, todayISO];
+  }
+}
+
+/** Progress toward the habit's goal for its current period — sums logged counts across the
+ *  period's date range (not just a single day), so weekly/monthly-style goals accumulate
+ *  completions logged on any day within that period. */
+export function periodProgress(habit: Habit, logs: HabitLog[], todayISO: string): { pct: number; sum: number; target: number; start: string; end: string } {
+  const [start, end] = currentPeriodRange(habit, todayISO);
+  const logsByDate = new Map(logs.map(l => [l.date, l]));
+  let sum = 0;
+  let cursor = start;
+  while (cursor <= end) {
+    sum += logsByDate.get(cursor)?.count || 0;
+    cursor = addDaysISO(cursor, 1);
+  }
+  const pct = habit.target_per_period > 0 ? Math.min(100, Math.round((sum / habit.target_per_period) * 100)) : 0;
+  return { pct, sum, target: habit.target_per_period, start, end };
+}
+
+export interface HabitDayStats {
+  currentStreak: number;
+  longestStreak: number;
+  daysCompleted: number;
+  daysFailed: number;
+  daysSkipped: number;
+  daysStacked: number;
+}
+
+/** Day-by-day breakdown since the habit's first log (or today, if none yet): Completed (hit
+ *  target that day), Failed (scheduled but missed), Skipped (not scheduled that day at all —
+ *  e.g. an off-day for a custom-days habit), and Stacked (over-achieved beyond the target). */
+export function habitDayStats(habit: Habit, logs: HabitLog[], todayISO: string): HabitDayStats {
+  const logsByDate = new Map(logs.map(l => [l.date, l]));
+  const sortedDates = [...logsByDate.keys()].sort();
+  const startISO = sortedDates.length > 0 ? sortedDates[0] : todayISO;
+
+  let daysCompleted = 0, daysFailed = 0, daysSkipped = 0, daysStacked = 0;
+  let cursor = startISO;
+  while (cursor <= todayISO) {
+    const scheduled = isHabitScheduledOn(habit, cursor);
+    const count = logsByDate.get(cursor)?.count || 0;
+    if (!scheduled) {
+      daysSkipped++;
+    } else if (count >= habit.target_per_period) {
+      daysCompleted++;
+      if (count > habit.target_per_period) daysStacked++;
+    } else {
+      daysFailed++;
+    }
+    cursor = addDaysISO(cursor, 1);
+  }
+
+  return {
+    currentStreak: currentStreak(habit, logs, todayISO),
+    longestStreak: bestStreak(habit, logs),
+    daysCompleted, daysFailed, daysSkipped, daysStacked,
+  };
+}

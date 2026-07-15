@@ -304,3 +304,25 @@ create index if not exists training_plans_user on training_plans(user_id, create
 --   using (auth.uid() = user_id)
 --   with check (auth.uid() = user_id);
 -- create index if not exists habit_logs_habit_date on habit_logs(habit_id, date);
+
+-- Migration: habit frequency options — every N days / fortnightly / monthly, in addition to
+-- the existing daily / weekly / custom_days.
+-- alter table habits add column if not exists frequency_interval_days integer;
+
+-- Migration: user-defined habit categories, on top of the built-in fixed ones — a habit's
+-- `category` column can hold either a fixed category key (e.g. 'health') or one of these
+-- rows' id, so no change to the habits table is needed.
+-- create table if not exists habit_categories (
+--   id uuid default gen_random_uuid() primary key,
+--   user_id uuid references auth.users(id) on delete cascade not null,
+--   name text not null,
+--   emoji text not null default '⭐',
+--   sort_order integer not null default 0,
+--   created_at timestamptz default now()
+-- );
+-- alter table habit_categories enable row level security;
+-- create policy "Users can manage their own habit categories"
+--   on habit_categories for all
+--   using (auth.uid() = user_id)
+--   with check (auth.uid() = user_id);
+-- create index if not exists habit_categories_user on habit_categories(user_id, sort_order);

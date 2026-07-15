@@ -277,18 +277,25 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
         <p className="text-sm text-[#475569] flex items-center gap-1">No sports selected — tap <PencilDoodle size={14} /> to add one.</p>
       ) : (
         <>
-          {/* Tab strip — one doodle icon per configured sport/subtype, scrolls horizontally if it overflows */}
-          <div className="flex gap-1.5 overflow-x-auto pb-1 mb-4 -mx-1 px-1">
-            {tiles.map(tile => {
+          {/* Tab strip — one doodle icon per configured sport/subtype, browser-tab style: the
+              active tab is bracketed by highlighted vertical divider lines on either side.
+              Scrolls if it overflows. */}
+          <div className="flex overflow-x-auto pb-1 mb-4 -mx-1 px-1">
+            {tiles.map((tile, i) => {
               const item = registry.get(tile.key);
               const active = tile.key === activeTile.key;
+              const nextActive = i < tiles.length - 1 && tiles[i + 1].key === activeTile.key;
               return (
                 <button
                   key={tile.key}
                   onClick={() => setActiveKey(tile.key)}
                   title={item?.label ?? tile.key}
                   aria-label={item?.label ?? tile.key}
-                  className={`flex-shrink-0 w-11 h-11 rounded-xl border flex items-center justify-center transition-colors ${active ? 'bg-[#293548] border-blue-500 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
+                  className={`flex-shrink-0 w-11 h-11 flex items-center justify-center border-r transition-colors ${
+                    active ? 'text-white' : 'text-[#64748B] hover:text-white'
+                  } ${active || nextActive ? 'border-r-blue-500' : 'border-r-[#334155]'} ${
+                    i === 0 ? `border-l ${active ? 'border-l-blue-500' : 'border-l-[#334155]'}` : ''
+                  }`}
                 >
                   <TabDoodle tileKey={tile.key} />
                 </button>
@@ -341,7 +348,7 @@ function AddTileButton({ onOpen }: { onOpen: () => void }) {
     <button
       onClick={onOpen}
       aria-label="Add a tab"
-      className="w-11 h-11 rounded-xl border border-dashed border-[#334155] flex items-center justify-center text-[#64748B] hover:text-white hover:border-[#475569] transition-colors"
+      className="w-11 h-11 flex items-center justify-center border-b-2 border-transparent text-[#64748B] hover:text-white transition-colors"
     >
       <Plus size={18} />
     </button>
