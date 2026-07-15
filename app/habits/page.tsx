@@ -1,12 +1,13 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import {
   Habit, HabitLog, HabitCategoryRow, HabitFrequencyType,
   HABIT_CATEGORY_LABELS, HABIT_CATEGORY_EMOJI, HABIT_CATEGORY_ORDER, HABIT_COLORS, HabitColorKey,
 } from '@/types';
-import { HABIT_PRESETS, HabitPreset } from '@/lib/habitPresets';
+import { HABIT_PRESETS } from '@/lib/habitPresets';
 import { todayLocalISO } from '@/lib/utils';
 import HabitListRow from '@/components/HabitListRow';
 import HabitMonthCalendar from '@/components/HabitMonthCalendar';
@@ -23,6 +24,7 @@ export default function HabitsPage() {
 
   const [showAdd, setShowAdd] = useState(false);
   const [addStep, setAddStep] = useState<'presets' | 'custom'>('presets');
+  const [selectedPresetNames, setSelectedPresetNames] = useState<Set<string>>(new Set());
   const [customName, setCustomName] = useState('');
   const [customCategory, setCustomCategory] = useState<string>('health');
   const [showAddCategory, setShowAddCategory] = useState(false);
@@ -92,6 +94,7 @@ export default function HabitsPage() {
 
   const resetAddForm = () => {
     setAddStep('presets');
+    setSelectedPresetNames(new Set());
     setCustomName(''); setCustomCategory('health'); setCustomColor('blue');
     setCustomFrequency('daily'); setCustomDays([]); setCustomInterval('2'); setCustomTarget('1');
     setShowAddCategory(false); setNewCategoryName(''); setNewCategoryEmoji('⭐');
@@ -145,10 +148,42 @@ export default function HabitsPage() {
     }
   };
 
-  const addPreset = (preset: HabitPreset) => createHabit({
-    name: preset.name, category: preset.category, color: preset.color,
-    frequency_type: 'daily', frequency_days: null, frequency_interval_days: null, target_per_period: preset.target_per_period,
-  });
+  const togglePreset = (name: string) => {
+    setSelectedPresetNames(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+  };
+
+  const addSelectedPresets = async () => {
+    if (!user) return;
+    const toAdd = HABIT_PRESETS.filter(p => selectedPresetNames.has(p.name));
+    if (toAdd.length === 0) { closeAdd(); return; }
+    setSaving(true);
+    setError('');
+    const { data, error: dbErr } = await supabase.from('habits').insert(
+      toAdd.map((p, i) => ({
+        user_id: user.id,
+        name: p.name,
+        category: p.category,
+        color: p.color,
+        frequency_type: 'daily',
+        frequency_days: null,
+        frequency_interval_days: null,
+        target_per_period: p.target_per_period,
+        sort_order: habits.length + i,
+        archived: false,
+      }))
+    ).select();
+    setSaving(false);
+    if (dbErr) { setError(dbErr.message); return; }
+    if (data) {
+      setHabits(prev => [...prev, ...(data as Habit[])]);
+      setActiveCategory(toAdd[0].category);
+    }
+    closeAdd();
+  };
 
   const submitCustom = () => {
     if (!customName.trim()) return setError('Please enter a habit name.');
@@ -207,12 +242,22 @@ export default function HabitsPage() {
     }
   };
 
-  /** Tap-to-cycle: 0 -> 1 -> 2 -> ... -> target -> 0. Shared by the calendar popover and
-   *  each HabitListRow's day-boxes so the interaction is identical everywhere. */
+  /** Tap-to-cycle: 0 -> 1 -> 2 -> ... -> target -> 0. Used by the month calendar's day popover. */
   const cycleHabitLog = (habit: Habit, date: string) => {
     const current = logsByHabit.get(habit.id)?.find(l => l.date === date)?.count || 0;
     const next = current >= habit.target_per_period ? 0 : current + 1;
     logHabit(habit, date, next);
+  };
+
+  /** +/- steppers on the tab box and progress rows — a second, more precise way to log a
+   *  completion for today alongside the calendar's tap-to-cycle. */
+  const incrementToday = (habit: Habit) => {
+    const current = logsByHabit.get(habit.id)?.find(l => l.date === todayLocalISO())?.count || 0;
+    logHabit(habit, todayLocalISO(), current + 1);
+  };
+  const decrementToday = (habit: Habit) => {
+    const current = logsByHabit.get(habit.id)?.find(l => l.date === todayLocalISO())?.count || 0;
+    logHabit(habit, todayLocalISO(), Math.max(0, current - 1));
   };
 
   if (loading) return <div className="text-[#64748B] text-sm">Loading...</div>;
@@ -258,6 +303,8 @@ export default function HabitsPage() {
               onCreateHabit={fields => createHabit({ ...fields, category: activeCategory })}
               onMoveHabit={moveHabit}
               onUpdateHabit={updateHabit}
+              onIncrementToday={incrementToday}
+              onDecrementToday={decrementToday}
             />
           </div>
 
@@ -267,7 +314,8 @@ export default function HabitsPage() {
                 key={habit.id}
                 habit={habit}
                 logs={logsByHabit.get(habit.id) || []}
-                onCycle={date => cycleHabitLog(habit, date)}
+                onIncrement={() => incrementToday(habit)}
+                onDecrement={() => decrementToday(habit)}
                 onUpdateHabit={patch => updateHabit(habit.id, patch)}
               />
             ))}
@@ -279,10 +327,13 @@ export default function HabitsPage() {
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeAdd} />
           <div className="relative w-full md:max-w-md max-h-[85vh] flex flex-col bg-[#1E293B] border border-[#334155] rounded-t-2xl md:rounded-2xl p-5 overflow-y-auto">
+            <button onClick={closeAdd} aria-label="Close" className="absolute top-4 right-4 p-1 rounded-lg hover:bg-[#334155] text-[#94A3B8] hover:text-white z-10">
+              <X size={18} />
+            </button>
             {addStep === 'presets' ? (
               <>
-                <h3 className="text-lg font-bold text-white mb-1">Add a Habit</h3>
-                <p className="text-sm text-[#94A3B8] mb-4">Tap a recommended habit to add it, or make your own.</p>
+                <h3 className="text-lg font-bold text-white mb-1 pr-8">Add a Habit</h3>
+                <p className="text-sm text-[#94A3B8] mb-4">Select all the habits you want to add, then tap Done.</p>
                 <div className="flex flex-col gap-4">
                   {HABIT_CATEGORY_ORDER.map(cat => {
                     const presets = HABIT_PRESETS.filter(p => p.category === cat);
@@ -291,28 +342,32 @@ export default function HabitsPage() {
                       <div key={cat}>
                         <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-2">{HABIT_CATEGORY_EMOJI[cat]} {HABIT_CATEGORY_LABELS[cat]}</p>
                         <div className="flex flex-wrap gap-1.5">
-                          {presets.map(p => (
-                            <button
-                              key={p.name}
-                              onClick={() => addPreset(p)}
-                              disabled={saving}
-                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-[#334155] text-[#94A3B8] hover:border-[#475569] disabled:opacity-50"
-                            >
-                              <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: p.color }} />
-                              {p.name}
-                            </button>
-                          ))}
+                          {presets.map(p => {
+                            const selected = selectedPresetNames.has(p.name);
+                            return (
+                              <button
+                                key={p.name}
+                                onClick={() => togglePreset(p.name)}
+                                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${selected ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
+                              >
+                                <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: p.color }} />
+                                {selected ? '✓ ' : ''}{p.name}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     );
                   })}
                 </div>
                 <button onClick={() => setAddStep('custom')} className="btn-secondary w-full mt-5">+ Create Custom Habit</button>
-                <button onClick={closeAdd} className="text-sm text-[#64748B] hover:text-white py-1 mt-2">Cancel</button>
+                <button onClick={addSelectedPresets} disabled={saving} className="btn-primary w-full mt-2">
+                  {saving ? 'Adding...' : selectedPresetNames.size > 0 ? `Done — Add ${selectedPresetNames.size}` : 'Done'}
+                </button>
               </>
             ) : (
               <>
-                <h3 className="text-lg font-bold text-white mb-4">Custom Habit</h3>
+                <h3 className="text-lg font-bold text-white mb-4 pr-8">Custom Habit</h3>
                 <div className="flex flex-col gap-3">
                   <div>
                     <label className="label">Name</label>

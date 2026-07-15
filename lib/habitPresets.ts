@@ -35,6 +35,7 @@ export const HABIT_PRESETS: HabitPreset[] = [
   { name: 'Consistent Bedtime', category: 'sleep', color: HABIT_COLORS.slate, target_per_period: 1 },
   { name: 'No Late Caffeine', category: 'sleep', color: HABIT_COLORS.orange, target_per_period: 1 },
   { name: '8+ Hrs Sleep', category: 'sleep', color: HABIT_COLORS.blue, target_per_period: 1 },
+  { name: 'Wake Up Before 7am', category: 'sleep', color: HABIT_COLORS.yellow, target_per_period: 1 },
 
   // Phone use
   { name: 'No Phone Before Bed', category: 'phone_use', color: HABIT_COLORS.red, target_per_period: 1 },

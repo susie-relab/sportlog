@@ -519,7 +519,7 @@ export const HABIT_CATEGORY_LABELS: Record<HabitCategory, string> = {
   phone_use: 'Phone Use', spiritual: 'Spiritual',
 };
 export const HABIT_CATEGORY_EMOJI: Record<HabitCategory, string> = {
-  health: '😁', nutrition: '🥑', lifestyle: '🌱', self_care: '🧽', sleep: '😴',
+  health: '😁', nutrition: '🥑', lifestyle: '🌱', self_care: '🧽', sleep: '💤',
   phone_use: '📵', spiritual: '🙏',
 };
 export const HABIT_CATEGORY_ORDER: HabitCategory[] = ['health', 'nutrition', 'lifestyle', 'self_care', 'sleep', 'phone_use', 'spiritual'];

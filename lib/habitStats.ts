@@ -125,20 +125,51 @@ export function currentPeriodRange(habit: Habit, todayISO: string): [string, str
   }
 }
 
-/** Progress toward the habit's goal for its current period — sums logged counts across the
- *  period's date range (not just a single day), so weekly/monthly-style goals accumulate
- *  completions logged on any day within that period. */
-export function periodProgress(habit: Habit, logs: HabitLog[], todayISO: string): { pct: number; sum: number; target: number; start: string; end: string } {
-  const [start, end] = currentPeriodRange(habit, todayISO);
-  const logsByDate = new Map(logs.map(l => [l.date, l]));
-  let sum = 0;
-  let cursor = start;
-  while (cursor <= end) {
-    sum += logsByDate.get(cursor)?.count || 0;
-    cursor = addDaysISO(cursor, 1);
+/** How many times a habit is expected to come up within a 7-day week, used to scale its
+ *  per-occurrence target up to a weekly planned total. */
+function occurrencesPerWeek(habit: Habit, weekDays: string[]): number {
+  switch (habit.frequency_type) {
+    case 'custom_days':
+      return weekDays.filter(d => isHabitScheduledOn(habit, d)).length;
+    case 'every_n_days':
+      return Math.ceil(7 / (habit.frequency_interval_days || 2));
+    case 'weekly':
+      return 1;
+    default: // daily
+      return 7;
   }
-  const pct = habit.target_per_period > 0 ? Math.min(100, Math.round((sum / habit.target_per_period) * 100)) : 0;
-  return { pct, sum, target: habit.target_per_period, start, end };
+}
+
+/** Progress toward the habit's planned total for the current tracking window: fortnightly and
+ *  monthly habits track toward their own fortnight/month goal, but every other frequency
+ *  (daily, every N days, weekly, specific days) tracks toward a planned WEEKLY total — the
+ *  per-occurrence target scaled up by how many times it's expected to come up this week. */
+export function periodProgress(habit: Habit, logs: HabitLog[], todayISO: string): { pct: number; sum: number; target: number; start: string; end: string; periodLabel: 'week' | 'fortnight' | 'month' } {
+  const logsByDate = new Map(logs.map(l => [l.date, l]));
+  const sumRange = (start: string, end: string) => {
+    let sum = 0;
+    let cursor = start;
+    while (cursor <= end) {
+      sum += logsByDate.get(cursor)?.count || 0;
+      cursor = addDaysISO(cursor, 1);
+    }
+    return sum;
+  };
+
+  if (habit.frequency_type === 'fortnightly' || habit.frequency_type === 'monthly') {
+    const [start, end] = currentPeriodRange(habit, todayISO);
+    const sum = sumRange(start, end);
+    const target = habit.target_per_period;
+    const pct = target > 0 ? Math.min(100, Math.round((sum / target) * 100)) : 0;
+    return { pct, sum, target, start, end, periodLabel: habit.frequency_type === 'fortnightly' ? 'fortnight' : 'month' };
+  }
+
+  const weekDays = getWeekDays(todayISO);
+  const start = weekDays[0], end = weekDays[6];
+  const sum = sumRange(start, end);
+  const target = habit.target_per_period * occurrencesPerWeek(habit, weekDays);
+  const pct = target > 0 ? Math.min(100, Math.round((sum / target) * 100)) : 0;
+  return { pct, sum, target, start, end, periodLabel: 'week' };
 }
 
 export interface HabitDayStats {

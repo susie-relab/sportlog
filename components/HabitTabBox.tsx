@@ -20,6 +20,8 @@ interface Props {
   }) => void;
   onMoveHabit: (id: string, direction: 'up' | 'down') => void;
   onUpdateHabit: (id: string, patch: Partial<Habit>) => void;
+  onIncrementToday: (habit: Habit) => void;
+  onDecrementToday: (habit: Habit) => void;
 }
 
 const WEEKDAY_OPTIONS = [
@@ -37,7 +39,7 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function PencilIcon() {
+export function PencilIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 20h9" />
@@ -126,7 +128,7 @@ export function FrequencyFields({
  *  showing the selected habit's repeat/target, overview %, a streak/completion stats grid,
  *  and a circular-day history calendar. The pencil opens an edit panel to add a habit or
  *  reorder/edit existing ones (including frequency and day-of-week schedule). */
-export default function HabitTabBox({ categoryLabel, habits, logsByHabit, selectedHabitId, onSelectHabit, onCreateHabit, onMoveHabit, onUpdateHabit }: Props) {
+export default function HabitTabBox({ categoryLabel, habits, logsByHabit, selectedHabitId, onSelectHabit, onCreateHabit, onMoveHabit, onUpdateHabit, onIncrementToday, onDecrementToday }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -239,6 +241,28 @@ export default function HabitTabBox({ categoryLabel, habits, logsByHabit, select
         <div className="text-right">
           <p className="text-xs text-[#64748B] mb-0.5">Target</p>
           <p className="text-sm font-medium text-white">{selected.target_per_period} / {targetUnitLabel(selected.frequency_type, String(selected.frequency_interval_days || 2))}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between mb-5 px-3 py-2 rounded-lg bg-black/20">
+        <span className="text-xs font-medium text-[#94A3B8]">Today</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onDecrementToday(selected)}
+            disabled={(logsByDate.get(todayISO)?.count || 0) <= 0}
+            aria-label="Remove one for today"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold bg-[#334155] text-white hover:bg-[#475569] disabled:opacity-30"
+          >
+            −
+          </button>
+          <span className="text-sm font-semibold text-white w-4 text-center">{logsByDate.get(todayISO)?.count || 0}</span>
+          <button
+            onClick={() => onIncrementToday(selected)}
+            aria-label="Add one for today"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold bg-[#334155] text-white hover:bg-[#475569]"
+          >
+            +
+          </button>
         </div>
       </div>
 

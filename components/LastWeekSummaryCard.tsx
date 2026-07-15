@@ -31,17 +31,17 @@ export default function LastWeekSummaryCard({ activities, plans, weekStartDay, t
       </div>
       {(r.topTypes.length > 0 || r.topSubtypes.length > 0) && (
         <p className="text-xs text-[#94A3B8] mb-1 truncate">
-          {r.topTypes.map(t => `${t.emoji} ${t.label}`).join(', ')}
-          {r.topTypes.length > 0 && r.topSubtypes.length > 0 ? ' · ' : ''}
-          {r.topSubtypes.map(t => `${t.emoji} ${t.label}`).join(', ')}
+          {r.topTypes.map((t, i) => `${i + 1}. ${t.emoji} ${t.label}`).join(', ')}
+          {r.topTypes.length > 0 && r.topSubtypes.length > 0 ? ' | ' : ''}
+          {r.topSubtypes.map((t, i) => `#${i + 1} ${t.emoji} ${t.label}`).join(', ')}
         </p>
       )}
       {(r.maxHr || r.bestPace || r.intensityMins > 0) && (
         <p className="text-xs text-[#94A3B8] mb-1 truncate">
           {[
-            r.maxHr ? `❤️ ${r.maxHr} bpm` : null,
-            r.bestPace ? `⚡ ${formatPaceMinKm(r.bestPace)}` : null,
-            r.intensityMins > 0 ? `🔥 ${r.intensityMins}m intensity` : null,
+            r.maxHr ? `❤️ Max HR: ${r.maxHr} bpm` : null,
+            r.bestPace ? `⚡ Best pace achieved: ${formatPaceMinKm(r.bestPace)}` : null,
+            r.intensityMins > 0 ? `🔥 Total intensity mins: ${r.intensityMins}` : null,
           ].filter(Boolean).join(' · ')}
         </p>
       )}

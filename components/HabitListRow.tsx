@@ -3,12 +3,13 @@ import { useState } from 'react';
 import { Habit, HabitLog, HabitFrequencyType } from '@/types';
 import { todayLocalISO } from '@/lib/utils';
 import { periodProgress } from '@/lib/habitStats';
-import { FrequencyFields, targetUnitLabel } from '@/components/HabitTabBox';
+import { FrequencyFields, PencilIcon } from '@/components/HabitTabBox';
 
 interface Props {
   habit: Habit;
   logs: HabitLog[];
-  onCycle: (date: string) => void;
+  onIncrement: () => void;
+  onDecrement: () => void;
   onUpdateHabit: (patch: Partial<Habit>) => void;
 }
 
@@ -21,10 +22,11 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 /** One habit as a paint-style fill bar — a 30%-opacity wash of the habit's colour floods
- *  left-to-right across the whole box as progress builds toward its current-period goal
- *  (today for daily habits, this week/fortnight/month for longer ones). Tapping the bar logs
- *  today's completion; tapping the name opens a quick editor for the goal amount and frequency. */
-export default function HabitListRow({ habit, logs, onCycle, onUpdateHabit }: Props) {
+ *  left-to-right as progress builds toward its planned total for the current tracking window
+ *  (a week for daily/every-N-days/weekly/specific-days habits, a fortnight or month for those
+ *  frequencies). Tapping anywhere on the box (or the +/- stepper) logs/undoes a completion for
+ *  today; tapping the name or the pencil opens a quick editor for the goal amount and frequency. */
+export default function HabitListRow({ habit, logs, onIncrement, onDecrement, onUpdateHabit }: Props) {
   const [editing, setEditing] = useState(false);
   const [frequency, setFrequency] = useState<HabitFrequencyType>(habit.frequency_type);
   const [days, setDays] = useState<string[]>(habit.frequency_days ? habit.frequency_days.split(',') : []);
@@ -32,7 +34,8 @@ export default function HabitListRow({ habit, logs, onCycle, onUpdateHabit }: Pr
   const [target, setTarget] = useState(String(habit.target_per_period));
 
   const todayISO = todayLocalISO();
-  const { pct, sum } = periodProgress(habit, logs, todayISO);
+  const { pct, sum, target: periodTarget, periodLabel } = periodProgress(habit, logs, todayISO);
+  const todayCount = logs.find(l => l.date === todayISO)?.count || 0;
 
   const openEditor = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -56,9 +59,9 @@ export default function HabitListRow({ habit, logs, onCycle, onUpdateHabit }: Pr
   return (
     <div className="card p-0 overflow-hidden">
       <div
-        onClick={() => onCycle(todayISO)}
+        onClick={onIncrement}
         role="button"
-        className="relative h-16 cursor-pointer select-none"
+        className="relative h-20 select-none cursor-pointer"
         style={{ background: '#1E293B' }}
       >
         <div
@@ -75,24 +78,51 @@ export default function HabitListRow({ habit, logs, onCycle, onUpdateHabit }: Pr
           />
         )}
 
-        <div className="relative z-10 h-full flex items-center justify-between px-4 gap-3">
-          <button onClick={openEditor} className="text-sm font-semibold text-white truncate hover:underline text-left">
-            {habit.name}
-          </button>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-xs text-[#94A3B8]">{sum}/{habit.target_per_period} per {targetUnitLabel(habit.frequency_type, String(habit.frequency_interval_days || 2))}</span>
+        <div className="relative z-10 h-full flex flex-col justify-center px-4 gap-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <button onClick={openEditor} className="text-sm font-semibold text-white truncate hover:underline text-left">
+              {habit.name}
+            </button>
             <span
-              className="text-xs font-bold px-2 py-1 rounded-full"
+              className="text-xs font-bold px-2 py-1 rounded-full flex-shrink-0"
               style={{ background: hexToRgba(habit.color, 0.9), color: '#0F172A' }}
             >
               {pct}%
             </span>
           </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-[#94A3B8]">{sum}/{periodTarget} this {periodLabel}</span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={e => { e.stopPropagation(); onDecrement(); }}
+                disabled={todayCount <= 0}
+                aria-label="Remove one for today"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold bg-black/25 text-white hover:bg-black/40 disabled:opacity-30"
+              >
+                −
+              </button>
+              <span className="text-xs font-semibold text-white w-4 text-center">{todayCount}</span>
+              <button
+                onClick={e => { e.stopPropagation(); onIncrement(); }}
+                aria-label="Add one for today"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold bg-black/25 text-white hover:bg-black/40"
+              >
+                +
+              </button>
+              <button
+                onClick={openEditor}
+                aria-label="Edit habit"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-white/70 hover:text-white bg-black/25 hover:bg-black/40"
+              >
+                <PencilIcon />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {editing && (
-        <div className="p-3 border-t border-[#334155] flex flex-col gap-3" onClick={e => e.stopPropagation()}>
+        <div className="p-3 border-t border-[#334155] flex flex-col gap-3">
           <FrequencyFields
             frequency={frequency} setFrequency={setFrequency}
             days={days} setDays={setDays}
