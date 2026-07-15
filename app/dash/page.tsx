@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
-import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, subTypeLabel, combinedRunTypeLabel, YearTotalTile } from '@/types';
+import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, subTypeLabel, combinedRunTypeLabel, YearTotalTile, Habit, HabitLog } from '@/types';
 import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak, todayLocalISO } from '@/lib/utils';
+import { completionPctInRange, addDaysISO } from '@/lib/habitStats';
 import { PlanRecord, PlanData, Session, Weekday, runPlanDisplayName, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS, movePlanSession, addSessionToDay, sessionParts } from '@/lib/runPlanGenerator';
 import PlanWeekTable, { sessionColor, sessionTarget, exerciseTypeTag } from '@/components/PlanWeekTable';
 import PlanDaySheet from '@/components/PlanDaySheet';
@@ -15,6 +16,7 @@ import RecapCard from '@/components/RecapCard';
 import LastWeekSummaryCard from '@/components/LastWeekSummaryCard';
 import FavouritesCard from '@/components/FavouritesCard';
 import YearTotalsCard from '@/components/YearTotalsCard';
+import TrainingMonthCalendar from '@/components/TrainingMonthCalendar';
 
 /** The subtype label for any activity — sub_type for most types, run_type for runs. */
 function activitySubLabel(a: Activity): string | null {
@@ -115,9 +117,12 @@ export default function DashPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [plans, setPlans] = useState<PlanRecord[]>([]);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [habitLogs, setHabitLogs] = useState<HabitLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<DetailSel | null>(null);
   const [showWeek, setShowWeek] = useState(false);
+  const [showTrainingMonth, setShowTrainingMonth] = useState(false);
   const [streakModal, setStreakModal] = useState<'day' | 'week' | null>(null);
   const [hoverType, setHoverType] = useState<ExerciseType | null>(null);
 
@@ -140,10 +145,14 @@ export default function DashPage() {
       supabase.from('activities').select('*').eq('user_id', user.id).order('date', { ascending: false }),
       supabase.from('goals').select('*').eq('user_id', user.id),
       supabase.from('training_plans').select('*').eq('user_id', user.id),
-    ]).then(([{ data: acts }, { data: g }, { data: p }]) => {
+      supabase.from('habits').select('*').eq('user_id', user.id).eq('archived', false),
+      supabase.from('habit_logs').select('*').eq('user_id', user.id).gte('date', addDaysISO(todayLocalISO(), -13)),
+    ]).then(([{ data: acts }, { data: g }, { data: p }, { data: h }, { data: hl }]) => {
       setActivities((acts as Activity[]) || []);
       setGoals((g as Goal[]) || []);
       setPlans((p as PlanRecord[]) || []);
+      setHabits((h as Habit[]) || []);
+      setHabitLogs((hl as HabitLog[]) || []);
       setLoading(false);
     });
   }, [user]);
@@ -182,6 +191,18 @@ export default function DashPage() {
   // Streaks
   const weekStartPref: WeekStart = user?.user_metadata?.week_start_day === 'sunday' ? 'sunday' : 'monday';
   const dayStreak = calcDayStreak(activities.map(a => a.date));
+  const habitsAvgPct = (() => {
+    if (habits.length === 0) return null;
+    const start = addDaysISO(todayLocalISO(), -13);
+    const end = todayLocalISO();
+    const logsByHabit = new Map<string, HabitLog[]>();
+    for (const l of habitLogs) {
+      if (!logsByHabit.has(l.habit_id)) logsByHabit.set(l.habit_id, []);
+      logsByHabit.get(l.habit_id)!.push(l);
+    }
+    const pcts = habits.map(h => completionPctInRange(h, logsByHabit.get(h.id) || [], start, end));
+    return Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length);
+  })();
   const weekStreak = calcWeekStreak(activities.map(a => a.date), weekStartPref);
 
   // Evening nudge: after the user's reminder hour, if there's a streak to protect but nothing logged today.
@@ -317,7 +338,7 @@ export default function DashPage() {
       )}
 
       {/* Streaks — tap to see when the streak started/broke */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className={`grid ${habitsAvgPct !== null ? 'grid-cols-3' : 'grid-cols-2'} gap-3 mb-5`}>
         <button onClick={() => setStreakModal('day')} className="card text-center border-orange-500/30 hover:border-orange-500/60 transition-colors" style={{ background: 'rgba(249,115,22,0.08)' }}>
           <div className="text-3xl font-extrabold text-orange-400" style={{ fontFamily: 'var(--font-display)' }}>
             {dayStreak}
@@ -330,6 +351,14 @@ export default function DashPage() {
           </div>
           <div className="text-xs text-yellow-400/70 mt-1 uppercase tracking-wide font-semibold">Week Streak ⚡</div>
         </button>
+        {habitsAvgPct !== null && (
+          <Link href="/habits" className="card text-center border-green-500/30 hover:border-green-500/60 transition-colors" style={{ background: 'rgba(34,197,94,0.08)' }}>
+            <div className="text-3xl font-extrabold text-green-400" style={{ fontFamily: 'var(--font-display)' }}>
+              {habitsAvgPct}%
+            </div>
+            <div className="text-xs text-green-400/70 mt-1 uppercase tracking-wide font-semibold">Habits · 14d avg ✅</div>
+          </Link>
+        )}
       </div>
 
       {/* This Year — full width on mobile; moves beside Today's Plan on desktop (see grid below) */}
@@ -442,6 +471,19 @@ export default function DashPage() {
           )}
         </div>
       )}
+
+      {/* Combined training month calendar — past days show what was logged, upcoming days
+          (up to 3 months out) show what the active plan(s) have scheduled. */}
+      <div className="card mb-5">
+        <button onClick={() => setShowTrainingMonth(v => !v)} className="text-sm font-semibold text-[#94A3B8] hover:text-white transition-colors uppercase tracking-wide">
+          {showTrainingMonth ? '▼' : '▶'} View Month&apos;s Training
+        </button>
+        {showTrainingMonth && (
+          <div className="mt-3">
+            <TrainingMonthCalendar activities={activities} plans={plans} todayISO={todayISO} />
+          </div>
+        )}
+      </div>
 
       {/* Desktop: last week + favourites side by side, mirroring the Today's Plan / This Year grid above */}
       <div className="lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start">

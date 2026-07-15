@@ -22,6 +22,15 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+/** Circle diameter (px) for a given side length of the square grid the circles are arranged
+ *  in — e.g. a 1x1 grid (just 1-2 habits) gets big circles, a 7x7 grid (up to 49) gets tiny
+ *  ones, so the day cell always looks "full" regardless of how many habits exist. */
+const CIRCLE_SIZE_BY_GRID: Record<number, number> = { 1: 22, 2: 18, 3: 13, 4: 10, 5: 8, 6: 6.5, 7: 5.5 };
+function circleSizeForCount(habitCount: number): number {
+  const gridSize = Math.min(7, Math.max(1, Math.ceil(Math.sqrt(habitCount))));
+  return CIRCLE_SIZE_BY_GRID[gridSize] || 5;
+}
+
 /** Combined month calendar — every scheduled habit shows as a small density-filled
  *  circle in its day cell. Tapping a day opens a popover to tap-cycle each habit. */
 export default function HabitMonthCalendar({ habits, logs, onCycle }: Props) {
@@ -55,6 +64,7 @@ export default function HabitMonthCalendar({ habits, logs, onCycle }: Props) {
   };
 
   const habitsForDate = (date: string) => habits.filter(h => isHabitScheduledOn(h, date));
+  const circleSize = circleSizeForCount(habits.length);
 
   return (
     <div className="card">
@@ -94,7 +104,7 @@ export default function HabitMonthCalendar({ habits, logs, onCycle }: Props) {
                       key={h.id}
                       className="rounded-full flex-shrink-0"
                       style={{
-                        width: 6, height: 6,
+                        width: circleSize, height: circleSize,
                         background: ratio > 0 ? hexToRgba(h.color, Math.max(0.25, ratio)) : 'transparent',
                         border: `1px solid ${h.color}`,
                       }}
