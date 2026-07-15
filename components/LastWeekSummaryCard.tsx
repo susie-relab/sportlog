@@ -30,11 +30,11 @@ export default function LastWeekSummaryCard({ activities, plans, weekStartDay, t
         <div className="stat-card"><div className="stat-value">{formatDuration(r.mins)}</div><div className="stat-label">Time</div></div>
       </div>
       {(r.topTypes.length > 0 || r.topSubtypes.length > 0) && (
-        <p className="text-xs text-[#94A3B8] mb-1 truncate">
-          {r.topTypes.map((t, i) => `${i + 1}. ${t.emoji} ${t.label}`).join(', ')}
-          {r.topTypes.length > 0 && r.topSubtypes.length > 0 ? ' | ' : ''}
-          {r.topSubtypes.map((t, i) => `#${i + 1} ${t.emoji} ${t.label}`).join(', ')}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 text-xs text-[#94A3B8]">
+          {r.topTypes.map((t, i) => <span key={`type-${i}`}>{i + 1}. {t.emoji} {t.label}</span>)}
+          {r.topTypes.length > 0 && r.topSubtypes.length > 0 && <span className="text-[#334155]">|</span>}
+          {r.topSubtypes.map((t, i) => <span key={`sub-${i}`}>#{i + 1} {t.emoji} {t.label}</span>)}
+        </div>
       )}
       {(r.maxHr || r.bestPace || r.intensityMins > 0) && (
         <p className="text-xs text-[#94A3B8] mb-1 truncate">

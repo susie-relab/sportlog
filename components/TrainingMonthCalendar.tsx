@@ -134,8 +134,8 @@ export default function TrainingMonthCalendar({ activities, plans, todayISO }: P
                 isToday ? 'border-blue-500 bg-[#1E293B]' : 'border-[#334155] bg-[#0F172A]/40 hover:border-[#475569]'
               }`}
             >
-              <span className="text-[9px] text-[#64748B]">{dayNum}</span>
-              <div className="flex flex-wrap items-center justify-center gap-[1px] overflow-hidden text-[10px] leading-none">
+              <span className="text-[9px] text-[#64748B] flex-shrink-0">{dayNum}</span>
+              <div className="flex-1 flex flex-wrap items-center justify-center content-center gap-0.5 overflow-hidden text-lg leading-none">
                 {icons.slice(0, 6).map((icon, idx) => <span key={idx}>{icon.emoji}</span>)}
               </div>
             </button>

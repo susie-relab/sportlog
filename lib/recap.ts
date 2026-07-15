@@ -62,8 +62,10 @@ export function recapFor(activities: Activity[], plans: PlanRecord[], start: str
   const intensityMins = inRange.reduce((s, a) => s + (a.intensity_minutes || 0), 0);
   const maxHrActs = inRange.filter(a => a.max_hr);
   const maxHr = maxHrActs.length ? Math.max(...maxHrActs.map(a => a.max_hr!)) : null;
-  const paceActs = inRange.filter(a => a.pace_min_km && !(a.run_type && REST_BREAK_RUN_TYPES.includes(a.run_type)));
-  const bestPace = paceActs.length ? Math.min(...paceActs.map(a => a.pace_min_km!)) : null;
+  // "Best pace" is the single fastest instant pace recorded (max_pace_min_km), not an average —
+  // falls back to pace_min_km for older activities logged before max pace was tracked.
+  const paceActs = inRange.filter(a => (a.max_pace_min_km || a.pace_min_km) && !(a.run_type && REST_BREAK_RUN_TYPES.includes(a.run_type)));
+  const bestPace = paceActs.length ? Math.min(...paceActs.map(a => a.max_pace_min_km || a.pace_min_km!)) : null;
 
   return { count: inRange.length, km, mins, pbs, planned, done, topActivity, topTypes, topSubtypes, intensityMins, maxHr, bestPace };
 }

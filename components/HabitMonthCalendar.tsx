@@ -22,13 +22,12 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-/** Circle diameter (px) for a given side length of the square grid the circles are arranged
- *  in — e.g. a 1x1 grid (just 1-2 habits) gets big circles, a 7x7 grid (up to 49) gets tiny
- *  ones, so the day cell always looks "full" regardless of how many habits exist. */
-const CIRCLE_SIZE_BY_GRID: Record<number, number> = { 1: 22, 2: 18, 3: 13, 4: 10, 5: 8, 6: 6.5, 7: 5.5 };
-function circleSizeForCount(habitCount: number): number {
-  const gridSize = Math.min(7, Math.max(1, Math.ceil(Math.sqrt(habitCount))));
-  return CIRCLE_SIZE_BY_GRID[gridSize] || 5;
+/** Side length of the square grid the circles are arranged in — e.g. 1-2 habits is a 1x1
+ *  grid (one big circle each), up to 49 is a 7x7 grid of tiny ones. Using an actual CSS grid
+ *  (below) rather than fixed pixel sizes means the circles always scale to completely fill
+ *  whatever room the day cell actually has, at any viewport size. */
+function gridSizeForCount(habitCount: number): number {
+  return Math.min(7, Math.max(1, Math.ceil(Math.sqrt(habitCount))));
 }
 
 /** Combined month calendar — every scheduled habit shows as a small density-filled
@@ -64,7 +63,7 @@ export default function HabitMonthCalendar({ habits, logs, onCycle }: Props) {
   };
 
   const habitsForDate = (date: string) => habits.filter(h => isHabitScheduledOn(h, date));
-  const circleSize = circleSizeForCount(habits.length);
+  const gridSize = gridSizeForCount(habits.length);
 
   return (
     <div className="card">
@@ -90,25 +89,28 @@ export default function HabitMonthCalendar({ habits, logs, onCycle }: Props) {
             <button
               key={date}
               onClick={() => setSelectedDate(date)}
-              className={`aspect-square rounded-lg border p-1 flex flex-col items-center gap-0.5 overflow-hidden ${
+              className={`aspect-square rounded-lg border p-1 flex flex-col items-center overflow-hidden ${
                 isToday ? 'border-blue-500 bg-[#1E293B]' : 'border-[#334155] bg-[#0F172A]/40 hover:border-[#475569]'
               }`}
             >
-              <span className="text-[9px] text-[#64748B]">{dayNum}</span>
-              <div className="flex flex-wrap items-center justify-center gap-[2px] overflow-hidden">
+              <span className="text-[9px] text-[#64748B] flex-shrink-0 leading-tight">{dayNum}</span>
+              <div
+                className="flex-1 w-full grid place-items-stretch"
+                style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)`, gridTemplateRows: `repeat(${gridSize}, 1fr)`, gap: 1 }}
+              >
                 {scheduled.slice(0, 49).map(h => {
                   const log = logsByHabitDate.get(`${h.id}|${date}`);
                   const ratio = completionRatio(h, log);
                   return (
-                    <span
-                      key={h.id}
-                      className="rounded-full flex-shrink-0"
-                      style={{
-                        width: circleSize, height: circleSize,
-                        background: ratio > 0 ? hexToRgba(h.color, Math.max(0.25, ratio)) : 'transparent',
-                        border: `1px solid ${h.color}`,
-                      }}
-                    />
+                    <div key={h.id} className="flex items-center justify-center min-w-0 min-h-0 p-px">
+                      <span
+                        className="rounded-full w-full h-full"
+                        style={{
+                          background: ratio > 0 ? hexToRgba(h.color, Math.max(0.25, ratio)) : 'transparent',
+                          border: `1px solid ${h.color}`,
+                        }}
+                      />
+                    </div>
                   );
                 })}
               </div>
