@@ -89,14 +89,18 @@ export default function HabitMonthCalendar({ habits, logs, onCycle }: Props) {
             <button
               key={date}
               onClick={() => setSelectedDate(date)}
-              className={`aspect-square rounded-lg border p-1 flex flex-col items-center overflow-hidden ${
+              className={`relative aspect-square rounded-lg border overflow-hidden ${
                 isToday ? 'border-blue-500 bg-[#1E293B]' : 'border-[#334155] bg-[#0F172A]/40 hover:border-[#475569]'
               }`}
             >
-              <span className="text-[9px] text-[#64748B] flex-shrink-0 leading-tight">{dayNum}</span>
+              <span className="absolute top-0.5 left-1 text-[9px] text-[#64748B] leading-tight z-10 pointer-events-none">{dayNum}</span>
+              {/* Absolutely filling the button (not a flex sibling of the day-number label) so
+                  this grid is always exactly as wide as it is tall — otherwise the rows and
+                  columns divide up slightly different amounts of space and the circles come
+                  out as ovals with a gap at the bottom instead of true circles filling the cell. */}
               <div
-                className="flex-1 w-full grid place-items-stretch"
-                style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)`, gridTemplateRows: `repeat(${gridSize}, 1fr)`, gap: 1 }}
+                className="absolute inset-0 grid"
+                style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)`, gridTemplateRows: `repeat(${gridSize}, 1fr)`, gap: 1, padding: 3 }}
               >
                 {scheduled.slice(0, 49).map(h => {
                   const log = logsByHabitDate.get(`${h.id}|${date}`);
