@@ -462,7 +462,9 @@ export default function HabitTabBox({
               onClick={() => onSelectHabit(h.id)}
               style={active ? ({ '--tab-color': '#3B82F6' } as React.CSSProperties) : undefined}
               className={`flex-shrink-0 px-3 py-2 text-sm font-medium transition-colors ${
-                active ? 'habit-tab-active text-white' : `text-[#94A3B8] hover:text-white border-r ${nextActive ? 'border-r-blue-500' : 'border-r-[#334155]'} ${i === 0 ? 'border-l border-l-[#334155]' : ''}`
+                active
+                  ? 'habit-tab-active text-white'
+                  : `text-[#94A3B8] hover:text-white ${nextActive ? '' : 'border-r border-r-[#334155]'} ${i === 0 ? 'border-l border-l-[#334155]' : ''}`
               }`}
             >
               <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: h.color }} />
