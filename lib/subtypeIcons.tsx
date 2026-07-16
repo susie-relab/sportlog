@@ -253,21 +253,24 @@ const HyroxIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
-// A dumbbell reads more clearly as "arms" at small sizes than an abstract flexed-bicep blob.
+// A flexed bicep + fist glyph, following the same two-curve-down-to-a-base technique as
+// LegsIcon (outer bicep bulge + inner arm line) so it reads clearly at small sizes.
 const ArmsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M7 12h10" />
-    <rect x="2.5" y="9" width="4" height="6" rx="1.5" />
-    <rect x="17.5" y="9" width="4" height="6" rx="1.5" />
-    <path d="M4.5 10v4M19.5 10v4" />
+    <circle cx="17" cy="4" r="2" fill="currentColor" stroke="none" />
+    <path d="M17 6c-1 1.4-2.1 2.4-3.5 3.2" />
+    <path d="M13.5 9.2c-4.3 1-6.7 3.8-5.8 7.5.9 3.6 4.6 4.8 8.6 4.8" />
+    <path d="M13.5 9.2c1.7 2.9 2 6.5 2 9.4v3" />
   </Svg>
 ));
 
-// Two legs from a hip bar down to the feet, rather than a single ambiguous silhouette shape.
+// A single bent leg, front-on, per reference — a bent-knee silhouette reads more clearly
+// as "legs" at small sizes than a pair of straight legs from a hip bar.
 const LegsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M9 3h5" />
-    <path d="M9 3v7l-2 11h3l1.5-9 1.5 9h3l-2-11V3" />
+    <path d="M9 3c2.2 2.6 3.6 5.3 3.2 7.4-.3 1.3-1.2 1.8-1.2 3.6 0 2.7.3 5 .5 6" />
+    <path d="M14 3c1 3.6 1.2 6.6 1 8.7-.3 1.8 0 3.5 0 5.3v3" />
+    <path d="M8.5 21h7" />
   </Svg>
 ));
 
@@ -291,14 +294,18 @@ const CoreIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
-// A rowing-machine side view: rail, seat on the rail, flywheel at the front, and the
-// handle cable — clearer than the previous abstract rail+arrow shape.
+// A seated rower mid-pull — head, bent-forward torso/legs, and the arm reaching to the
+// handle — plus the machine's floor rail, per reference, instead of an abstract
+// rail+seat+flywheel diagram.
 const RowIndoorIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M2 20 18 5" />
-    <rect x="7.3" y="14.3" width="4" height="2.6" rx="1" transform="rotate(-40 9.3 15.6)" />
-    <circle cx="19.5" cy="4.5" r="2.8" />
-    <path d="M11.5 13.5 16.8 8.2" />
+    <circle cx="7" cy="4" r="2" fill="currentColor" stroke="none" />
+    <path d="M7 6v3.5" />
+    <path d="M7 9.5c-2 1-3.2 2.8-3.2 5" />
+    <path d="M7 9.5c1.8.2 3.3 1.2 4.6 2.6" />
+    <path d="M11.6 12.1 19 5.5" />
+    <path d="M4 15h9" />
+    <path d="M2 19.5h20" />
   </Svg>
 ));
 
