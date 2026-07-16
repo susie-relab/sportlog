@@ -334,11 +334,15 @@ const BoxingIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// Two handles at the bottom with the rope rising and crossing into a teardrop-shaped loop,
+// per reference — reads as a rope mid-swing rather than a plain arc between two handles.
 const JumpRopeIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M5 5v6a7 7 0 0 0 14 0V5" />
-    <rect x="3" y="3" width="3" height="4" rx="1" />
-    <rect x="18" y="3" width="3" height="4" rx="1" />
+    <rect x="4" y="15" width="4" height="7" rx="2" />
+    <rect x="16" y="15" width="4" height="7" rx="2" />
+    <path d="M6 15V9c0-3 2-6 6-6" />
+    <path d="M18 15V9c0-3-2-6-6-6" />
+    <path d="M9 9c0-2 1.3-3.5 3-3.5s3 1.5 3 3.5c0 2-1.3 4-3 5-1.7-1-3-3-3-5Z" />
   </Svg>
 ));
 
@@ -361,20 +365,31 @@ const SkateboardIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A climber clinging under a rock ledge (head, arm reaching up to the ledge, sprawled
+// legs), per reference — a clearer "climbing" pose than an abstract rock-line silhouette.
 const RockClimbingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M6 14c-2 0-3-2-2-4s4-3 6-1 5 6 9 4" />
-    <path d="M9 14 7 21" />
-    <path d="M15 12 16 21" />
+    <path d="M3 6c3 0 4 1 6 1s3-1 5 0 4 2 7 1" />
+    <circle cx="6.5" cy="10.5" r="1.7" fill="currentColor" stroke="none" />
+    <path d="M7.7 11.7 10.3 7.7" />
+    <path d="M7.7 11.7 9.5 16" />
+    <path d="M9.5 16 6 20" />
+    <path d="M9.5 16 13.5 18.5" />
   </Svg>
 ));
 
+// A person mid-jump (head + splayed arms/legs) above the trampoline mat with its centre
+// hole and support legs, per reference — clearer than a bare arc over an ellipse.
 const TrampolineIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <ellipse cx="12" cy="17" rx="9" ry="3" />
-    <path d="M4 17v-2" />
-    <path d="M20 17v-2" />
-    <path d="M9 10 12 4 15 10" />
+    <circle cx="12" cy="4" r="2" fill="currentColor" stroke="none" />
+    <path d="M12 6.5 8 9" />
+    <path d="M12 6.5 16 9" />
+    <path d="M12 6.5 9 11" />
+    <path d="M12 6.5 15 11" />
+    <ellipse cx="12" cy="16" rx="8" ry="2.3" />
+    <ellipse cx="12" cy="16" rx="1.3" ry="0.5" fill="currentColor" stroke="none" />
+    <path d="M5 17.3v3M19 17.3v3M12 18.3v3" />
   </Svg>
 ));
 
@@ -393,13 +408,16 @@ const CleaningIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A handstand: head/hands near the ground, arms out to the sides for support, legs
+// splayed up and out — per reference, instead of a figure standing on a beam.
 const GymnasticsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <circle cx="12" cy="20" r="2" />
-    <path d="M12 18V11" />
-    <path d="M12 11 6 8" />
-    <path d="M12 11l6-3" />
-    <path d="M8 5h8" />
+    <circle cx="12" cy="19" r="1.8" fill="currentColor" stroke="none" />
+    <path d="M12 17V9" />
+    <path d="M12 17 7 16.5" />
+    <path d="M12 17 17 16.5" />
+    <path d="M12 9 6 2" />
+    <path d="M12 9 18 2" />
   </Svg>
 ));
 
