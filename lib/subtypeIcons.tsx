@@ -82,12 +82,14 @@ const NetballIcon = makeIcon(({ size, className }) => (
 // recognisable "ball" glyph and Netball gets its own hoop-and-net glyph instead.
 // Three curved panel seams all converging near the right edge and fanning out across the
 // ball, plus a short seam curling up to the top — matches the classic volleyball glyph.
+// The classic 3-panel pinwheel seam pattern (a top "cone" plus one long diagonal sweep),
+// matching the reference more closely than the earlier converging-fan version.
 const VolleyballIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <circle cx="12" cy="12" r="9" />
-    <path d="M20.5 12c-5-3.5-11-3.5-16 0" />
-    <path d="M20.5 12c-5 3.5-11 3.5-16 0" />
-    <path d="M20 8.5c-4 1-8 1-8-5.3" />
+    <path d="M12 3c4 2 6 6 6 9" />
+    <path d="M12 3c-4 2-6 6-6 9" />
+    <path d="M6 12c2 4 6 6 9 6" />
   </Svg>
 ));
 
@@ -105,16 +107,19 @@ const TurboTouchIcon = makeIcon(({ size, className }) => (
 // reads more clearly as "padel" (a doubles game played with two solid paddles).
 // Both heads centred on the crossing point with the handles extending outward past them,
 // rather than handles that pass through the centre toward the opposite racquet.
+// A wider crossing angle separates the two heads more clearly than a near-overlap, and a
+// small ball at the centre reads as the third reference element without adding clutter.
 const PadelIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <g transform="rotate(-25 12 12)">
-      <rect x="8.5" y="4" width="7" height="10" rx="3.5" />
-      <path d="M12 14v7" />
+    <g transform="rotate(-40 12 12)">
+      <rect x="8.5" y="3.5" width="7" height="10" rx="3.5" />
+      <path d="M12 13.5v7.5" />
     </g>
-    <g transform="rotate(25 12 12)">
-      <rect x="8.5" y="4" width="7" height="10" rx="3.5" />
-      <path d="M12 14v7" />
+    <g transform="rotate(40 12 12)">
+      <rect x="8.5" y="3.5" width="7" height="10" rx="3.5" />
+      <path d="M12 13.5v7.5" />
     </g>
+    <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
   </Svg>
 ));
 
@@ -158,6 +163,8 @@ const CricketIcon = makeIcon(({ size, className }) => (
 // instead of a plain flat-sided triangle.
 // Cork base plus four fanning feather spines, each with a short cross-stroke near the tip
 // suggesting the feather's blade width/overlap — closer to the reference than plain rays.
+// Each feather spine now ends in a small angled point (a tiny "V" cap) instead of a plain
+// round stroke-end, which read as a flat/cut-off tip rather than a tapered feather.
 const BadmintonIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <path d="M8.5 18a3.5 3.5 0 1 1 7 0" />
@@ -165,10 +172,10 @@ const BadmintonIcon = makeIcon(({ size, className }) => (
     <path d="M10.5 18 9 3.5" />
     <path d="M13.5 18 15 3.5" />
     <path d="M15.5 18 19 5" />
-    <path d="M5 5c1.3 1 2.7 1.6 4 2" />
-    <path d="M9 3.5c1 1.2 2 2 3 2.5" />
-    <path d="M15 3.5c-1 1.2-2 2-3 2.5" />
-    <path d="M19 5c-1.3 1-2.7 1.6-4 2" />
+    <path d="M3.8 6.4 5 5l1.4 1.2" />
+    <path d="M7.7 4.6 9 3.5l1.4 1" />
+    <path d="M13.6 4.5 15 3.5l1.3 1.1" />
+    <path d="M17.6 6.2 19 5l1.2 1.4" />
   </Svg>
 ));
 
