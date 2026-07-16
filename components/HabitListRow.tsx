@@ -13,6 +13,7 @@ interface Props {
   onUpdateHabit: (patch: Partial<Habit>) => void;
   onReorder: (toHabitId: string) => void;
   onArchive: () => void;
+  onDelete: () => void;
 }
 
 function hexToRgba(hex: string, alpha: number): string {
@@ -28,7 +29,7 @@ function hexToRgba(hex: string, alpha: number): string {
  *  window. Tapping anywhere on the row (other than the +/- stepper or pencil) opens/closes the
  *  quick editor; press-and-hold anywhere else drags the row to reorder it within the full
  *  habit list (across every category). */
-export default function HabitListRow({ habit, logs, onIncrement, onDecrement, onUpdateHabit, onReorder, onArchive }: Props) {
+export default function HabitListRow({ habit, logs, onIncrement, onDecrement, onUpdateHabit, onReorder, onArchive, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   const [dragging, setDragging] = useState(false);
   const dragMovedRef = useRef(false);
@@ -172,7 +173,8 @@ export default function HabitListRow({ habit, logs, onIncrement, onDecrement, on
           <div className="flex gap-2">
             <button onClick={save} className="btn-primary flex-1">Save</button>
             <button onClick={() => setEditing(false)} className="text-sm text-[#64748B] hover:text-white px-3">Cancel</button>
-            <button onClick={onArchive} className="text-sm text-red-400 hover:text-red-300 px-2">Archive</button>
+            <button onClick={onArchive} className="text-sm text-[#94A3B8] hover:text-white px-2">Archive</button>
+            <button onClick={onDelete} className="text-sm text-red-400 hover:text-red-300 px-2">Delete</button>
           </div>
         </div>
       )}

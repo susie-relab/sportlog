@@ -346,6 +346,15 @@ export default function HabitsPage() {
     await supabase.from('habits').update({ archived: false }).eq('id', habitId);
   };
 
+  // Unlike archiving, this permanently removes the habit and its logs (cascades via FK) —
+  // used for both an active habit's own delete button and an archived habit's "Delete forever".
+  const deleteHabit = async (habitId: string) => {
+    if (!confirm('Delete this habit and all its history? This can\'t be undone.')) return;
+    setHabits(prev => prev.filter(h => h.id !== habitId));
+    setArchivedHabits(prev => prev.filter(h => h.id !== habitId));
+    await supabase.from('habits').delete().eq('id', habitId);
+  };
+
   const toggleBulkSelected = (id: string) => {
     setBulkSelected(prev => {
       const next = new Set(prev);
@@ -445,7 +454,10 @@ export default function HabitsPage() {
                       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: h.color }} />
                       <span className="text-sm text-white truncate">{h.name}</span>
                     </span>
-                    <button onClick={() => unarchiveHabit(h.id)} className="text-xs font-medium text-blue-400 hover:text-blue-300 flex-shrink-0">Unarchive</button>
+                    <span className="flex items-center gap-3 flex-shrink-0">
+                      <button onClick={() => unarchiveHabit(h.id)} className="text-xs font-medium text-blue-400 hover:text-blue-300">Unarchive</button>
+                      <button onClick={() => deleteHabit(h.id)} className="text-xs font-medium text-red-400 hover:text-red-300">Delete forever</button>
+                    </span>
                   </div>
                 ))}
               </div>
@@ -478,6 +490,7 @@ export default function HabitsPage() {
               onCreateHabit={fields => createHabit({ ...fields, category: activeCategory })}
               onMoveHabit={moveHabit}
               onArchiveHabit={archiveHabit}
+              onDeleteHabit={deleteHabit}
               onUpdateHabit={updateHabit}
               onIncrementToday={incrementToday}
               onDecrementToday={decrementToday}
@@ -548,6 +561,7 @@ export default function HabitsPage() {
                 onUpdateHabit={patch => updateHabit(habit.id, patch)}
                 onReorder={toId => reorderAllHabits(habit.id, toId)}
                 onArchive={() => archiveHabit(habit.id)}
+                onDelete={() => deleteHabit(habit.id)}
               />
             ))}
           </div>
