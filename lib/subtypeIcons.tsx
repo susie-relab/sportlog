@@ -94,15 +94,13 @@ const NetballIcon = makeIcon(({ size, className }) => (
 const VolleyballIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <circle cx="12" cy="12" r="9" />
-    <path d="M7 4.5Q5.5 12 7 19.5" />
+    <path d="M7 4.5Q8.5 12 7 19.5" />
     <path d="M12 3V21" />
-    <path d="M17 4.5Q18.5 12 17 19.5" />
-    <path d="M6.3 8H4" />
-    <path d="M5.5 12H3" />
-    <path d="M6.3 16H4" />
-    <path d="M17.7 8H20" />
-    <path d="M18.5 12H21" />
-    <path d="M17.7 16H20" />
+    <path d="M17 4.5Q15.5 12 17 19.5" />
+    <path d="M6.6 10H4.3" strokeWidth={1.1} />
+    <path d="M6.6 14H4.3" strokeWidth={1.1} />
+    <path d="M17.4 10H19.7" strokeWidth={1.1} />
+    <path d="M17.4 14H19.7" strokeWidth={1.1} />
   </Svg>
 ));
 
@@ -124,12 +122,25 @@ const TurboTouchIcon = makeIcon(({ size, className }) => (
 // small ball at the centre reads as the third reference element without adding clutter.
 // A single solid-filled paddle instead of two crossed outlines — simpler and reads more
 // clearly as "padel" (its solid paddle is what sets it apart from a strung racquet sport).
+// A rounded perforated paddle head + throat + grip, plus a ball beside it — closer to a
+// real padel racquet's shape than a plain filled rounded rect, per reference.
+// The racquet sits on a diagonal (like it would in an action shot), with a single-line
+// handle instead of a hollow grip rect and connector — plus a ball beside it.
 const PadelIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <g transform="rotate(-15 12 12)">
-      <rect x="7.5" y="2.5" width="9" height="12" rx="4.5" fill="currentColor" stroke="none" />
-      <path d="M12 14.5v7" />
+    <g transform="rotate(-25 11 11)">
+      <path d="M9.5 2.3C6.3 2.9 4 6 4 9.7c0 3.6 2.8 5.8 6.5 5.8s6.5-2.2 6.5-5.8c0-3.7-2.3-6.8-5.5-7.4a4 4 0 0 0-2 0Z" />
+      <circle cx="7.6" cy="7.4" r="0.55" fill="currentColor" stroke="none" />
+      <circle cx="10.5" cy="6" r="0.55" fill="currentColor" stroke="none" />
+      <circle cx="13.4" cy="7.4" r="0.55" fill="currentColor" stroke="none" />
+      <circle cx="7" cy="10.3" r="0.55" fill="currentColor" stroke="none" />
+      <circle cx="10.5" cy="9.2" r="0.55" fill="currentColor" stroke="none" />
+      <circle cx="14" cy="10.3" r="0.55" fill="currentColor" stroke="none" />
+      <circle cx="8.3" cy="13" r="0.55" fill="currentColor" stroke="none" />
+      <circle cx="12.7" cy="13" r="0.55" fill="currentColor" stroke="none" />
+      <path d="M10.5 15.5v6" />
     </g>
+    <circle cx="19.5" cy="18" r="2.3" />
   </Svg>
 ));
 
