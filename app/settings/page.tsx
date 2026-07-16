@@ -15,6 +15,7 @@ export default function SettingsPage() {
   const [lightTheme, setLightTheme] = useState(false);
   const [weeklyRecapEmail, setWeeklyRecapEmail] = useState(false);
   const [monthlyRecapEmail, setMonthlyRecapEmail] = useState(false);
+  const [habitsInRecapEmail, setHabitsInRecapEmail] = useState(false);
 
   const flash = (text: string, ok: boolean) => {
     setMsg({ text, ok });
@@ -35,6 +36,7 @@ export default function SettingsPage() {
     setLightTheme(user?.user_metadata?.theme === 'light');
     if (user?.user_metadata?.weekly_recap_email !== undefined) setWeeklyRecapEmail(user.user_metadata.weekly_recap_email);
     if (user?.user_metadata?.monthly_recap_email !== undefined) setMonthlyRecapEmail(user.user_metadata.monthly_recap_email);
+    if (user?.user_metadata?.habits_in_recap_email !== undefined) setHabitsInRecapEmail(user.user_metadata.habits_in_recap_email);
   }, [user]);
 
   return (
@@ -132,6 +134,20 @@ export default function SettingsPage() {
             className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${monthlyRecapEmail ? 'bg-blue-600' : 'bg-[#334155]'}`}
           >
             <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${monthlyRecapEmail ? 'translate-x-5' : ''}`} />
+          </button>
+        </div>
+
+        <div className="border-t border-[#334155] pt-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-white font-semibold">Habits in recap emails</p>
+            <p className="text-xs text-[#64748B]">Include a habit-completion summary in your weekly/monthly recap.</p>
+          </div>
+          <button
+            onClick={() => { const v = !habitsInRecapEmail; setHabitsInRecapEmail(v); savePrefs({ habits_in_recap_email: v }); }}
+            role="switch" aria-checked={habitsInRecapEmail}
+            className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${habitsInRecapEmail ? 'bg-blue-600' : 'bg-[#334155]'}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${habitsInRecapEmail ? 'translate-x-5' : ''}`} />
           </button>
         </div>
 

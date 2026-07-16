@@ -39,10 +39,13 @@ const isDone = (habit: Habit, logsByDate: Map<string, HabitLog>, dateISO: string
 };
 
 /** Current consecutive-day streak of fully-completed scheduled days, walking backward from
- *  today. A day the habit isn't scheduled on doesn't break the streak, it's just skipped. */
+ *  today. A day the habit isn't scheduled on doesn't break the streak, it's just skipped.
+ *  A "streak freeze" grants one missed scheduled day of grace per streak — that single miss
+ *  doesn't reset the count to 0, it just doesn't add to it either. */
 export function currentStreak(habit: Habit, logs: HabitLog[], todayISO: string): number {
   const logsByDate = new Map(logs.map(l => [l.date, l]));
   let streak = 0;
+  let freezesLeft = 1;
   let cursor = todayISO;
   // Today doesn't have to be done yet to keep a streak alive from yesterday.
   if (isHabitScheduledOn(habit, cursor) && !isDone(habit, logsByDate, cursor)) {
@@ -50,7 +53,10 @@ export function currentStreak(habit: Habit, logs: HabitLog[], todayISO: string):
   }
   for (let i = 0; i < 3650; i++) {
     if (!isHabitScheduledOn(habit, cursor)) { cursor = addDaysISO(cursor, -1); continue; }
-    if (!isDone(habit, logsByDate, cursor)) break;
+    if (!isDone(habit, logsByDate, cursor)) {
+      if (freezesLeft > 0) { freezesLeft--; cursor = addDaysISO(cursor, -1); continue; }
+      break;
+    }
     streak++;
     cursor = addDaysISO(cursor, -1);
   }

@@ -5,10 +5,11 @@
 //   SUPABASE_SERVICE_ROLE_KEY — list users + read their data (never exposed to client)
 //   RESEND_API_KEY / RESEND_FROM — same email service as the contact form
 //   CRON_SECRET — Vercel injects this as a Bearer token on cron invocations
-import { Activity } from '@/types';
+import { Activity, Habit, HabitLog } from '@/types';
 import { PlanRecord } from '@/lib/runPlanGenerator';
 import { recapWithComparison, addDays, upcomingCount } from '@/lib/recap';
 import { formatDuration, formatDistance, formatPaceMinKm, localWeekKey, WeekStart, calcWeekStreak } from '@/lib/utils';
+import { completionPctInRange } from '@/lib/habitStats';
 
 // Run on the Node runtime (needs Intl timezone + long-running fetches) and give the
 // cron enough headroom to page users + fetch each one's data + send emails.
@@ -37,6 +38,27 @@ function deltaHtml(pct: number | null): string {
   if (pct == null || pct === 0) return '';
   const up = pct > 0;
   return `<span style="color:${up ? '#4ADE80' : '#F87171'};font-size:10px;"> ${up ? '↑' : '↓'}${Math.abs(pct)}%</span>`;
+}
+
+function habitsHtml(habits: Habit[], logs: HabitLog[], startISO: string, endISO: string): string {
+  if (habits.length === 0) return '';
+  const logsByHabit = new Map<string, HabitLog[]>();
+  for (const l of logs) {
+    const arr = logsByHabit.get(l.habit_id) || [];
+    arr.push(l);
+    logsByHabit.set(l.habit_id, arr);
+  }
+  const rows = habits
+    .map(h => ({ h, pct: completionPctInRange(h, logsByHabit.get(h.id) || [], startISO, endISO) }))
+    .sort((a, b) => b.pct - a.pct);
+  const avgPct = Math.round(rows.reduce((s, r) => s + r.pct, 0) / rows.length);
+  const top = rows.slice(0, 3).filter(r => r.pct > 0);
+  return `
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid #1E293B;">
+      <h3 style="margin:0 0 4px;color:#fff;font-size:15px;">✅ Habits</h3>
+      <p style="font-size:13px;color:#94A3B8;margin:6px 0 0;">Average completion: <strong style="color:#fff;">${avgPct}%</strong> across ${habits.length} habit${habits.length > 1 ? 's' : ''}</p>
+      ${top.length > 0 ? `<p style="font-size:13px;color:#94A3B8;margin:6px 0 0;">Best: ${top.map(r => `${esc(r.h.name)} (${r.pct}%)`).join(', ')}</p>` : ''}
+    </div>`;
 }
 
 type Recap = ReturnType<typeof recapWithComparison>;
@@ -122,14 +144,23 @@ export async function GET(request: Request) {
     const wantsWeekly = meta.weekly_recap_email === true && isWeekStartDay;
     const wantsMonthly = meta.monthly_recap_email === true && isFirstOfMonth;
     if (!wantsWeekly && !wantsMonthly) continue;
+    const wantsHabits = meta.habits_in_recap_email === true;
 
-    const [actsRes, plansRes] = await Promise.all([
+    const [actsRes, plansRes, habitsRes, habitLogsRes] = await Promise.all([
       fetch(`${supabaseUrl}/rest/v1/activities?select=*&user_id=eq.${u.id}`, { headers: adminHeaders }),
       fetch(`${supabaseUrl}/rest/v1/training_plans?select=*&user_id=eq.${u.id}`, { headers: adminHeaders }),
+      wantsHabits
+        ? fetch(`${supabaseUrl}/rest/v1/habits?select=*&user_id=eq.${u.id}&archived=eq.false`, { headers: adminHeaders })
+        : Promise.resolve(null),
+      wantsHabits
+        ? fetch(`${supabaseUrl}/rest/v1/habit_logs?select=*&user_id=eq.${u.id}`, { headers: adminHeaders })
+        : Promise.resolve(null),
     ]);
     if (!actsRes.ok || !plansRes.ok) { errors.push(`${u.email}: data fetch failed`); continue; }
     const activities = (await actsRes.json()) as Activity[];
     const plans = (await plansRes.json()) as PlanRecord[];
+    const habits = habitsRes && habitsRes.ok ? ((await habitsRes.json()) as Habit[]) : [];
+    const habitLogs = habitLogsRes && habitLogsRes.ok ? ((await habitLogsRes.json()) as HabitLog[]) : [];
 
     const emails: { subject: string; html: string }[] = [];
     if (wantsWeekly) {
@@ -141,7 +172,8 @@ export async function GET(request: Request) {
       const upcoming = upcomingCount(plans, thisWeekStart, addDays(thisWeekStart, 6));
       emails.push({
         subject: 'Your SportLog weekly recap 🏃',
-        html: recapHtml("Last Week's Recap", `${fmt(lastWeekStart)} to ${fmt(lastWeekEnd)}`, r, { appUrl, weekStreak, upcoming }),
+        html: recapHtml("Last Week's Recap", `${fmt(lastWeekStart)} to ${fmt(lastWeekEnd)}`, r, { appUrl, weekStreak, upcoming })
+          + (wantsHabits ? habitsHtml(habits, habitLogs, lastWeekStart, lastWeekEnd) : ''),
       });
     }
     if (wantsMonthly) {
@@ -153,7 +185,8 @@ export async function GET(request: Request) {
       const r = recapWithComparison(activities, plans, first, end, monthDays);
       emails.push({
         subject: 'Your SportLog monthly recap 📅',
-        html: recapHtml("Last Month's Recap", `${fmt(first)} to ${fmt(end)}`, r, { appUrl }),
+        html: recapHtml("Last Month's Recap", `${fmt(first)} to ${fmt(end)}`, r, { appUrl })
+          + (wantsHabits ? habitsHtml(habits, habitLogs, first, end) : ''),
       });
     }
 

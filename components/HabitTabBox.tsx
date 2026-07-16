@@ -33,6 +33,7 @@ interface Props {
   }) => void;
   onMoveHabit: (id: string, direction: 'up' | 'down') => void;
   onUpdateHabit: (id: string, patch: Partial<Habit>) => void;
+  onArchiveHabit: (id: string) => void;
   onIncrementToday: (habit: Habit) => void;
   onDecrementToday: (habit: Habit) => void;
 }
@@ -183,7 +184,7 @@ export function StartDateFields({
  *  reorder). */
 export default function HabitTabBox({
   categories, activeCategory, onSelectCategory, onReorderCategory, onMoveCategory, onRenameCategory, onRemoveCategory, onCreateCategory,
-  categoryLabel, habits, logsByHabit, selectedHabitId, onSelectHabit, onCreateHabit, onMoveHabit, onUpdateHabit, onIncrementToday, onDecrementToday,
+  categoryLabel, habits, logsByHabit, selectedHabitId, onSelectHabit, onCreateHabit, onMoveHabit, onUpdateHabit, onArchiveHabit, onIncrementToday, onDecrementToday,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const [showManageCategories, setShowManageCategories] = useState(false);
@@ -495,7 +496,10 @@ export default function HabitTabBox({
                         intervalDays={editInterval} setIntervalDays={setEditInterval}
                         target={editTarget} setTarget={setEditTarget}
                       />
-                      <button onClick={() => saveEditing(h.id)} className="btn-primary w-full">Save</button>
+                      <div className="flex gap-2">
+                        <button onClick={() => saveEditing(h.id)} className="btn-primary flex-1">Save</button>
+                        <button onClick={() => { onArchiveHabit(h.id); setExpandedId(null); }} className="text-sm text-red-400 hover:text-red-300 px-2">Archive</button>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -14,6 +14,7 @@ import Avatar from '@/components/Avatar';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import RecapCard from '@/components/RecapCard';
 import LastWeekSummaryCard from '@/components/LastWeekSummaryCard';
+import HabitsLastWeekSummaryCard from '@/components/HabitsLastWeekSummaryCard';
 import FavouritesCard from '@/components/FavouritesCard';
 import YearTotalsCard from '@/components/YearTotalsCard';
 import TrainingMonthCalendar from '@/components/TrainingMonthCalendar';
@@ -191,16 +192,19 @@ export default function DashPage() {
   // Streaks
   const weekStartPref: WeekStart = user?.user_metadata?.week_start_day === 'sunday' ? 'sunday' : 'monday';
   const dayStreak = calcDayStreak(activities.map(a => a.date));
-  const habitsAvgPct = (() => {
-    if (habits.length === 0) return null;
-    const start = addDaysISO(todayLocalISO(), -13);
-    const end = todayLocalISO();
+  const habitsLogsByHabit = (() => {
     const logsByHabit = new Map<string, HabitLog[]>();
     for (const l of habitLogs) {
       if (!logsByHabit.has(l.habit_id)) logsByHabit.set(l.habit_id, []);
       logsByHabit.get(l.habit_id)!.push(l);
     }
-    const pcts = habits.map(h => completionPctInRange(h, logsByHabit.get(h.id) || [], start, end));
+    return logsByHabit;
+  })();
+  const habitsAvgPct = (() => {
+    if (habits.length === 0) return null;
+    const start = addDaysISO(todayLocalISO(), -13);
+    const end = todayLocalISO();
+    const pcts = habits.map(h => completionPctInRange(h, habitsLogsByHabit.get(h.id) || [], start, end));
     return Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length);
   })();
   const weekStreak = calcWeekStreak(activities.map(a => a.date), weekStartPref);
@@ -489,6 +493,7 @@ export default function DashPage() {
       <div className="lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start">
         <div>
           <LastWeekSummaryCard activities={activities} plans={plans} weekStartDay={weekStartPref} todayISO={todayISO} />
+          <HabitsLastWeekSummaryCard habits={habits} logsByHabit={habitsLogsByHabit} weekStartDay={weekStartPref} todayISO={todayISO} />
         </div>
         <div>
           <FavouritesCard favourites={user?.user_metadata?.favourite_activities ?? []} activities={activities} />
