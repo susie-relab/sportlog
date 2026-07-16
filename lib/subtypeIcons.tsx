@@ -69,9 +69,12 @@ const TennisIcon = makeIcon(({ size, className }) => (
 
 const NetballIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M9 21V9" />
-    <ellipse cx="9" cy="7" rx="5" ry="2" />
-    <circle cx="18" cy="18" r="2.5" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 3a9 9 0 0 0-6.36 15.36" />
+    <path d="M12 3a9 9 0 0 1 6.36 15.36" />
+    <path d="M4.5 8.5a9 9 0 0 0 0 7" />
+    <path d="M19.5 8.5a9 9 0 0 1 0 7" />
+    <path d="M8 20.5a9 9 0 0 0 8 0" />
   </Svg>
 ));
 

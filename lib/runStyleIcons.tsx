@@ -25,9 +25,11 @@ function makeIcon(render: (props: IconProps) => ReactNode): LucideIcon {
 
 const TreadmillIcon = makeIcon(({ size, className, style }) => (
   <Svg size={size} className={className} style={style}>
-    <rect x="3" y="15" width="15" height="4" rx="1" />
-    <path d="M6 15v-2M10 15v-2M14 15v-2" />
-    <path d="M18 17l3-5" />
+    <path d="M2 19h11" />
+    <path d="M9 19c0-3.2 2.8-6.3 6.8-8.3" />
+    <path d="M14.5 12.2l2.3-3.4" />
+    <path d="M16.8 8.8h3.5" />
+    <path d="M12.5 19v-2.2" />
   </Svg>
 ));
 
@@ -41,10 +43,12 @@ const TrailIcon = makeIcon(({ size, className, style }) => (
 
 const PushBuggyIcon = makeIcon(({ size, className, style }) => (
   <Svg size={size} className={className} style={style}>
-    <circle cx="7" cy="19" r="2" />
-    <circle cx="16" cy="19" r="2" />
-    <path d="M7 17V9h7l3 8" />
-    <path d="M14 9V6h4" />
+    <circle cx="7.5" cy="18.5" r="3" />
+    <circle cx="19" cy="18.5" r="1.8" />
+    <path d="M7.5 15.5V8.5a5 5 0 0 1 5 5v2" />
+    <path d="M12.5 15.5H19" />
+    <path d="M19 15.5v3" />
+    <path d="M7.5 8.5L3.5 6.5" />
   </Svg>
 ));
 
@@ -53,6 +57,16 @@ const BeachIcon = makeIcon(({ size, className, style }) => (
     <circle cx="17" cy="6" r="2.5" />
     <path d="M3 20c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0" />
     <path d="M3 16c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0" />
+  </Svg>
+));
+
+const SuburbanIcon = makeIcon(({ size, className, style }) => (
+  <Svg size={size} className={className} style={style}>
+    <path d="M4 20V13l4-3 4 3v7" />
+    <path d="M4 13l4-3 4 3" />
+    <path d="M6 20v-3h4v3" />
+    <path d="M14 20V15l3-2 3 2v5" />
+    <path d="M4 20h16" />
   </Svg>
 ));
 
@@ -99,6 +113,7 @@ export const RUN_STYLE_ICON_OVERRIDES: Partial<Record<RunType, LucideIcon>> = {
   push_buggy: PushBuggyIcon,
   beach: BeachIcon,
   urban: UrbanIcon,
+  suburban: SuburbanIcon,
   road: RoadIcon,
   track: TrackIcon,
   cross_country: CrossCountryIcon,

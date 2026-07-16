@@ -10,7 +10,7 @@ import { PB_SHARE_ICON } from '@/lib/shareIcons';
 import { DISTANCE_PB_KM, DISTANCE_LABELS } from '@/lib/pbDetect';
 
 const EXERCISE_TYPES: ExerciseType[] = ['run', 'walk', 'sport', 'hiit', 'stretch', 'bike', 'swim', 'solo_fitness', 'water', 'snow'];
-const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy', 'treadmill', 'beach', 'track', 'road', 'urban', 'cross_country', 'mountain'];
+const RUN_TYPES: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'trail', 'long_intervals', 'push_buggy', 'treadmill', 'beach', 'track', 'road', 'urban', 'suburban', 'cross_country', 'mountain'];
 
 const hasRestBreaks = (a: Activity) => !!a.run_type && REST_BREAK_RUN_TYPES.includes(a.run_type);
 

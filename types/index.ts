@@ -129,7 +129,7 @@ export const EXERCISE_TYPE_COLORS: Record<ExerciseType, string> = {
   snow: '#CBD5E1',
 };
 
-export type RunType = 'long' | 'easy' | 'tempo' | 'fartlek' | 'speed_intervals' | 'hill_reps' | 'trail' | 'long_intervals' | 'push_buggy' | 'treadmill' | 'beach' | 'track' | 'road' | 'urban' | 'cross_country' | 'mountain';
+export type RunType = 'long' | 'easy' | 'tempo' | 'fartlek' | 'speed_intervals' | 'hill_reps' | 'trail' | 'long_intervals' | 'push_buggy' | 'treadmill' | 'beach' | 'track' | 'road' | 'urban' | 'suburban' | 'cross_country' | 'mountain';
 
 export const RUN_TYPE_LABELS: Record<RunType, string> = {
   long: 'Long',
@@ -140,12 +140,13 @@ export const RUN_TYPE_LABELS: Record<RunType, string> = {
   hill_reps: 'Hill Reps',
   trail: 'Trail',
   long_intervals: 'Long Intervals',
-  push_buggy: 'Push Buggy',
+  push_buggy: 'Push Pram',
   treadmill: 'Treadmill',
   beach: 'Beach',
   track: 'Track',
   road: 'Road',
   urban: 'Urban',
+  suburban: 'Suburban',
   cross_country: 'Cross Country',
   mountain: 'Mountain',
 };
@@ -165,14 +166,15 @@ export const RUN_TYPE_COLORS: Record<RunType, string> = {
   track: '#F472B6',
   road: '#94A3B8',
   urban: '#22C55E',
+  suburban: '#A3E635',
   cross_country: '#84CC16',
   mountain: '#78716C',
 };
 
 // Run types split into two independently-selectable groups: pick at most one from each.
 // e.g. Treadmill + Easy -> "Treadmill - Easy Run". Either group alone is also valid on its own
-// (e.g. just Push Buggy, or just Fartlek).
-export const RUN_TYPE_TERRAIN: RunType[] = ['treadmill', 'trail', 'push_buggy', 'beach', 'urban', 'road', 'track', 'cross_country', 'mountain'];
+// (e.g. just Push Pram, or just Fartlek).
+export const RUN_TYPE_TERRAIN: RunType[] = ['treadmill', 'trail', 'push_buggy', 'beach', 'urban', 'suburban', 'road', 'track', 'cross_country', 'mountain'];
 export const RUN_TYPE_WORKOUT: RunType[] = ['easy', 'long', 'tempo', 'fartlek', 'speed_intervals', 'hill_reps', 'long_intervals'];
 
 /** Run types with scripted rest breaks between reps. Total elapsed time ÷ total distance for
