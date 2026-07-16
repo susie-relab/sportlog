@@ -689,11 +689,23 @@ const PoolIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A stick figure's head and swinging arms above the waterline, per reference — reads
+// clearly as "jogging in water" rather than two bare vertical lines.
 const WaterJoggingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M9 3v8" />
-    <path d="M15 3v6" />
+    <circle cx="12" cy="5" r="2" fill="currentColor" stroke="none" />
+    <path d="M12 7v5" />
+    <path d="M12 9 8 7" />
+    <path d="M12 9l4 6" />
     <path d="M2 17c3-2 6-2 9 0s6 2 9 0" />
+  </Svg>
+));
+
+// A curling breaking-wave crest above a choppy waterline, for open-water/ocean swims.
+const OceanIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <path d="M4 15c0-3 2.5-5 5.5-5s4.5 2 3.5 4c-.6 1.3-2.5 1.2-2.5 2.5 0 1.5 2 2 4 2h6" />
+    <path d="M2 20c2.5-1.3 4.5-1.3 7 0s4.5 1.3 7 0 4.5-1.3 6-1" />
   </Svg>
 ));
 
@@ -713,6 +725,111 @@ const BeachIcon = makeIcon(({ size, className }) => (
     <path d="M4 20c4-6 12-6 16 0" />
     <ellipse cx="9" cy="10" rx="1.5" ry="2.5" transform="rotate(-10 9 10)" />
     <ellipse cx="12" cy="7" rx="1" ry="1.6" transform="rotate(-10 12 7)" />
+  </Svg>
+));
+
+// A backpack, for multi-day hikes.
+const MultiDayIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <rect x="5" y="8" width="14" height="13" rx="3" />
+    <path d="M8 8V6a4 4 0 0 1 8 0v2" />
+    <path d="M9 12h6" />
+    <path d="M9 16h6" />
+  </Svg>
+));
+
+// A relaxed walker — head, arm/leg mid-swing, no motion lines (unlike Speed below).
+const StrollIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <circle cx="12" cy="4" r="2" fill="currentColor" stroke="none" />
+    <path d="M12 6v6" />
+    <path d="M12 8 9 10" />
+    <path d="M12 9l4 1" />
+    <path d="M12 12 9 20" />
+    <path d="M12 12l4 7" />
+  </Svg>
+));
+
+// A leaning-forward walker with motion lines trailing behind, for a brisk/speed walk.
+const SpeedWalkIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <circle cx="15" cy="4" r="2" fill="currentColor" stroke="none" />
+    <path d="M15 6v5" />
+    <path d="M15 7l4 2" />
+    <path d="M15 11 11 13" />
+    <path d="M11 13 8 20" />
+    <path d="M11 13l6 5" />
+    <path d="M2 9h4M2 13h5M2 17h3" />
+  </Svg>
+));
+
+const WalkUrbanIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <path d="M4 21V9l5-4v16" />
+    <path d="M14 21V12l6-3v12" />
+    <path d="M4 21h16" />
+    <path d="M7 12h1M7 15h1M16 13h1M16 16h1" />
+  </Svg>
+));
+
+// A fern/leafy clump, for bush walks.
+const BushIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <path d="M12 21V9" />
+    <path d="M12 9c-3 0-5-2-5-5 2 0 4 1 5 3 1-2 3-3 5-3 0 3-2 5-5 5Z" />
+    <path d="M12 14c-2 0-3.5-1.3-3.5-3.3 1.3 0 2.7.7 3.5 2 .8-1.3 2.2-2 3.5-2 0 2-1.5 3.3-3.5 3.3Z" />
+  </Svg>
+));
+
+const WalkMountainIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <path d="M3 19l6-11 4 6 2-3 6 8Z" />
+    <path d="M9 8l1.5 2" />
+  </Svg>
+));
+
+// A barn, for farm walks.
+const FarmIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <path d="M4 11 12 4l8 7" />
+    <path d="M4 11v10h16V11" />
+    <path d="M10 21v-6h4v6" />
+  </Svg>
+));
+
+const WalkRoadIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <path d="M9 4 5 20" />
+    <path d="M15 4l4 16" />
+    <path d="M12 6v2M12 11v2M12 16v2" />
+  </Svg>
+));
+
+const TrackOvalIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <ellipse cx="12" cy="12" rx="9" ry="6" />
+    <ellipse cx="12" cy="12" rx="4.5" ry="2.5" />
+  </Svg>
+));
+
+const WalkTreadmillIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <rect x="2" y="16" width="14" height="3" rx="1.5" />
+    <path d="M13.5 16v-3.2a2 2 0 0 1 2-2h1" />
+    <path d="M16.5 10.8v-4" />
+    <path d="M14.3 6.8h4.4" />
+    <path d="M5 19v2M10 19v2" />
+  </Svg>
+));
+
+const WalkPushBuggyIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <circle cx="7.5" cy="18.5" r="3" />
+    <circle cx="19" cy="18.5" r="1.8" />
+    <path d="M7.5 15.5V8.5a5 5 0 0 1 5 5v2" />
+    <path d="M12.5 15.5H19" />
+    <path d="M19 15.5v3" />
+    <path d="M7.5 8.5L3.5 6.5" />
   </Svg>
 ));
 
@@ -776,7 +893,19 @@ export const SUBTYPE_ICON_OVERRIDES: Record<string, LucideIcon> = {
   sledding: SleddingIcon,
   skating: SkatingIcon,
   water_jogging: WaterJoggingIcon,
+  ocean: OceanIcon,
   aqua_aerobics: AquaAerobicsIcon,
+  multi_day: MultiDayIcon,
+  stroll: StrollIcon,
+  speed: SpeedWalkIcon,
+  urban: WalkUrbanIcon,
+  bush: BushIcon,
+  mountain: WalkMountainIcon,
+  farm: FarmIcon,
+  road: WalkRoadIcon,
+  track_oval: TrackOvalIcon,
+  treadmill: WalkTreadmillIcon,
+  push_buggy: WalkPushBuggyIcon,
   gymnastics: GymnasticsIcon,
   calisthenics: CalisthenicsIcon,
   sandboarding: SandboardingIcon,
