@@ -9,7 +9,7 @@ import {
   EXERCISE_TYPE_COLORS, RUN_TYPE_COLORS,
   EXERCISE_TYPE_ORDER, RUN_TYPE_TERRAIN, RUN_TYPE_WORKOUT,
   SportSubType, SportFocus, SportStyle, GymSubType, WaterSubType, WaterStyle, SnowSubType, SnowStyle, SwimSubType, SwimFocus, SwimStyle, FitnessSubType, BikeSubType, StretchSubType, WalkSubType,
-  SPORT_SUB_LABELS, SPORT_FOCUS_LABELS, SPORT_STYLE_LABELS, GYM_SUB_LABELS, WATER_SUB_LABELS, WATER_STYLE_LABELS, SNOW_SUB_LABELS, SNOW_STYLE_LABELS, SWIM_SUB_LABELS, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
+  SPORT_SUB_LABELS, SPORT_FOCUS_LABELS, SPORT_STYLE_LABELS, SPORT_STYLE_COLORS, GYM_SUB_LABELS, WATER_SUB_LABELS, WATER_STYLE_LABELS, SNOW_SUB_LABELS, SNOW_STYLE_LABELS, SWIM_SUB_LABELS, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, SWIM_STYLE_COLORS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
   suggestedMaxHr, suggestedAvgHr,
   Companion, COMPANION_LABELS, COMPANION_EMOJI, WeatherCondition, CONDITION_LABELS, CONDITION_EMOJI,
   Activity,
@@ -56,15 +56,15 @@ function IconSubtypeButton({ label, subtypeKey, active, onClick, activeClass }: 
 
 /** Style option shown as a plain bullet list (no box) — for groups where a full button grid
  *  reads as too heavy; the bullet fills in solid when selected. */
-function BulletStyleOption({ label, active, onClick, dotClass }: {
-  label: string; active: boolean; onClick: () => void; dotClass: string;
+function BulletStyleOption({ label, active, onClick, color }: {
+  label: string; active: boolean; onClick: () => void; color: string;
 }) {
   return (
     <button
       onClick={onClick}
       className={`flex items-center gap-2 px-1 py-1.5 text-xs text-left transition-colors ${active ? 'text-white font-semibold' : 'text-[#94A3B8] hover:text-white'}`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${active ? dotClass : 'bg-[#475569]'}`} />
+      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: active ? color : '#475569' }} />
       {label}
     </button>
   );
@@ -488,7 +488,7 @@ export default function AddPage() {
             <div className="grid grid-cols-2 gap-1">
               {(Object.keys(SPORT_STYLE_LABELS) as SportStyle[]).map(t => (
                 <BulletStyleOption key={t} label={SPORT_STYLE_LABELS[t]} active={sportStyle === t}
-                  onClick={() => setSportStyle(sportStyle === t ? '' : t)} dotClass="bg-orange-500" />
+                  onClick={() => setSportStyle(sportStyle === t ? '' : t)} color={SPORT_STYLE_COLORS[t]} />
               ))}
             </div>
           </div>
@@ -578,7 +578,7 @@ export default function AddPage() {
                 const active = swimStyles.includes(t);
                 return (
                   <BulletStyleOption key={t} label={SWIM_STYLE_LABELS[t]} active={active}
-                    onClick={() => setSwimStyles(active ? swimStyles.filter(x => x !== t) : [...swimStyles, t])} dotClass="bg-cyan-500" />
+                    onClick={() => setSwimStyles(active ? swimStyles.filter(x => x !== t) : [...swimStyles, t])} color={SWIM_STYLE_COLORS[t]} />
                 );
               })}
             </div>

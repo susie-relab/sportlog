@@ -166,10 +166,13 @@ const BadmintonIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A dynamic swoosh-seam ball emblem (per reference logo) instead of a plain oval with a
+// straight lace line across it.
 const RugbyIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <ellipse cx="12" cy="12" rx="9" ry="5" transform="rotate(-25 12 12)" />
-    <path d="M4 14 20 10" />
+    <path d="M6 8c3 1.5 10 8 13 9" />
+    <path d="M6 8c1 2.5 2.2 4.3 4 6" />
   </Svg>
 ));
 

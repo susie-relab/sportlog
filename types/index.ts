@@ -254,6 +254,10 @@ export const SPORT_STYLE_LABELS: Record<SportStyle, string> = {
   indoor: 'Indoor', outdoor: 'Outdoor', grass: 'Grass', turf: 'Turf', clay_dirt: 'Clay / Dirt',
   rooftop: 'Rooftop', water: 'Water', beach: 'Beach', mountain: 'Mountain',
 };
+export const SPORT_STYLE_COLORS: Record<SportStyle, string> = {
+  indoor: '#A78BFA', outdoor: '#4ADE80', grass: '#22C55E', turf: '#84CC16', clay_dirt: '#C2410C',
+  rooftop: '#38BDF8', water: '#0EA5E9', beach: '#FBBF24', mountain: '#78716C',
+};
 export const GYM_SUB_LABELS: Record<GymSubType, string> = {
   hiit_workout: 'HIIT', strength: 'Strength', conditioning: 'Conditioning',
   crossfit: 'CrossFit', hyrox: 'Hyrox', arms: 'Arms', legs: 'Legs',
@@ -287,6 +291,10 @@ export const SWIM_FOCUS_LABELS: Record<SwimFocus, string> = {
 export const SWIM_STYLE_LABELS: Record<SwimStyle, string> = {
   mixed: 'Mixed', freestyle: 'Freestyle', backstroke: 'Backstroke', breaststroke: 'Breaststroke', butterfly: 'Butterfly', im: 'Individual Medley',
   kick_only: 'Kick-only', pull_only: 'Pull-only',
+};
+export const SWIM_STYLE_COLORS: Record<SwimStyle, string> = {
+  mixed: '#A78BFA', freestyle: '#22D3EE', backstroke: '#38BDF8', breaststroke: '#34D399', butterfly: '#FB923C', im: '#F472B6',
+  kick_only: '#FACC15', pull_only: '#818CF8',
 };
 export const FITNESS_SUB_LABELS: Record<FitnessSubType, string> = {
   boxing: 'Boxing', jump_rope: 'Jump Rope', dance: 'Dance', skateboard: 'Skateboard',
