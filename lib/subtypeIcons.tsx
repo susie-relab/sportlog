@@ -87,9 +87,10 @@ const NetballIcon = makeIcon(({ size, className }) => (
 const VolleyballIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <circle cx="12" cy="12" r="9" />
-    <path d="M12 3c4 2 6 6 6 9" />
-    <path d="M12 3c-4 2-6 6-6 9" />
-    <path d="M6 12c2 4 6 6 9 6" />
+    <path d="M12 3c2 2.5 2.5 5.5 1 8-1.2 2-3.5 2.3-3.5 4.5 0 1.8 1.5 3 3.5 3.5" />
+    <path d="M4.5 8c2 1 3 3 2.5 5.5" />
+    <path d="M19.5 8c-2 1-3 3-2.5 5.5" />
+    <path d="M7 18.5c2-1 3.5-1 5.5 0" />
   </Svg>
 ));
 
@@ -262,22 +263,28 @@ const HyroxIcon = makeIcon(({ size, className }) => (
 
 // A flexed bicep + fist glyph, following the same two-curve-down-to-a-base technique as
 // LegsIcon (outer bicep bulge + inner arm line) so it reads clearly at small sizes.
+// Filled circles at the fist and base (instead of a thin baseline that all but vanishes at
+// small sizes) keep both ends of the arm clearly visible instead of trailing off.
 const ArmsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <circle cx="17" cy="4" r="2" fill="currentColor" stroke="none" />
-    <path d="M17 6c-1 1.4-2.1 2.4-3.5 3.2" />
-    <path d="M13.5 9.2c-4.3 1-6.7 3.8-5.8 7.5.9 3.6 4.6 4.8 8.6 4.8" />
-    <path d="M13.5 9.2c1.7 2.9 2 6.5 2 9.4v3" />
+    <circle cx="16.5" cy="4.5" r="2.1" fill="currentColor" stroke="none" />
+    <path d="M16.5 6.6c-1 1.3-2.1 2.2-3.4 2.9" />
+    <path d="M13.1 9.5c-4 1-6.2 3.7-5.4 7.1.8 3.4 4.3 4.6 8 4.6" />
+    <circle cx="15.7" cy="21.2" r="1.4" fill="currentColor" stroke="none" />
   </Svg>
 ));
 
 // A single bent leg, front-on, per reference — a bent-knee silhouette reads more clearly
 // as "legs" at small sizes than a pair of straight legs from a hip bar.
+// Filled foot circles (instead of a thin baseline that all but vanishes at small sizes)
+// keep both feet clearly visible instead of the legs looking like they trail off.
 const LegsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M9 3c2.2 2.6 3.6 5.3 3.2 7.4-.3 1.3-1.2 1.8-1.2 3.6 0 2.7.3 5 .5 6" />
-    <path d="M14 3c1 3.6 1.2 6.6 1 8.7-.3 1.8 0 3.5 0 5.3v3" />
-    <path d="M8.5 21h7" />
+    <path d="M9 3h5" />
+    <path d="M9 3c2.2 2.6 3.6 5.3 3.2 7.4-.3 1.3-1.2 1.8-1.2 3.6 0 1.9.2 3.5.3 4.5" />
+    <path d="M14 3c1 3.6 1.2 6.6 1 8.7-.3 1.8 0 3.5 0 5.3v1.5" />
+    <circle cx="11.6" cy="19.8" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="19.8" r="1.4" fill="currentColor" stroke="none" />
   </Svg>
 ));
 
@@ -343,13 +350,17 @@ const BoxingIcon = makeIcon(({ size, className }) => (
 
 // Two handles at the bottom with the rope rising and crossing into a teardrop-shaped loop,
 // per reference — reads as a rope mid-swing rather than a plain arc between two handles.
+// Two offset handles, each with a grip band and rivet dot, joined by one simple scooping
+// rope curve — per reference, instead of a crossed teardrop loop between two level handles.
 const JumpRopeIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <rect x="4" y="15" width="4" height="7" rx="2" />
-    <rect x="16" y="15" width="4" height="7" rx="2" />
-    <path d="M6 15V9c0-3 2-6 6-6" />
-    <path d="M18 15V9c0-3-2-6-6-6" />
-    <path d="M9 9c0-2 1.3-3.5 3-3.5s3 1.5 3 3.5c0 2-1.3 4-3 5-1.7-1-3-3-3-5Z" />
+    <rect x="3" y="2" width="4" height="9" rx="2" />
+    <rect x="3" y="7.3" width="4" height="2.4" rx="0.6" />
+    <circle cx="5" cy="4.5" r="0.6" fill="currentColor" stroke="none" />
+    <rect x="17" y="13" width="4" height="9" rx="2" />
+    <rect x="17" y="13" width="4" height="2.4" rx="0.6" />
+    <circle cx="19" cy="19.5" r="0.6" fill="currentColor" stroke="none" />
+    <path d="M5 11c-3 3-3 8 2 10 5 2 10-2 10-7v-1" />
   </Svg>
 ));
 
@@ -496,11 +507,17 @@ const RollerskateIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A person rappelling down the rope — head, gripping arm, and bent legs pushed against
+// the wall — instead of an abstract mountain-with-a-rope shape.
 const AbseilingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M3 21 12 3 21 21Z" />
-    <path d="M12 3v18" />
-    <circle cx="12" cy="14" r="1.5" fill="currentColor" stroke="none" />
+    <path d="M18 2v20" />
+    <circle cx="10" cy="6" r="2" fill="currentColor" stroke="none" />
+    <path d="M10 8c1 2 2 3 4 3.5" />
+    <path d="M14 11.5 18 9" />
+    <path d="M10 8c-1 2.5-1 5-1 7" />
+    <path d="M9 15 6 19" />
+    <path d="M9 15l5 2" />
   </Svg>
 ));
 
