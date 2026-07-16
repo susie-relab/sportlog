@@ -86,12 +86,15 @@ const NetballIcon = makeIcon(({ size, className }) => (
 // matching the reference more closely than the earlier converging-fan version.
 // Three curved seams, each running from one side of the ball to the other without
 // touching the other two — a cleaner read than the earlier converging pattern.
+// Three vertical seams, each spanning the ball's full height at its own x-position,
+// evenly spaced 5 units apart (7, 12, 17) — computed to touch the circle's own boundary
+// top and bottom rather than an arbitrary curve.
 const VolleyballIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <circle cx="12" cy="12" r="9" />
-    <path d="M4.5 7Q12 4 19.5 7" />
-    <path d="M3 12Q12 16 21 12" />
-    <path d="M4.5 17Q12 20 19.5 17" />
+    <path d="M7 4.5V19.5" />
+    <path d="M12 3V21" />
+    <path d="M17 4.5V19.5" />
   </Svg>
 ));
 
