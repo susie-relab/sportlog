@@ -23,16 +23,22 @@ function makeIcon(render: (props: IconProps) => ReactNode): LucideIcon {
   return ((props: IconProps) => render(props)) as unknown as LucideIcon;
 }
 
+// One figure (head + shoulders), positioned pointing outward from the centre — rotated by
+// 45° increments below to form the ring-of-people "team huddle" silhouette.
+const TEAM_PERSON = (
+  <>
+    <circle cx="12" cy="3.6" r="1.9" />
+    <path d="M8.7 10.6c0-2.1 1.3-3.6 3.3-3.6s3.3 1.5 3.3 3.6v1.1H8.7Z" />
+  </>
+);
+
 const TeamIcon = makeIcon(({ size, className }) => (
-  // A trophy/shield-style badge — reads as "team"/organised group rather than casual friends.
-  <Svg size={size} className={className}>
-    <path d="M7 4h10v6a5 5 0 0 1-10 0V4Z" />
-    <path d="M7 6H4a3 3 0 0 0 3 5" />
-    <path d="M17 6h3a3 3 0 0 1-3 5" />
-    <path d="M12 15v3" />
-    <path d="M9 21h6" />
-    <path d="M10 18h4v3h-4Z" />
-  </Svg>
+  // A ring of 8 people holding hands, viewed from above — reads as "team"/group huddle.
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
+      <g key={deg} transform={`rotate(${deg} 12 12)`}>{TEAM_PERSON}</g>
+    ))}
+  </svg>
 ));
 
 const PartnerIcon = makeIcon(({ size, className }) => (
@@ -99,9 +105,9 @@ const PetsIcon = makeIcon(({ size, className }) => (
 
 export const COMPANION_ICON_OVERRIDES: Record<Companion, LucideIcon> = {
   team: TeamIcon,
-  partner: PartnerIcon,
   friends: FriendsIcon,
   family: FamilyIcon,
   kids: KidsIcon,
   pets: PetsIcon,
+  partner: PartnerIcon,
 };

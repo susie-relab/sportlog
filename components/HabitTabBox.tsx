@@ -442,7 +442,7 @@ export default function HabitTabBox({
 
       <div className="relative text-center mb-4">
         <button
-          onClick={() => setShowEdit(true)}
+          onClick={() => { setShowEdit(true); if (selected) startEditing(selected); }}
           aria-label="Edit habits"
           className="absolute right-0 top-0 p-1.5 rounded-lg text-[#64748B] hover:text-white hover:bg-[#334155]"
         >

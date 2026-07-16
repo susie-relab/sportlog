@@ -102,11 +102,12 @@ export default function HabitMonthCalendar({ habits, logs, onCycle }: Props) {
                 className="absolute inset-0 grid"
                 style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)`, gridTemplateRows: `repeat(${gridSize}, 1fr)`, gap: 1, padding: 3 }}
               >
-                {scheduled.slice(0, 49).map(h => {
+                {/* A skipped habit's circle disappears entirely for that day — same as a habit
+                    that simply isn't scheduled — rather than showing a special marker. */}
+                {scheduled.filter(h => !isSkippedLog(logsByHabitDate.get(`${h.id}|${date}`))).slice(0, 49).map(h => {
                   const log = logsByHabitDate.get(`${h.id}|${date}`);
                   const ratio = completionRatio(h, log);
                   const failed = isFailedLog(log);
-                  const skipped = isSkippedLog(log);
                   return (
                     <div key={h.id} className="flex items-center justify-center min-w-0 min-h-0 p-px">
                       {failed ? (
@@ -115,13 +116,6 @@ export default function HabitMonthCalendar({ habits, logs, onCycle }: Props) {
                           style={{ background: '#E2E8F0', border: `1px solid ${h.color}`, fontSize: '80%' }}
                         >
                           ×
-                        </span>
-                      ) : skipped ? (
-                        <span
-                          className="rounded-full w-full h-full flex items-center justify-center leading-none font-bold text-white"
-                          style={{ background: '#475569', border: `1px solid ${h.color}`, fontSize: '80%' }}
-                        >
-                          –
                         </span>
                       ) : (
                         <span

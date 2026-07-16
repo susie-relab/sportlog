@@ -16,6 +16,7 @@ import ScrollFieldPicker from './ScrollFieldPicker';
 import ImageUploader from './ImageUploader';
 import TagToggleGrid from './TagToggleGrid';
 import { COMPANION_ICON_OVERRIDES } from '@/lib/companionIcons';
+import { CONDITION_ICON_OVERRIDES } from '@/lib/conditionIcons';
 import { openDatePicker, calcAge } from '@/lib/utils';
 import { revertCompletedActivity } from '@/lib/runPlanGenerator';
 import { useAuth } from './AuthProvider';
@@ -552,7 +553,7 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
                     active: companions.includes(key), onToggle: () => toggleCompanion(key),
                   })),
                   (Object.keys(CONDITION_LABELS) as WeatherCondition[]).map(key => ({
-                    key, label: CONDITION_LABELS[key], emoji: CONDITION_EMOJI[key],
+                    key, label: CONDITION_LABELS[key], emoji: CONDITION_EMOJI[key], doodle: CONDITION_ICON_OVERRIDES[key],
                     active: conditions.includes(key), onToggle: () => toggleCondition(key),
                   })),
                 ]}

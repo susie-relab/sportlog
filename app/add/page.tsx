@@ -16,6 +16,7 @@ import {
 } from '@/types';
 import TagToggleGrid from '@/components/TagToggleGrid';
 import { COMPANION_ICON_OVERRIDES } from '@/lib/companionIcons';
+import { CONDITION_ICON_OVERRIDES } from '@/lib/conditionIcons';
 import DistancePicker from '@/components/DistancePicker';
 import ScrollFieldPicker from '@/components/ScrollFieldPicker';
 import ImageUploader from '@/components/ImageUploader';
@@ -758,7 +759,7 @@ export default function AddPage() {
                   active: companions.includes(key), onToggle: () => toggleCompanion(key),
                 })),
                 (Object.keys(CONDITION_LABELS) as WeatherCondition[]).map(key => ({
-                  key, label: CONDITION_LABELS[key], emoji: CONDITION_EMOJI[key],
+                  key, label: CONDITION_LABELS[key], emoji: CONDITION_EMOJI[key], doodle: CONDITION_ICON_OVERRIDES[key],
                   active: conditions.includes(key), onToggle: () => toggleCondition(key),
                 })),
               ]}

@@ -6,6 +6,10 @@ import {
   sessionCount, sessionParts, MAX_SESSIONS_PER_DAY, movePartToDay, updateSessionPart, removeSessionPart,
 } from '@/lib/runPlanGenerator';
 import { sessionColor, sessionTarget, exerciseTypeTag } from './PlanWeekTable';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from './AuthProvider';
+import { Activity, EXERCISE_TYPE_COLORS } from '@/types';
+import { formatDuration, formatDistance } from '@/lib/utils';
 
 interface Props {
   data: PlanData;
@@ -20,6 +24,10 @@ interface Props {
 }
 
 export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAndComplete, cfg }: Props) {
+  const { user } = useAuth();
+  const [assigningPart, setAssigningPart] = useState<number | null>(null);
+  const [recentActivities, setRecentActivities] = useState<Activity[] | null>(null);
+  const [loadingRecent, setLoadingRecent] = useState(false);
   const [targetWeek, setTargetWeek] = useState(selected.week);
   const [pendingDay, setPendingDay] = useState<Weekday | null>(null);
   const [editing, setEditing] = useState(false);
@@ -109,6 +117,32 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
     if (!keepOpen) onClose();
   };
   const makePartRestDay = (i: number) => { onSave(removeSessionPart(data, selected, i)); onClose(); };
+
+  // "Assign an existing activity" — completes the session by linking an activity already
+  // logged (e.g. from the same day), instead of opening the Add form to log a new one.
+  const openAssignPicker = async (partIndex: number) => {
+    setAssigningPart(partIndex);
+    if (recentActivities !== null || !user) return;
+    setLoadingRecent(true);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const cutoffISO = cutoff.toISOString().slice(0, 10);
+    const { data: acts } = await supabase.from('activities').select('*')
+      .eq('user_id', user.id).gte('date', cutoffISO).order('date', { ascending: false }).limit(50);
+    setRecentActivities((acts as Activity[]) || []);
+    setLoadingRecent(false);
+  };
+  const assignActivity = (activity: Activity, partIndex: number) => {
+    const totalMin = activity.duration_minutes + (activity.duration_seconds ? activity.duration_seconds / 60 : 0);
+    const patch = (s: Session): Session => ({
+      ...s, completed: true, completedActivityId: activity.id,
+      completedDistanceKm: activity.distance_km ?? null, completedTimeMin: Math.round(totalMin) || null,
+      completedEffort: activity.effort,
+    });
+    setAssigningPart(null);
+    if (sessionParts(sel).length > 1) mutatePart(partIndex, patch);
+    else mutateSelf(patch);
+  };
   const startEditingPart = (i: number) => {
     const p = sessionParts(sel)[i];
     setEditTitle(p.title);
@@ -214,6 +248,9 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
                           {onLogAndComplete && isRunSession(p) && !p.completed && (
                             <button onClick={() => { onLogAndComplete(p, i); onClose(); }} className="btn-primary w-full text-sm py-1.5">✓ Log &amp; Complete</button>
                           )}
+                          {onLogAndComplete && isRunSession(p) && !p.completed && (
+                            <button onClick={() => openAssignPicker(i)} className="btn-secondary w-full text-xs py-1.5">☑ Assign an existing activity</button>
+                          )}
                           {onLogAndComplete && isRunSession(p) && (
                             <button onClick={() => mutatePart(i, s => ({ ...s, completed: !s.completed }))} className="btn-secondary w-full text-xs py-1.5">
                               {p.completed ? 'Mark as not done' : 'Mark done (without logging)'}
@@ -309,6 +346,9 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
                   {onLogAndComplete && isRunSession(sel) && !sel.completed && (
                     <button onClick={() => { onLogAndComplete(sel, 0); onClose(); }} className="btn-primary w-full">✓ Log &amp; Complete</button>
                   )}
+                  {onLogAndComplete && isRunSession(sel) && !sel.completed && (
+                    <button onClick={() => openAssignPicker(0)} className="btn-secondary w-full text-sm">☑ Assign an existing activity</button>
+                  )}
                   {onLogAndComplete && isRunSession(sel) && (
                     <button onClick={() => mutateSelf(s => ({ ...s, completed: !s.completed }))} className="btn-secondary w-full">
                       {sel.completed ? 'Mark as not done' : 'Mark done (without logging)'}
@@ -382,6 +422,39 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
           </>
         )}
       </div>
+
+      {assigningPart !== null && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60" onClick={() => setAssigningPart(null)}>
+          <div className="card w-full sm:w-96 max-h-[75vh] overflow-y-auto rounded-b-none sm:rounded-b-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-white">Assign an Existing Activity</span>
+              <button onClick={() => setAssigningPart(null)} className="p-1 rounded-lg hover:bg-[#334155] text-[#94A3B8]">✕</button>
+            </div>
+            {loadingRecent && <p className="text-xs text-[#64748B]">Loading...</p>}
+            {!loadingRecent && recentActivities?.length === 0 && (
+              <p className="text-xs text-[#64748B]">No activities logged in the last 30 days.</p>
+            )}
+            <div className="flex flex-col gap-2">
+              {recentActivities?.map(a => (
+                <button
+                  key={a.id}
+                  onClick={() => assignActivity(a, assigningPart)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#334155] hover:border-[#475569] text-left"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: EXERCISE_TYPE_COLORS[a.exercise_type] }} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm text-white truncate">{a.name}</span>
+                    <span className="block text-xs text-[#64748B]">
+                      {a.date.split('-').reverse().join('/')} · {formatDuration(a.duration_minutes)}
+                      {a.distance_km ? ` · ${formatDistance(a.distance_km, a.exercise_type)}` : ''}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
