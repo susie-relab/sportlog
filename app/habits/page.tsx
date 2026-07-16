@@ -213,7 +213,7 @@ export default function HabitsPage() {
   const createHabit = async (fields: {
     name: string; category: string; color: string; frequency_type: HabitFrequencyType;
     frequency_days: string | null; frequency_interval_days: number | null; target_per_period: number;
-    start_date?: string;
+    start_date?: string; time_of_day?: string | null;
   }) => {
     if (!user) return;
     setSaving(true);
@@ -228,6 +228,7 @@ export default function HabitsPage() {
       frequency_interval_days: fields.frequency_interval_days,
       target_per_period: fields.target_per_period,
       start_date: fields.start_date || todayLocalISO(),
+      time_of_day: fields.time_of_day || null,
       sort_order: habits.length,
       archived: false,
     }).select().single();

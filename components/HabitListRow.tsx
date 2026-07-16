@@ -4,7 +4,7 @@ import { SkipForward } from 'lucide-react';
 import { Habit, HabitLog, HabitFrequencyType, HabitColorKey, HABIT_COLORS } from '@/types';
 import { todayLocalISO } from '@/lib/utils';
 import { periodProgress } from '@/lib/habitStats';
-import { FrequencyFields, PencilIcon } from '@/components/HabitTabBox';
+import { FrequencyFields, PencilIcon, TimeOfDayField } from '@/components/HabitTabBox';
 
 interface CategoryOption { key: string; label: string; emoji: string }
 
@@ -46,6 +46,7 @@ export default function HabitListRow({ habit, logs, categories, onIncrement, onD
   const [days, setDays] = useState<string[]>(habit.frequency_days ? habit.frequency_days.split(',') : []);
   const [intervalDays, setIntervalDays] = useState(String(habit.frequency_interval_days || 2));
   const [target, setTarget] = useState(String(habit.target_per_period));
+  const [timeOfDay, setTimeOfDay] = useState(habit.time_of_day || '');
   const [revealed, setRevealed] = useState<RevealSection>(null);
   const [nameValue, setNameValue] = useState(habit.name);
 
@@ -64,6 +65,7 @@ const toggleEditor = () => {
     setDays(habit.frequency_days ? habit.frequency_days.split(',') : []);
     setIntervalDays(String(habit.frequency_interval_days || 2));
     setTarget(String(habit.target_per_period));
+    setTimeOfDay(habit.time_of_day || '');
     setNameValue(habit.name);
     setRevealed(null);
     setEditing(true);
@@ -80,6 +82,7 @@ const toggleEditor = () => {
       frequency_days: frequency === 'custom_days' ? (days.join(',') || null) : null,
       frequency_interval_days: frequency === 'every_n_days' ? (parseInt(intervalDays) || 2) : null,
       target_per_period: parseInt(target) || 1,
+      time_of_day: timeOfDay || null,
     });
     setEditing(false);
   };
@@ -257,6 +260,7 @@ const toggleEditor = () => {
             intervalDays={intervalDays} setIntervalDays={setIntervalDays}
             target={target} setTarget={setTarget}
           />
+          <TimeOfDayField value={timeOfDay} setValue={setTimeOfDay} />
           <div className="flex gap-2">
             <button onClick={save} className="btn-primary flex-1">Save</button>
             <button onClick={() => setEditing(false)} className="text-sm text-[#64748B] hover:text-white px-3">Cancel</button>

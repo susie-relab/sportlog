@@ -566,6 +566,7 @@ export interface Habit {
   sort_order: number;
   archived: boolean;
   start_date?: string | null; // YYYY-MM-DD — habit doesn't apply/show before this date; null = always applied
+  time_of_day?: string | null; // 'HH:00' 24hr, hour increments only — a reminder/planning cue, not enforced
   created_at: string;
 }
 

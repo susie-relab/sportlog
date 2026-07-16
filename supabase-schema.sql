@@ -330,3 +330,7 @@ create index if not exists training_plans_user on training_plans(user_id, create
 -- Migration: habit start date — a habit doesn't apply/show on the calendar or progress bars
 -- before this date. Null means it always applied (existing habits are unaffected).
 -- alter table habits add column if not exists start_date date;
+
+-- Migration: habit time-of-day — an optional reminder/planning cue (hour increments only,
+-- e.g. '08:00'), not enforced anywhere; null means no time set.
+-- alter table habits add column if not exists time_of_day text;

@@ -107,6 +107,24 @@ export function totalCompletions(logs: HabitLog[]): number {
   return logs.reduce((s, l) => s + Math.max(0, l.count), 0);
 }
 
+/** The habit's target as shown on its stats overview — for 'custom_days' the stored
+ *  target_per_period stays a per-day amount (so editing the goal doesn't need to know how
+ *  many days are selected), but the overview shows the resulting weekly total instead, e.g.
+ *  4/day on Mon+Tue+Wed reads as "12 / week". Every other frequency just shows its own unit. */
+export function displayTarget(habit: Habit): { amount: number; unit: string } {
+  if (habit.frequency_type === 'custom_days') {
+    const dayCount = habit.frequency_days ? habit.frequency_days.split(',').filter(Boolean).length : 0;
+    return { amount: habit.target_per_period * dayCount, unit: 'week' };
+  }
+  switch (habit.frequency_type) {
+    case 'every_n_days': return { amount: habit.target_per_period, unit: `${habit.frequency_interval_days || 2} days` };
+    case 'weekly': return { amount: habit.target_per_period, unit: 'week' };
+    case 'fortnightly': return { amount: habit.target_per_period, unit: 'fortnight' };
+    case 'monthly': return { amount: habit.target_per_period, unit: 'month' };
+    default: return { amount: habit.target_per_period, unit: 'day' };
+  }
+}
+
 /** % of scheduled days fully completed within an inclusive date range. */
 export function completionPctInRange(habit: Habit, logs: HabitLog[], startISO: string, endISO: string): number {
   const logsByDate = new Map(logs.map(l => [l.date, l]));

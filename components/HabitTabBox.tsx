@@ -6,7 +6,7 @@ import {
   HABIT_COLORS, HABIT_FREQUENCY_LABELS, isHabitScheduledOn,
 } from '@/types';
 import { todayLocalISO } from '@/lib/utils';
-import { getMonthDays, completionPctInRange, completionRatio, habitDayStats, addDaysISO } from '@/lib/habitStats';
+import { getMonthDays, completionPctInRange, completionRatio, habitDayStats, addDaysISO, displayTarget } from '@/lib/habitStats';
 
 interface CategoryDef { key: string; label: string; emoji: string; isCustom: boolean; habitCount: number }
 
@@ -28,7 +28,7 @@ interface Props {
   onCreateHabit: (fields: {
     name: string; color: string; frequency_type: HabitFrequencyType;
     frequency_days: string | null; frequency_interval_days: number | null; target_per_period: number;
-    start_date: string;
+    start_date: string; time_of_day: string | null;
   }) => void;
   onReorderHabit: (fromId: string, toId: string) => void;
   onUpdateHabit: (id: string, patch: Partial<Habit>) => void;
@@ -102,6 +102,26 @@ export function resolveStartDate(option: StartOption, dateValue: string, todayIS
   if (option === 'today') return todayISO;
   if (option === 'tomorrow') return addDaysISO(todayISO, 1);
   return dateValue || todayISO;
+}
+
+const TIME_OF_DAY_OPTIONS = Array.from({ length: 24 }, (_, hour) => {
+  const label = hour === 0 ? '12:00 AM' : hour < 12 ? `${hour}:00 AM` : hour === 12 ? '12:00 PM' : `${hour - 12}:00 PM`;
+  return { value: `${String(hour).padStart(2, '0')}:00`, label };
+});
+
+/** Optional hour-increment time-of-day cue for a habit (e.g. "take vitamins at 8am") — purely
+ *  informational, not enforced anywhere, so a plain select is enough (no need for a full
+ *  scroll-picker like Distance/Elevation). */
+export function TimeOfDayField({ value, setValue }: { value: string; setValue: (v: string) => void }) {
+  return (
+    <div>
+      <label className="label">Time of day (optional)</label>
+      <select className="input" value={value} onChange={e => setValue(e.target.value)}>
+        <option value="">No specific time</option>
+        {TIME_OF_DAY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </div>
+  );
 }
 
 /** Frequency + goal-amount picker shared by the "add a habit" and per-habit "edit" forms. */
@@ -216,6 +236,7 @@ export default function HabitTabBox({
   const [newTarget, setNewTarget] = useState('1');
   const [newStartOption, setNewStartOption] = useState<StartOption>('today');
   const [newStartDate, setNewStartDate] = useState('');
+  const [newTimeOfDay, setNewTimeOfDay] = useState('');
 
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState<HabitColorKey>('blue');
@@ -223,6 +244,7 @@ export default function HabitTabBox({
   const [editDays, setEditDays] = useState<string[]>([]);
   const [editInterval, setEditInterval] = useState('2');
   const [editTarget, setEditTarget] = useState('1');
+  const [editTimeOfDay, setEditTimeOfDay] = useState('');
 
   const [renamingKey, setRenamingKey] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -244,7 +266,7 @@ export default function HabitTabBox({
 
   const resetNewForm = () => {
     setNewName(''); setNewColor('blue'); setNewFrequency('daily'); setNewDays([]); setNewInterval('2'); setNewTarget('1');
-    setNewStartOption('today'); setNewStartDate('');
+    setNewStartOption('today'); setNewStartDate(''); setNewTimeOfDay('');
   };
 
   const submitNew = () => {
@@ -257,6 +279,7 @@ export default function HabitTabBox({
       frequency_interval_days: newFrequency === 'every_n_days' ? (parseInt(newInterval) || 2) : null,
       target_per_period: parseInt(newTarget) || 1,
       start_date: resolveStartDate(newStartOption, newStartDate, todayISO),
+      time_of_day: newTimeOfDay || null,
     });
     resetNewForm();
   };
@@ -270,6 +293,7 @@ export default function HabitTabBox({
     setEditDays(h.frequency_days ? h.frequency_days.split(',') : []);
     setEditInterval(String(h.frequency_interval_days || 2));
     setEditTarget(String(h.target_per_period));
+    setEditTimeOfDay(h.time_of_day || '');
   };
 
   // Press-and-hold drag to reorder category tabs — a tap (no movement) selects the category
@@ -385,6 +409,7 @@ export default function HabitTabBox({
       frequency_days: editFrequency === 'custom_days' ? (editDays.join(',') || null) : null,
       frequency_interval_days: editFrequency === 'every_n_days' ? (parseInt(editInterval) || 2) : null,
       target_per_period: parseInt(editTarget) || 1,
+      time_of_day: editTimeOfDay || null,
     });
     setExpandedId(null);
   };
@@ -456,9 +481,12 @@ export default function HabitTabBox({
           <PencilIcon />
         </button>
         <p className="text-xs text-[#64748B] mb-0.5">Repeat</p>
-        <p className="text-sm font-medium text-white mb-3">{frequencyLabel(selected)}</p>
+        <p className="text-sm font-medium text-white mb-3">
+          {frequencyLabel(selected)}
+          {selected.time_of_day && <span className="text-[#64748B] font-normal"> · {TIME_OF_DAY_OPTIONS.find(o => o.value === selected.time_of_day)?.label}</span>}
+        </p>
         <p className="text-xs text-[#64748B] mb-0.5">Target</p>
-        <p className="text-sm font-medium text-white">{selected.target_per_period} / {targetUnitLabel(selected.frequency_type, String(selected.frequency_interval_days || 2))}</p>
+        <p className="text-sm font-medium text-white">{displayTarget(selected).amount} / {displayTarget(selected).unit}</p>
       </div>
 
       <div className="flex flex-col items-center gap-2 mb-5 px-3 py-2 rounded-lg bg-black/20">
@@ -611,6 +639,7 @@ export default function HabitTabBox({
                         intervalDays={editInterval} setIntervalDays={setEditInterval}
                         target={editTarget} setTarget={setEditTarget}
                       />
+                      <TimeOfDayField value={editTimeOfDay} setValue={setEditTimeOfDay} />
                       <div className="flex gap-2">
                         <button onClick={() => saveEditing(h.id)} className="btn-primary flex-1">Save</button>
                         <button onClick={() => { onArchiveHabit(h.id); setExpandedId(null); }} className="text-sm text-[#94A3B8] hover:text-white px-2">Pause</button>
@@ -645,6 +674,7 @@ export default function HabitTabBox({
                 intervalDays={newInterval} setIntervalDays={setNewInterval}
                 target={newTarget} setTarget={setNewTarget}
               />
+              <TimeOfDayField value={newTimeOfDay} setValue={setNewTimeOfDay} />
               <StartDateFields option={newStartOption} setOption={setNewStartOption} dateValue={newStartDate} setDateValue={setNewStartDate} />
               <button onClick={submitNew} className="btn-primary w-full">+ Add Habit</button>
             </div>
