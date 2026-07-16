@@ -67,7 +67,20 @@ const TennisIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A netball hoop (open ring on a net, no backboard) with the ball arriving from above —
+// distinguishes it from Basketball's backboard+hoop and Volleyball's seamed ball.
 const NetballIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <ellipse cx="9" cy="9" rx="6" ry="2" />
+    <path d="M3.5 9c0 3 1 7 2.5 10M14.5 9c0 3-1 7-2.5 10" />
+    <path d="M5 11.5l2.5 6.5M7 10.5l2 7.5M9 10l1 8M11 10.5l-1 7.5M13 11.5l-2.5 6.5" />
+    <circle cx="17" cy="5" r="4" />
+  </Svg>
+));
+
+// The ball's classic seamed panels — moved here from Netball so Volleyball gets the more
+// recognisable "ball" glyph and Netball gets its own hoop-and-net glyph instead.
+const VolleyballIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <circle cx="12" cy="12" r="9" />
     <path d="M12 3a9 9 0 0 0-6.36 15.36" />
@@ -75,15 +88,6 @@ const NetballIcon = makeIcon(({ size, className }) => (
     <path d="M4.5 8.5a9 9 0 0 0 0 7" />
     <path d="M19.5 8.5a9 9 0 0 1 0 7" />
     <path d="M8 20.5a9 9 0 0 0 8 0" />
-  </Svg>
-));
-
-const VolleyballIcon = makeIcon(({ size, className }) => (
-  <Svg size={size} className={className}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M12 3C9 6 9 18 12 21" />
-    <path d="M4.5 7.5C9 9 15 9 19.5 7.5" />
-    <path d="M4.5 16.5C9 15 15 15 19.5 16.5" />
   </Svg>
 ));
 
@@ -97,23 +101,32 @@ const TurboTouchIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// Two small paddle-shaped racquets crossing each other, rather than one racquet + ball —
+// reads more clearly as "padel" (a doubles game played with two solid paddles).
 const PadelIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <rect x="5" y="3" width="8" height="11" rx="4" />
-    <path d="M9 14V21" />
-    <circle cx="18" cy="18" r="2" fill="currentColor" stroke="none" />
-    <circle cx="7" cy="7" r="0.6" fill="currentColor" stroke="none" />
-    <circle cx="11" cy="7" r="0.6" fill="currentColor" stroke="none" />
-    <circle cx="9" cy="10" r="0.6" fill="currentColor" stroke="none" />
+    <g transform="rotate(-25 12 12)">
+      <rect x="7" y="2.5" width="7" height="9" rx="3.5" />
+      <path d="M10.5 11.5v6.5" />
+    </g>
+    <g transform="rotate(25 12 12)">
+      <rect x="10" y="2.5" width="7" height="9" rx="3.5" />
+      <path d="M13.5 11.5v6.5" />
+    </g>
   </Svg>
 ));
 
+// A running figure carrying the ball under one arm, per the reference photo, instead of the
+// generic ball-with-motion-lines glyph shared by other touch/oval-ball sports.
 const TouchRugbyIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <ellipse cx="10" cy="13" rx="7" ry="4.5" transform="rotate(-20 10 13)" />
-    <path d="M5 12 15 14" />
-    <path d="M18 4V12" />
-    <path d="M18 4 22 6 18 8Z" fill="currentColor" stroke="none" />
+    <circle cx="14" cy="4" r="2" fill="currentColor" stroke="none" />
+    <path d="M14 6v5.5" />
+    <path d="M14 8l-4.5 2" />
+    <path d="M14 8l3 1.5-1 2" />
+    <path d="M14 11.5l-4 8" />
+    <path d="M14 11.5l3.5 7" />
+    <ellipse cx="8.5" cy="11.5" rx="2.4" ry="1.5" transform="rotate(-25 8.5 11.5)" fill="currentColor" stroke="none" />
   </Svg>
 ));
 
@@ -127,22 +140,29 @@ const BasketballIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// Three stumps with bails on top, next to the ball — no bat, since a bowled-out wicket reads
+// more distinctly as "cricket" than a bat silhouette shared with other bat-and-ball sports.
 const CricketIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M9 3 6 12" strokeWidth={3.5} />
-    <path d="M6 12 4 20" />
-    <circle cx="19" cy="6" r="2" fill="currentColor" stroke="none" />
+    <path d="M6 20V9" />
+    <path d="M10 20V9" />
+    <path d="M14 20V9" />
+    <path d="M6 9h4M10 9h4" />
+    <circle cx="19.5" cy="16" r="2" fill="currentColor" stroke="none" />
   </Svg>
 ));
 
+// A proper shuttlecock: rounded cork base with the feather skirt fanning out to a wider rim,
+// instead of a plain flat-sided triangle.
 const BadmintonIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M12 3 8 13h8Z" />
-    <circle cx="12" cy="3" r="2" fill="currentColor" stroke="none" />
-    <path d="M8 13 6 20" />
-    <path d="M10 13 8.5 20" />
-    <path d="M14 13 16 20" />
-    <path d="M12 13 13.5 20" />
+    <circle cx="12" cy="4.5" r="2" fill="currentColor" stroke="none" />
+    <path d="M12 6.5 6 16" />
+    <path d="M12 6.5 9 17" />
+    <path d="M12 6.5 12 17.5" />
+    <path d="M12 6.5 15 17" />
+    <path d="M12 6.5 18 16" />
+    <path d="M6 16h12" />
   </Svg>
 ));
 
@@ -153,18 +173,25 @@ const RugbyIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A disc with an inner rim plus a couple of upward motion-trail swooshes, per the reference —
+// reads as a disc actively in flight rather than sitting flat.
 const FrisbeeIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <ellipse cx="12" cy="12" rx="9" ry="4" />
-    <path d="M4 10.5C8 8 16 8 20 10.5" />
+    <ellipse cx="14" cy="15" rx="7" ry="3.2" />
+    <ellipse cx="14" cy="15" rx="3.3" ry="1.5" />
+    <path d="M9.5 10.5c-2-2-2.8-4.2-1.8-6.2" />
+    <path d="M6.5 12.5c-2.3-2-3.2-4.4-2.2-6.8" />
   </Svg>
 ));
 
+// The table (with net) instead of a bat+ball — every other racquet sport here already gets
+// its own racquet glyph, so the table is the more distinctive choice for "table tennis".
 const TableTennisIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <circle cx="9" cy="8" r="5.5" />
-    <path d="M9 13.5V21" />
-    <circle cx="18" cy="18" r="2" fill="currentColor" stroke="none" />
+    <rect x="3" y="9" width="18" height="7" rx="1" />
+    <path d="M12 9v7" />
+    <path d="M6 16v3" />
+    <path d="M18 16v3" />
   </Svg>
 ));
 
