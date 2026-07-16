@@ -23,20 +23,18 @@ function makeIcon(render: (props: IconProps) => ReactNode): LucideIcon {
   return ((props: IconProps) => render(props)) as unknown as LucideIcon;
 }
 
-// One stick figure (head + torso + splayed arms/legs), positioned pointing outward from the
-// centre — rotated by 360/7 increments below to form a ring of 7 people, viewed from above.
+// Just a (larger) head with a thin line running inward to the centre — rotated by 360/7
+// increments below to form a ring of 7 heads all connecting to a shared middle point.
 const TEAM_PERSON = (
   <>
-    <circle cx="12" cy="3.4" r="1.7" fill="currentColor" stroke="none" />
-    <path d="M12 5.8v4.2" />
-    <path d="M12 7.2 9.2 9.6M12 7.2l2.8 2.4" />
-    <path d="M12 10 9.3 13M12 10l2.7 3" />
+    <circle cx="12" cy="4" r="2.6" fill="currentColor" stroke="none" />
+    <path d="M12 6.7V12" />
   </>
 );
 
 const TeamIcon = makeIcon(({ size, className }) => (
-  // A ring of 7 stick figures, viewed from above — reads as "team"/group huddle.
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className={className}>
+  // A ring of 7 heads meeting at the centre — reads as "team"/group huddle.
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.3} strokeLinecap="round" strokeLinejoin="round" className={className}>
     {[0, 1, 2, 3, 4, 5, 6].map(i => (
       <g key={i} transform={`rotate(${(i * 360) / 7} 12 12)`}>{TEAM_PERSON}</g>
     ))}

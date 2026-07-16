@@ -23,13 +23,15 @@ function makeIcon(render: (props: IconProps) => ReactNode): LucideIcon {
   return ((props: IconProps) => render(props)) as unknown as LucideIcon;
 }
 
+// A deck/belt with a front upright rising to a console handlebar, viewed from the side —
+// clearer as a treadmill silhouette than a bare diagonal line with a small foot mark.
 const TreadmillIcon = makeIcon(({ size, className, style }) => (
   <Svg size={size} className={className} style={style}>
-    <path d="M2 19h11" />
-    <path d="M9 19c0-3.2 2.8-6.3 6.8-8.3" />
-    <path d="M14.5 12.2l2.3-3.4" />
-    <path d="M16.8 8.8h3.5" />
-    <path d="M12.5 19v-2.2" />
+    <rect x="2" y="16" width="14" height="3" rx="1.5" />
+    <path d="M13.5 16v-3.2a2 2 0 0 1 2-2h1" />
+    <path d="M16.5 10.8v-4" />
+    <path d="M14.3 6.8h4.4" />
+    <path d="M5 19v2M10 19v2" />
   </Svg>
 ));
 

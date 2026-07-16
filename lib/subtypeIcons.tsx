@@ -243,21 +243,32 @@ const HyroxIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A dumbbell reads more clearly as "arms" at small sizes than an abstract flexed-bicep blob.
 const ArmsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M6 20c-2-4-2-9 1-12 2-2 5-2 6 0 1 2 0 4-2 5 3 0 5 2 5 5 0 2-1 4-3 4" />
+    <path d="M7 12h10" />
+    <rect x="2.5" y="9" width="4" height="6" rx="1.5" />
+    <rect x="17.5" y="9" width="4" height="6" rx="1.5" />
+    <path d="M4.5 10v4M19.5 10v4" />
   </Svg>
 ));
 
+// Two legs from a hip bar down to the feet, rather than a single ambiguous silhouette shape.
 const LegsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M10 3h4l1 8-2 10h-3l-1-7-2 7H4l3-11Z" />
+    <path d="M9 3h5" />
+    <path d="M9 3v7l-2 11h3l1.5-9 1.5 9h3l-2-11V3" />
   </Svg>
 ));
 
+// Shoulder arc plus trapezius/lat curves flowing down to the sides and a spine down the
+// centre, instead of a single bare arc — reads as a back, not just a rounded line.
 const BackShouldersIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M4 20c0-6 3-9 8-9s8 3 8 9" />
+    <path d="M4 9c0-3 3.5-6 8-6s8 3 8 6" />
+    <path d="M4 9c-1 4 0 8 2 11" />
+    <path d="M20 9c1 4 0 8-2 11" />
+    <path d="M12 3v18" />
   </Svg>
 ));
 
@@ -270,12 +281,14 @@ const CoreIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A rowing-machine side view: rail, seat on the rail, flywheel at the front, and the
+// handle cable — clearer than the previous abstract rail+arrow shape.
 const RowIndoorIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M2 20h20" />
-    <rect x="9" y="16" width="4" height="3" rx="1" />
-    <path d="M13 17 20 6" />
-    <path d="M18 8h4" />
+    <path d="M2 20 18 5" />
+    <rect x="7.3" y="14.3" width="4" height="2.6" rx="1" transform="rotate(-40 9.3 15.6)" />
+    <circle cx="19.5" cy="4.5" r="2.8" />
+    <path d="M11.5 13.5 16.8 8.2" />
   </Svg>
 ));
 
