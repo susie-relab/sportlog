@@ -35,6 +35,13 @@ const TeamIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+const PartnerIcon = makeIcon(({ size, className }) => (
+  // A simple filled heart — reads as "with partner" distinct from the friends/family figures.
+  <Svg size={size} className={className}>
+    <path d="M12 20.5s-7.2-4.4-9.6-8.7C.8 8.2 2.4 4 6.4 4c2 0 3.6 1.1 5.6 3.4C14 5.1 15.6 4 17.6 4c4 0 5.6 4.2 4 7.8-2.4 4.3-9.6 8.7-9.6 8.7Z" fill="currentColor" stroke="none" />
+  </Svg>
+));
+
 const FriendsIcon = makeIcon(({ size, className }) => (
   // Three stick figures holding hands — the outer two joining the middle one at the hand.
   <Svg size={size} className={className}>
@@ -92,6 +99,7 @@ const PetsIcon = makeIcon(({ size, className }) => (
 
 export const COMPANION_ICON_OVERRIDES: Record<Companion, LucideIcon> = {
   team: TeamIcon,
+  partner: PartnerIcon,
   friends: FriendsIcon,
   family: FamilyIcon,
   kids: KidsIcon,

@@ -40,15 +40,23 @@ export function isFailedLog(log: HabitLog | undefined): boolean {
   return log?.count === -1;
 }
 
+/** A day explicitly "skipped" — stored as the sentinel count -2. Unlike a fail, a skip is an
+ *  excused absence: it doesn't break a streak or use up the streak freeze, same as a day the
+ *  habit isn't scheduled on at all. */
+export function isSkippedLog(log: HabitLog | undefined): boolean {
+  return log?.count === -2;
+}
+
 const isDone = (habit: Habit, logsByDate: Map<string, HabitLog>, dateISO: string) => {
   const log = logsByDate.get(dateISO);
   return !!log && log.count >= habit.target_per_period;
 };
 
 /** Current consecutive-day streak of fully-completed scheduled days, walking backward from
- *  today. A day the habit isn't scheduled on doesn't break the streak, it's just skipped.
- *  A "streak freeze" grants one missed scheduled day of grace per streak — that single miss
- *  doesn't reset the count to 0, it just doesn't add to it either. */
+ *  today. A day the habit isn't scheduled on doesn't break the streak, it's just skipped over —
+ *  and neither does a day explicitly marked "skip for today". A "streak freeze" grants one
+ *  missed scheduled day of grace per streak — that single miss doesn't reset the count to 0,
+ *  it just doesn't add to it either. */
 export function currentStreak(habit: Habit, logs: HabitLog[], todayISO: string): number {
   const logsByDate = new Map(logs.map(l => [l.date, l]));
   let streak = 0;
@@ -59,7 +67,9 @@ export function currentStreak(habit: Habit, logs: HabitLog[], todayISO: string):
     cursor = addDaysISO(cursor, -1);
   }
   for (let i = 0; i < 3650; i++) {
-    if (!isHabitScheduledOn(habit, cursor)) { cursor = addDaysISO(cursor, -1); continue; }
+    if (!isHabitScheduledOn(habit, cursor) || isSkippedLog(logsByDate.get(cursor))) {
+      cursor = addDaysISO(cursor, -1); continue;
+    }
     if (!isDone(habit, logsByDate, cursor)) {
       if (freezesLeft > 0) { freezesLeft--; cursor = addDaysISO(cursor, -1); continue; }
       break;
@@ -80,7 +90,7 @@ export function bestStreak(habit: Habit, logs: HabitLog[]): number {
   let best = 0, running = 0;
   let cursor = firstDate;
   while (cursor <= lastDate) {
-    if (!isHabitScheduledOn(habit, cursor)) { cursor = addDaysISO(cursor, 1); continue; }
+    if (!isHabitScheduledOn(habit, cursor) || isSkippedLog(logsByDate.get(cursor))) { cursor = addDaysISO(cursor, 1); continue; }
     if (isDone(habit, logsByDate, cursor)) {
       running++;
       best = Math.max(best, running);
@@ -103,7 +113,7 @@ export function completionPctInRange(habit: Habit, logs: HabitLog[], startISO: s
   let scheduled = 0, done = 0;
   let cursor = startISO;
   while (cursor <= endISO) {
-    if (isHabitScheduledOn(habit, cursor)) {
+    if (isHabitScheduledOn(habit, cursor) && !isSkippedLog(logsByDate.get(cursor))) {
       scheduled++;
       if (isDone(habit, logsByDate, cursor)) done++;
     }
@@ -188,32 +198,37 @@ export function periodProgress(habit: Habit, logs: HabitLog[], todayISO: string)
 export interface HabitDayStats {
   currentStreak: number;
   longestStreak: number;
-  daysCompleted: number;
-  daysFailed: number;
+  daysAchieved: number;
+  daysPartial: number;
+  daysIncomplete: number;
   daysSkipped: number;
   daysStacked: number;
 }
 
-/** Day-by-day breakdown since the habit's first log (or today, if none yet): Completed (hit
- *  target that day), Failed (scheduled but missed), Skipped (not scheduled that day at all —
- *  e.g. an off-day for a custom-days habit), and Stacked (over-achieved beyond the target). */
+/** Day-by-day breakdown since the habit's first log (or today, if none yet): Achieved (hit
+ *  target that day), Partly Done (logged something but short of target), Incomplete (nothing
+ *  logged, or explicitly marked "didn't happen"), Skipped (not scheduled, or explicitly
+ *  skipped for the day), and Stacked (over-achieved beyond the target). */
 export function habitDayStats(habit: Habit, logs: HabitLog[], todayISO: string): HabitDayStats {
   const logsByDate = new Map(logs.map(l => [l.date, l]));
   const sortedDates = [...logsByDate.keys()].sort();
   const startISO = sortedDates.length > 0 ? sortedDates[0] : todayISO;
 
-  let daysCompleted = 0, daysFailed = 0, daysSkipped = 0, daysStacked = 0;
+  let daysAchieved = 0, daysPartial = 0, daysIncomplete = 0, daysSkipped = 0, daysStacked = 0;
   let cursor = startISO;
   while (cursor <= todayISO) {
     const scheduled = isHabitScheduledOn(habit, cursor);
-    const count = logsByDate.get(cursor)?.count || 0;
-    if (!scheduled) {
+    const log = logsByDate.get(cursor);
+    const count = log?.count || 0;
+    if (!scheduled || isSkippedLog(log)) {
       daysSkipped++;
     } else if (count >= habit.target_per_period) {
-      daysCompleted++;
+      daysAchieved++;
       if (count > habit.target_per_period) daysStacked++;
+    } else if (count > 0) {
+      daysPartial++;
     } else {
-      daysFailed++;
+      daysIncomplete++;
     }
     cursor = addDaysISO(cursor, 1);
   }
@@ -221,6 +236,6 @@ export function habitDayStats(habit: Habit, logs: HabitLog[], todayISO: string):
   return {
     currentStreak: currentStreak(habit, logs, todayISO),
     longestStreak: bestStreak(habit, logs),
-    daysCompleted, daysFailed, daysSkipped, daysStacked,
+    daysAchieved, daysPartial, daysIncomplete, daysSkipped, daysStacked,
   };
 }

@@ -98,17 +98,6 @@ export default function HabitsPage() {
     persistCategoryOrder(reordered);
   };
 
-  // Up/down in the "Manage Categories" panel — swaps with the immediate neighbour.
-  const moveCategoryOrder = (key: string, direction: 'up' | 'down') => {
-    const allKeys = allCategoryDefs.map(d => d.key);
-    const idx = allKeys.indexOf(key);
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (idx === -1 || swapIdx < 0 || swapIdx >= allKeys.length) return;
-    const reordered = [...allKeys];
-    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
-    persistCategoryOrder(reordered);
-  };
-
   const renameCategory = async (key: string, newName: string) => {
     setCustomCategories(prev => prev.map(c => c.id === key ? { ...c, name: newName } : c));
     await supabase.from('habit_categories').update({ name: newName }).eq('id', key);
@@ -293,22 +282,6 @@ export default function HabitsPage() {
 
   // Up/down in the tab box's edit panel — moves a habit past its nearest neighbour *within
   // the same category*, skipping over any other categories' habits interleaved between them.
-  const moveHabit = (id: string, direction: 'up' | 'down') => {
-    const idx = habits.findIndex(h => h.id === id);
-    if (idx === -1) return;
-    const category = habits[idx].category;
-    let swapIdx = -1;
-    if (direction === 'up') {
-      for (let i = idx - 1; i >= 0; i--) { if (habits[i].category === category) { swapIdx = i; break; } }
-    } else {
-      for (let i = idx + 1; i < habits.length; i++) { if (habits[i].category === category) { swapIdx = i; break; } }
-    }
-    if (swapIdx === -1) return;
-    const reordered = [...habits];
-    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
-    persistHabitOrder(reordered);
-  };
-
   // Press-and-hold drag reorder on the flat habit list below — reorders across categories too.
   const reorderAllHabits = (fromId: string, toId: string) => {
     const from = habits.findIndex(h => h.id === fromId);
@@ -425,27 +398,30 @@ export default function HabitsPage() {
     logHabit(habit, todayLocalISO(), Math.max(0, current - 1));
   };
 
-  // "Didn't happen" — an explicit fail for today, stored as the sentinel count -1 so it's
-  // distinguishable from a day that's simply not logged yet. Tapping again clears it.
-  const markFailedToday = async (habit: Habit) => {
+  // Shared by "Didn't happen" (-1) and "Skip for today" (-2) — both are sentinel counts
+  // distinguishing an explicit mark from a day that's simply not logged yet. Tapping the same
+  // sentinel again clears it back to unlogged.
+  const setSentinelToday = async (habit: Habit, sentinel: -1 | -2) => {
     if (!user) return;
     const todayISO = todayLocalISO();
     const existing = logsByHabit.get(habit.id)?.find(l => l.date === todayISO);
-    if (existing?.count === -1) {
+    if (existing?.count === sentinel) {
       setLogs(prev => prev.filter(l => l.id !== existing.id));
       await supabase.from('habit_logs').delete().eq('id', existing.id);
       return;
     }
     if (existing) {
-      setLogs(prev => prev.map(l => l.id === existing.id ? { ...l, count: -1 } : l));
-      await supabase.from('habit_logs').update({ count: -1 }).eq('id', existing.id);
+      setLogs(prev => prev.map(l => l.id === existing.id ? { ...l, count: sentinel } : l));
+      await supabase.from('habit_logs').update({ count: sentinel }).eq('id', existing.id);
     } else {
       const { data } = await supabase.from('habit_logs').insert({
-        habit_id: habit.id, user_id: user.id, date: todayISO, count: -1,
+        habit_id: habit.id, user_id: user.id, date: todayISO, count: sentinel,
       }).select().single();
       if (data) setLogs(prev => [...prev, data as HabitLog]);
     }
   };
+  const markFailedToday = (habit: Habit) => setSentinelToday(habit, -1);
+  const skipToday = (habit: Habit) => setSentinelToday(habit, -2);
 
   if (loading) return <div className="text-[#64748B] text-sm">Loading...</div>;
 
@@ -455,7 +431,7 @@ export default function HabitsPage() {
         <h1 className="text-xl font-bold text-white">Habits</h1>
         <div className="flex items-center gap-3">
           <button onClick={() => (bulkMode ? exitBulkMode() : setBulkMode(true))} className="text-sm text-[#64748B] hover:text-white">{bulkMode ? 'Cancel' : 'Select'}</button>
-          <button onClick={() => { setShowArchived(true); loadArchived(); }} className="text-sm text-[#64748B] hover:text-white">Archived</button>
+          <button onClick={() => { setShowArchived(true); loadArchived(); }} className="text-sm text-[#64748B] hover:text-white">Paused</button>
           <button onClick={() => setShowAdd(true)} className="btn-primary text-sm">+ Add Habit</button>
         </div>
       </div>
@@ -465,11 +441,11 @@ export default function HabitsPage() {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowArchived(false)} />
           <div className="custom-scroll relative w-full md:max-w-md max-h-[85vh] flex flex-col bg-[#1E293B] border border-[#334155] rounded-t-2xl md:rounded-2xl p-5 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">Archived Habits</h3>
+              <h3 className="text-lg font-bold text-white">Paused Habits</h3>
               <button onClick={() => setShowArchived(false)} className="p-1 rounded-lg hover:bg-[#334155] text-[#94A3B8]"><X size={18} /></button>
             </div>
             {archivedHabits.length === 0 ? (
-              <p className="text-sm text-[#64748B]">No archived habits — paused habits (via Archive in a habit's edit panel) show up here to bring back.</p>
+              <p className="text-sm text-[#64748B]">No paused habits — habits paused via a habit's edit panel show up here to bring back.</p>
             ) : (
               <div className="flex flex-col gap-2">
                 {archivedHabits.map(h => (
@@ -479,7 +455,7 @@ export default function HabitsPage() {
                       <span className="text-sm text-white truncate">{h.name}</span>
                     </span>
                     <span className="flex items-center gap-3 flex-shrink-0">
-                      <button onClick={() => unarchiveHabit(h.id)} className="text-xs font-medium text-blue-400 hover:text-blue-300">Unarchive</button>
+                      <button onClick={() => unarchiveHabit(h.id)} className="text-xs font-medium text-blue-400 hover:text-blue-300">Unpause</button>
                       <button onClick={() => deleteHabit(h.id)} className="text-xs font-medium text-red-400 hover:text-red-300">Delete forever</button>
                     </span>
                   </div>
@@ -502,7 +478,6 @@ export default function HabitsPage() {
               activeCategory={activeCategory}
               onSelectCategory={setActiveCategory}
               onReorderCategory={reorderCategories}
-              onMoveCategory={moveCategoryOrder}
               onRenameCategory={renameCategory}
               onRemoveCategory={removeCategory}
               onCreateCategory={createCategoryFromManagePanel}
@@ -512,13 +487,14 @@ export default function HabitsPage() {
               selectedHabitId={selectedHabitId}
               onSelectHabit={setSelectedHabitId}
               onCreateHabit={fields => createHabit({ ...fields, category: activeCategory })}
-              onMoveHabit={moveHabit}
+              onReorderHabit={reorderAllHabits}
               onArchiveHabit={archiveHabit}
               onDeleteHabit={deleteHabit}
               onUpdateHabit={updateHabit}
               onIncrementToday={incrementToday}
               onDecrementToday={decrementToday}
               onMarkFailedToday={markFailedToday}
+              onSkipToday={skipToday}
             />
           </div>
 
@@ -584,6 +560,7 @@ export default function HabitsPage() {
                 onIncrement={() => incrementToday(habit)}
                 onDecrement={() => decrementToday(habit)}
                 onMarkFailed={() => markFailedToday(habit)}
+                onSkip={() => skipToday(habit)}
                 onUpdateHabit={patch => updateHabit(habit.id, patch)}
                 onReorder={toId => reorderAllHabits(habit.id, toId)}
                 onArchive={() => archiveHabit(habit.id)}

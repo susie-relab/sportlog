@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Habit, HabitLog, isHabitScheduledOn } from '@/types';
 import { todayLocalISO } from '@/lib/utils';
-import { completionRatio, isFailedLog } from '@/lib/habitStats';
+import { completionRatio, isFailedLog, isSkippedLog } from '@/lib/habitStats';
 
 interface Props {
   habits: Habit[];
@@ -106,6 +106,7 @@ export default function HabitMonthCalendar({ habits, logs, onCycle }: Props) {
                   const log = logsByHabitDate.get(`${h.id}|${date}`);
                   const ratio = completionRatio(h, log);
                   const failed = isFailedLog(log);
+                  const skipped = isSkippedLog(log);
                   return (
                     <div key={h.id} className="flex items-center justify-center min-w-0 min-h-0 p-px">
                       {failed ? (
@@ -114,6 +115,13 @@ export default function HabitMonthCalendar({ habits, logs, onCycle }: Props) {
                           style={{ background: '#E2E8F0', border: `1px solid ${h.color}`, fontSize: '80%' }}
                         >
                           ×
+                        </span>
+                      ) : skipped ? (
+                        <span
+                          className="rounded-full w-full h-full flex items-center justify-center leading-none font-bold text-white"
+                          style={{ background: '#475569', border: `1px solid ${h.color}`, fontSize: '80%' }}
+                        >
+                          –
                         </span>
                       ) : (
                         <span
@@ -144,7 +152,8 @@ export default function HabitMonthCalendar({ habits, logs, onCycle }: Props) {
               {habitsForDate(selectedDate).map(h => {
                 const log = logsByHabitDate.get(`${h.id}|${selectedDate}`);
                 const failed = isFailedLog(log);
-                const count = failed ? 0 : (log?.count ?? 0);
+                const skipped = isSkippedLog(log);
+                const count = (failed || skipped) ? 0 : (log?.count ?? 0);
                 const ratio = completionRatio(h, log);
                 return (
                   <button
@@ -157,7 +166,7 @@ export default function HabitMonthCalendar({ habits, logs, onCycle }: Props) {
                       <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: h.color }} />
                       <span className="text-sm text-white truncate">{h.name}</span>
                     </span>
-                    <span className="text-xs font-medium text-[#94A3B8] flex-shrink-0">{failed ? "Didn't happen" : `${count}/${h.target_per_period}`}</span>
+                    <span className="text-xs font-medium text-[#94A3B8] flex-shrink-0">{failed ? "Didn't happen" : skipped ? 'Skipped' : `${count}/${h.target_per_period}`}</span>
                   </button>
                 );
               })}

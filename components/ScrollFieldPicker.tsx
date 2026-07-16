@@ -142,6 +142,8 @@ export default function ScrollFieldPicker({ label, unit, value, onChange, max, m
                   if (decimals === 2 && (e.key === '.' || e.key === ',')) {
                     e.preventDefault();
                     fracInputRef.current?.focus();
+                  } else if (e.key === 'Enter') {
+                    commitAndClose();
                   }
                 }}
                 style={{ width: wholeWidth }}
@@ -158,6 +160,7 @@ export default function ScrollFieldPicker({ label, unit, value, onChange, max, m
                     onFocus={e => { setFocused(true); e.target.select(); }}
                     onBlur={() => setFocused(false)}
                     onChange={e => handleFracText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') commitAndClose(); }}
                     style={{ width: fracWidth }}
                     className="pointer-events-auto bg-transparent text-white text-lg font-bold text-center outline-none"
                   />

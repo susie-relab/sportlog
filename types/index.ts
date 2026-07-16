@@ -214,18 +214,19 @@ export type WalkSubType = 'multi_day' | 'stroll' | 'speed' | 'urban' | 'bush' | 
 
 // --- Companions & conditions — universal tags, apply to any exercise type ---
 
-export type Companion = 'team' | 'friends' | 'family' | 'kids' | 'pets';
+export type Companion = 'team' | 'partner' | 'friends' | 'family' | 'kids' | 'pets';
 export const COMPANION_LABELS: Record<Companion, string> = {
-  team: 'With Team', friends: 'With Friend/s', family: 'With Fam', kids: 'With Kid/s', pets: 'With Pet/s',
+  team: 'With Team', partner: 'With Partner', friends: 'With Friend/s', family: 'With Fam', kids: 'With Kid/s', pets: 'With Pet/s',
 };
 export const COMPANION_EMOJI: Record<Companion, string> = {
-  team: '🤝', friends: '👫', family: '👪', kids: '🧒', pets: '🐾',
+  team: '🤝', partner: '❤️', friends: '👫', family: '👪', kids: '🧒', pets: '🐾',
 };
 
-export type WeatherCondition = 'rainy' | 'sunny' | 'windy' | 'cloudy' | 'foggy' | 'snowy' | 'stormy' | 'freezing' | 'cold' | 'hot' | 'humid' | 'dusty' | 'sunrise' | 'morning' | 'afternoon' | 'sunset' | 'night';
+export type WeatherCondition = 'rainy' | 'sunny' | 'windy' | 'cloudy' | 'foggy' | 'snowy' | 'stormy' | 'freezing' | 'cold' | 'hot' | 'humid' | 'dusty' | 'muddy' | 'sunrise' | 'morning' | 'afternoon' | 'sunset' | 'night';
 export const CONDITION_LABELS: Record<WeatherCondition, string> = {
   rainy: 'Rainy', sunny: 'Sunny', windy: 'Windy', cloudy: 'Cloudy', foggy: 'Foggy', snowy: 'Snowy',
   stormy: 'Stormy', dusty: 'Dusty', freezing: 'Freezing', cold: 'Cold', hot: 'Hot', humid: 'Humid',
+  muddy: 'Muddy',
   sunrise: 'Sunrise', morning: 'Morning', afternoon: 'Afternoon', sunset: 'Sunset', night: 'Night',
 };
 // Plain glyph icons (no smiley/photographic-style faces) so they read as simple sketch-style
@@ -233,6 +234,7 @@ export const CONDITION_LABELS: Record<WeatherCondition, string> = {
 export const CONDITION_EMOJI: Record<WeatherCondition, string> = {
   rainy: '🌧️', sunny: '☀️', windy: '💨', cloudy: '☁️', foggy: '🌫️', snowy: '🌨️',
   stormy: '⛈️', dusty: '🌪️', freezing: '🧊', cold: '❄️', hot: '🌡️', humid: '💧',
+  muddy: '🥾',
   sunrise: '🌅', morning: '🌄', afternoon: '🌇', sunset: '🌆', night: '🌙',
 };
 
@@ -537,10 +539,10 @@ export interface HabitCategoryRow {
 }
 
 export const HABIT_COLORS = {
-  lightblue: '#93C5FD', blue: '#60A5FA', azure: '#2563EB', navy: '#1E3A8A',
-  teal: '#2DD4BF', green: '#4ADE80', forest: '#15803D', lime: '#A3E635',
+  lightblue: '#93C5FD', blue: '#0000FF', azure: '#2563EB', navy: '#1E3A8A',
+  aqua: '#00F5FF', darkturquoise: '#00CED1', green: '#4ADE80', forest: '#15803D', lime: '#A3E635',
   yellow: '#FACC15', cream: '#F5E6C8', orange: '#FB923C', rust: '#C2410C',
-  brown: '#92400E', hotpink: '#EC4899', pink: '#F472B6', crimson: '#DC2626',
+  brown: '#92400E', hotpink: '#EC4899', pink: '#F472B6',
   plum: '#7E22CE', purple: '#C084FC', slate: '#94A3B8', bluegrey: '#5B7B99',
 } as const;
 export type HabitColorKey = keyof typeof HABIT_COLORS;

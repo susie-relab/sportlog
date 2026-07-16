@@ -13,9 +13,9 @@ export const HABIT_PRESETS: HabitPreset[] = [
   // Health
   { name: 'Cups of Water', category: 'health', color: HABIT_COLORS.blue, target_per_period: 8 },
   { name: 'Vitamins', category: 'health', color: HABIT_COLORS.orange, target_per_period: 1 },
-  { name: 'Meds', category: 'health', color: HABIT_COLORS.crimson, target_per_period: 1 },
-  { name: 'Teeth', category: 'health', color: HABIT_COLORS.teal, target_per_period: 2 },
-  { name: 'Floss', category: 'health', color: HABIT_COLORS.teal, target_per_period: 1 },
+  { name: 'Meds', category: 'health', color: HABIT_COLORS.rust, target_per_period: 1 },
+  { name: 'Teeth', category: 'health', color: HABIT_COLORS.darkturquoise, target_per_period: 2 },
+  { name: 'Floss', category: 'health', color: HABIT_COLORS.darkturquoise, target_per_period: 1 },
   { name: 'Sunlight Time', category: 'health', color: HABIT_COLORS.yellow, target_per_period: 1 },
 
   // Nutrition
@@ -23,7 +23,7 @@ export const HABIT_PRESETS: HabitPreset[] = [
   { name: '5+ Veges', category: 'nutrition', color: HABIT_COLORS.green, target_per_period: 1 },
   { name: 'Fruit', category: 'nutrition', color: HABIT_COLORS.pink, target_per_period: 1 },
   { name: 'Home Cooked Only', category: 'nutrition', color: HABIT_COLORS.forest, target_per_period: 1 },
-  { name: 'No Sugar', category: 'nutrition', color: HABIT_COLORS.crimson, target_per_period: 1 },
+  { name: 'No Sugar', category: 'nutrition', color: HABIT_COLORS.rust, target_per_period: 1 },
   { name: 'No Alcohol', category: 'nutrition', color: HABIT_COLORS.slate, target_per_period: 1 },
   { name: 'No Buying Out', category: 'nutrition', color: HABIT_COLORS.brown, target_per_period: 1 },
 
@@ -35,7 +35,7 @@ export const HABIT_PRESETS: HabitPreset[] = [
   { name: 'Journaling', category: 'lifestyle', color: HABIT_COLORS.pink, target_per_period: 1 },
   { name: 'Gratitude', category: 'lifestyle', color: HABIT_COLORS.hotpink, target_per_period: 1 },
   { name: 'Play Musical Instrument', category: 'lifestyle', color: HABIT_COLORS.purple, target_per_period: 1 },
-  { name: 'Language Learning', category: 'lifestyle', color: HABIT_COLORS.teal, target_per_period: 1 },
+  { name: 'Language Learning', category: 'lifestyle', color: HABIT_COLORS.darkturquoise, target_per_period: 1 },
   { name: 'Hobby', category: 'lifestyle', color: HABIT_COLORS.lime, target_per_period: 1 },
 
   // Self-care
@@ -50,22 +50,22 @@ export const HABIT_PRESETS: HabitPreset[] = [
   { name: '8+ Hrs Sleep', category: 'sleep', color: HABIT_COLORS.blue, target_per_period: 1 },
   { name: 'In Bed Before 11pm', category: 'sleep', color: HABIT_COLORS.slate, target_per_period: 1 },
   { name: 'Wake Up Before 7am', category: 'sleep', color: HABIT_COLORS.yellow, target_per_period: 1 },
-  { name: 'No Snooze', category: 'sleep', color: HABIT_COLORS.crimson, target_per_period: 1 },
+  { name: 'No Snooze', category: 'sleep', color: HABIT_COLORS.rust, target_per_period: 1 },
   { name: 'No Late Caffeine', category: 'sleep', color: HABIT_COLORS.orange, target_per_period: 1 },
 
   // Phone use
-  { name: 'No Phone Before Bed', category: 'phone_use', color: HABIT_COLORS.crimson, target_per_period: 1 },
+  { name: 'No Phone Before Bed', category: 'phone_use', color: HABIT_COLORS.rust, target_per_period: 1 },
   { name: 'No Phone First Hour', category: 'phone_use', color: HABIT_COLORS.orange, target_per_period: 1 },
   { name: 'Screen Time Under Limit', category: 'phone_use', color: HABIT_COLORS.yellow, target_per_period: 1 },
 
   // Spiritual
   { name: 'Bible Reading', category: 'spiritual', color: HABIT_COLORS.purple, target_per_period: 1 },
   { name: 'Prayer', category: 'spiritual', color: HABIT_COLORS.blue, target_per_period: 1 },
-  { name: 'Being Still with God', category: 'spiritual', color: HABIT_COLORS.teal, target_per_period: 1 },
+  { name: 'Being Still with God', category: 'spiritual', color: HABIT_COLORS.darkturquoise, target_per_period: 1 },
   { name: 'Church', category: 'spiritual', color: HABIT_COLORS.pink, target_per_period: 1 },
   { name: 'Fellowship', category: 'spiritual', color: HABIT_COLORS.blue, target_per_period: 1 },
   { name: 'Bible Study', category: 'spiritual', color: HABIT_COLORS.purple, target_per_period: 1 },
-  { name: 'Memorise Scripture', category: 'spiritual', color: HABIT_COLORS.teal, target_per_period: 1 },
+  { name: 'Memorise Scripture', category: 'spiritual', color: HABIT_COLORS.darkturquoise, target_per_period: 1 },
   { name: 'Volunteer', category: 'spiritual', color: HABIT_COLORS.green, target_per_period: 1 },
   { name: 'Meditation', category: 'spiritual', color: HABIT_COLORS.purple, target_per_period: 1 },
 
@@ -93,10 +93,10 @@ export const HABIT_PRESETS: HabitPreset[] = [
   { name: 'Friends Outing', category: 'connection', color: HABIT_COLORS.pink, target_per_period: 1 },
   { name: 'Call a Friend', category: 'connection', color: HABIT_COLORS.azure, target_per_period: 1 },
   { name: 'Call a Family Member', category: 'connection', color: HABIT_COLORS.navy, target_per_period: 1 },
-  { name: 'Friend Check-in Txt', category: 'connection', color: HABIT_COLORS.teal, target_per_period: 1 },
+  { name: 'Friend Check-in Txt', category: 'connection', color: HABIT_COLORS.darkturquoise, target_per_period: 1 },
   { name: 'Send Birthday Msgs', category: 'connection', color: HABIT_COLORS.hotpink, target_per_period: 1 },
   { name: 'Send a Meme', category: 'connection', color: HABIT_COLORS.lime, target_per_period: 1 },
   { name: 'Host Gathering', category: 'connection', color: HABIT_COLORS.orange, target_per_period: 1 },
   { name: 'Visit Elderly', category: 'connection', color: HABIT_COLORS.slate, target_per_period: 1 },
-  { name: 'Date Night', category: 'connection', color: HABIT_COLORS.crimson, target_per_period: 1 },
+  { name: 'Date Night', category: 'connection', color: HABIT_COLORS.rust, target_per_period: 1 },
 ];

@@ -17,7 +17,6 @@ interface Props {
   activeCategory: string;
   onSelectCategory: (key: string) => void;
   onReorderCategory: (fromKey: string, toKey: string) => void;
-  onMoveCategory: (key: string, direction: 'up' | 'down') => void;
   onRenameCategory: (key: string, newName: string) => void;
   onRemoveCategory: (key: string) => void;
   onCreateCategory: (name: string, emoji: string) => void;
@@ -31,13 +30,14 @@ interface Props {
     frequency_days: string | null; frequency_interval_days: number | null; target_per_period: number;
     start_date: string;
   }) => void;
-  onMoveHabit: (id: string, direction: 'up' | 'down') => void;
+  onReorderHabit: (fromId: string, toId: string) => void;
   onUpdateHabit: (id: string, patch: Partial<Habit>) => void;
   onArchiveHabit: (id: string) => void;
   onDeleteHabit: (id: string) => void;
   onIncrementToday: (habit: Habit) => void;
   onDecrementToday: (habit: Habit) => void;
   onMarkFailedToday: (habit: Habit) => void;
+  onSkipToday: (habit: Habit) => void;
 }
 
 const WEEKDAY_OPTIONS = [
@@ -62,6 +62,19 @@ export function PencilIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 20h9" />
       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+/** Press-and-hold drag handle — replaces up/down arrow buttons for reordering list rows. */
+export function SortHandleIcon() {
+  return (
+    <svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor">
+      <path d="M7 0 3 4h8L7 0Z" />
+      <rect x="2" y="7" width="10" height="1.5" rx="0.75" />
+      <rect x="2" y="10.25" width="10" height="1.5" rx="0.75" />
+      <rect x="2" y="13.5" width="10" height="1.5" rx="0.75" />
+      <path d="M7 20 3 16h8l-4 4Z" />
     </svg>
   );
 }
@@ -185,13 +198,15 @@ export function StartDateFields({
  *  category; one top-right opens a panel to manage categories themselves (add/rename/remove/
  *  reorder). */
 export default function HabitTabBox({
-  categories, activeCategory, onSelectCategory, onReorderCategory, onMoveCategory, onRenameCategory, onRemoveCategory, onCreateCategory,
-  categoryLabel, habits, logsByHabit, selectedHabitId, onSelectHabit, onCreateHabit, onMoveHabit, onUpdateHabit, onArchiveHabit, onDeleteHabit, onIncrementToday, onDecrementToday, onMarkFailedToday,
+  categories, activeCategory, onSelectCategory, onReorderCategory, onRenameCategory, onRemoveCategory, onCreateCategory,
+  categoryLabel, habits, logsByHabit, selectedHabitId, onSelectHabit, onCreateHabit, onReorderHabit, onUpdateHabit, onArchiveHabit, onDeleteHabit, onIncrementToday, onDecrementToday, onMarkFailedToday, onSkipToday,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const [showManageCategories, setShowManageCategories] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const categoryDragRef = useRef<{ fromKey: string; moved: boolean } | null>(null);
+  const habitManageDragRef = useRef<{ fromId: string } | null>(null);
+  const categoryManageDragRef = useRef<{ fromKey: string } | null>(null);
 
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState<HabitColorKey>('blue');
@@ -291,6 +306,68 @@ export default function HabitTabBox({
     else onSelectCategory(drag.fromKey);
   };
 
+  // Press-and-hold drag on the sort handle to reorder habits within the "Reorder & Edit" list —
+  // unlike the tab strip, the handle is a dedicated small icon so a plain tap on the row (the
+  // Edit link) is never mistaken for a drag.
+  const handleHabitManagePointerDown = (id: string) => (e: React.PointerEvent) => {
+    e.preventDefault();
+    habitManageDragRef.current = { fromId: id };
+    window.addEventListener('pointermove', handleHabitManagePointerMove);
+    window.addEventListener('pointerup', handleHabitManagePointerUp);
+  };
+  const handleHabitManagePointerMove = (e: PointerEvent) => {
+    const drag = habitManageDragRef.current;
+    if (!drag) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const overEl = el?.closest('[data-habit-manage-key]') as HTMLElement | null;
+    document.querySelectorAll('[data-habit-manage-key]').forEach(t => t.classList.remove('ring-2', 'ring-blue-400', 'ring-inset'));
+    if (overEl && overEl.dataset.habitManageKey !== drag.fromId) {
+      overEl.classList.add('ring-2', 'ring-blue-400', 'ring-inset');
+    }
+  };
+  const handleHabitManagePointerUp = (e: PointerEvent) => {
+    const drag = habitManageDragRef.current;
+    habitManageDragRef.current = null;
+    window.removeEventListener('pointermove', handleHabitManagePointerMove);
+    window.removeEventListener('pointerup', handleHabitManagePointerUp);
+    document.querySelectorAll('[data-habit-manage-key]').forEach(t => t.classList.remove('ring-2', 'ring-blue-400', 'ring-inset'));
+    if (!drag) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const overEl = el?.closest('[data-habit-manage-key]') as HTMLElement | null;
+    const toId = overEl?.dataset.habitManageKey;
+    if (toId && toId !== drag.fromId) onReorderHabit(drag.fromId, toId);
+  };
+
+  // Same pattern for the "Manage Categories" panel's reorder list.
+  const handleCategoryManagePointerDown = (key: string) => (e: React.PointerEvent) => {
+    e.preventDefault();
+    categoryManageDragRef.current = { fromKey: key };
+    window.addEventListener('pointermove', handleCategoryManagePointerMove);
+    window.addEventListener('pointerup', handleCategoryManagePointerUp);
+  };
+  const handleCategoryManagePointerMove = (e: PointerEvent) => {
+    const drag = categoryManageDragRef.current;
+    if (!drag) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const overEl = el?.closest('[data-category-manage-key]') as HTMLElement | null;
+    document.querySelectorAll('[data-category-manage-key]').forEach(t => t.classList.remove('ring-2', 'ring-blue-400', 'ring-inset'));
+    if (overEl && overEl.dataset.categoryManageKey !== drag.fromKey) {
+      overEl.classList.add('ring-2', 'ring-blue-400', 'ring-inset');
+    }
+  };
+  const handleCategoryManagePointerUp = (e: PointerEvent) => {
+    const drag = categoryManageDragRef.current;
+    categoryManageDragRef.current = null;
+    window.removeEventListener('pointermove', handleCategoryManagePointerMove);
+    window.removeEventListener('pointerup', handleCategoryManagePointerUp);
+    document.querySelectorAll('[data-category-manage-key]').forEach(t => t.classList.remove('ring-2', 'ring-blue-400', 'ring-inset'));
+    if (!drag) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const overEl = el?.closest('[data-category-manage-key]') as HTMLElement | null;
+    const toKey = overEl?.dataset.categoryManageKey;
+    if (toKey && toKey !== drag.fromKey) onReorderCategory(drag.fromKey, toKey);
+  };
+
   const saveEditing = (habitId: string) => {
     if (!editName.trim()) return;
     onUpdateHabit(habitId, {
@@ -342,7 +419,7 @@ export default function HabitTabBox({
       </div>
       <div className="border-b border-[#334155] mb-3" />
 
-      <div className="flex overflow-x-auto mb-4 -mx-1 px-1">
+      <div className="custom-scroll flex overflow-x-auto mb-4 -mx-1 px-1">
         {habits.map((h, i) => {
           const active = selected.id === h.id;
           const nextActive = i < habits.length - 1 && habits[i + 1].id === selected.id;
@@ -404,6 +481,14 @@ export default function HabitTabBox({
           >
             ×
           </button>
+          <button
+            onClick={() => onSkipToday(selected)}
+            title="Skip for today"
+            aria-label="Skip for today"
+            className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${logsByDate.get(todayISO)?.count === -2 ? 'bg-slate-400/80 text-white' : 'bg-[#334155] text-white hover:bg-[#475569]'}`}
+          >
+            –
+          </button>
         </div>
       </div>
 
@@ -417,13 +502,20 @@ export default function HabitTabBox({
       </div>
 
       {dayStats && (
-        <div className="grid grid-cols-2 gap-2 mb-5">
-          <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.currentStreak}</p><p className="text-xs text-[#64748B]">Current Streak</p></div>
-          <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.longestStreak}</p><p className="text-xs text-[#64748B]">Longest Streak</p></div>
-          <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysCompleted}</p><p className="text-xs text-[#64748B]">Days Completed</p></div>
-          <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysFailed}</p><p className="text-xs text-[#64748B]">Days Failed</p></div>
-          <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysSkipped}</p><p className="text-xs text-[#64748B]">Days Skipped</p></div>
-          <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysStacked}</p><p className="text-xs text-[#64748B]">Days Stacked</p></div>
+        <div className="flex flex-col gap-2 mb-5">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.currentStreak}</p><p className="text-xs text-[#64748B]">Current Streak</p></div>
+            <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.longestStreak}</p><p className="text-xs text-[#64748B]">Longest Streak</p></div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysAchieved}</p><p className="text-xs text-[#64748B]">Achieved</p></div>
+            <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysPartial}</p><p className="text-xs text-[#64748B]">Partly Done</p></div>
+            <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysIncomplete}</p><p className="text-xs text-[#64748B]">Incomplete</p></div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysSkipped}</p><p className="text-xs text-[#64748B]">Days Skipped</p></div>
+            <div className="stat-card"><p className="text-2xl font-bold text-white">{dayStats.daysStacked}</p><p className="text-xs text-[#64748B]">Days Stacked</p></div>
+          </div>
         </div>
       )}
 
@@ -464,13 +556,17 @@ export default function HabitTabBox({
 
             <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-2">Reorder &amp; Edit</p>
             <div className="flex flex-col gap-2 mb-5">
-              {habits.map((h, i) => (
-                <div key={h.id} className="rounded-lg border border-[#334155]">
+              {habits.map((h) => (
+                <div key={h.id} data-habit-manage-key={h.id} className="rounded-lg border border-[#334155] transition-shadow">
                   <div className="flex items-center gap-2 px-3 py-2">
-                    <div className="flex flex-col">
-                      <button disabled={i === 0} onClick={() => onMoveHabit(h.id, 'up')} className="text-[#64748B] hover:text-white disabled:opacity-20 leading-none text-xs">▲</button>
-                      <button disabled={i === habits.length - 1} onClick={() => onMoveHabit(h.id, 'down')} className="text-[#64748B] hover:text-white disabled:opacity-20 leading-none text-xs">▼</button>
-                    </div>
+                    <button
+                      onPointerDown={handleHabitManagePointerDown(h.id)}
+                      aria-label="Drag to reorder"
+                      className="text-[#64748B] hover:text-white cursor-grab active:cursor-grabbing flex-shrink-0"
+                      style={{ touchAction: 'none' }}
+                    >
+                      <SortHandleIcon />
+                    </button>
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: h.color }} />
                     <span className="text-sm text-white flex-1 truncate">{h.name}</span>
                     <button
@@ -508,7 +604,7 @@ export default function HabitTabBox({
                       />
                       <div className="flex gap-2">
                         <button onClick={() => saveEditing(h.id)} className="btn-primary flex-1">Save</button>
-                        <button onClick={() => { onArchiveHabit(h.id); setExpandedId(null); }} className="text-sm text-[#94A3B8] hover:text-white px-2">Archive</button>
+                        <button onClick={() => { onArchiveHabit(h.id); setExpandedId(null); }} className="text-sm text-[#94A3B8] hover:text-white px-2">Pause</button>
                         <button onClick={() => { onDeleteHabit(h.id); setExpandedId(null); }} className="text-sm text-red-400 hover:text-red-300 px-2">Delete</button>
                       </div>
                     </div>
@@ -557,12 +653,16 @@ export default function HabitTabBox({
             </div>
 
             <div className="flex flex-col gap-2 mb-5">
-              {categories.map((c, i) => (
-                <div key={c.key} className="rounded-lg border border-[#334155] px-3 py-2 flex items-center gap-2">
-                  <div className="flex flex-col flex-shrink-0">
-                    <button disabled={i === 0} onClick={() => onMoveCategory(c.key, 'up')} className="text-[#64748B] hover:text-white disabled:opacity-20 leading-none text-xs">▲</button>
-                    <button disabled={i === categories.length - 1} onClick={() => onMoveCategory(c.key, 'down')} className="text-[#64748B] hover:text-white disabled:opacity-20 leading-none text-xs">▼</button>
-                  </div>
+              {categories.map((c) => (
+                <div key={c.key} data-category-manage-key={c.key} className="rounded-lg border border-[#334155] px-3 py-2 flex items-center gap-2 transition-shadow">
+                  <button
+                    onPointerDown={handleCategoryManagePointerDown(c.key)}
+                    aria-label="Drag to reorder"
+                    className="text-[#64748B] hover:text-white cursor-grab active:cursor-grabbing flex-shrink-0"
+                    style={{ touchAction: 'none' }}
+                  >
+                    <SortHandleIcon />
+                  </button>
                   <span className="flex-shrink-0">{c.emoji}</span>
                   {renamingKey === c.key ? (
                     <input className="input flex-1" value={renameValue} onChange={e => setRenameValue(e.target.value)} />
