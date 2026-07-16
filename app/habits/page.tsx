@@ -14,7 +14,7 @@ import HabitListRow from '@/components/HabitListRow';
 import HabitMonthCalendar from '@/components/HabitMonthCalendar';
 import HabitTabBox, { FrequencyFields, StartDateFields, StartOption, resolveStartDate } from '@/components/HabitTabBox';
 
-type SortKey = 'name' | 'category' | 'colour' | 'frequency' | 'amount' | 'streak' | 'most_done' | 'completion';
+type SortKey = 'name' | 'category' | 'colour' | 'frequency' | 'amount' | 'streak' | 'most_done' | 'completion' | 'time_of_day';
 
 const SORT_KEY_LABELS: Record<SortKey, string> = {
   name: 'Alphabetical',
@@ -25,8 +25,9 @@ const SORT_KEY_LABELS: Record<SortKey, string> = {
   streak: 'Current Streak',
   most_done: 'Most Often Done',
   completion: 'Completion % (this period)',
+  time_of_day: 'Time of Day',
 };
-const SORT_KEY_ORDER: SortKey[] = ['name', 'category', 'colour', 'frequency', 'amount', 'streak', 'most_done', 'completion'];
+const SORT_KEY_ORDER: SortKey[] = ['name', 'category', 'colour', 'frequency', 'amount', 'streak', 'most_done', 'completion', 'time_of_day'];
 const FREQUENCY_SORT_ORDER: HabitFrequencyType[] = ['daily', 'every_n_days', 'weekly', 'fortnightly', 'monthly', 'custom_days'];
 
 export default function HabitsPage() {
@@ -435,6 +436,8 @@ export default function HabitsPage() {
       case 'streak': return currentStreak(h, logsByHabit.get(h.id) || [], todayLocalISO());
       case 'most_done': return totalCompletions(logsByHabit.get(h.id) || []);
       case 'completion': return periodProgress(h, logsByHabit.get(h.id) || [], todayLocalISO()).pct;
+      // Habits with no time set sort after every timed habit, regardless of direction.
+      case 'time_of_day': return h.time_of_day || '99:99';
     }
   };
 

@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { X, SkipForward } from 'lucide-react';
 import {
   Habit, HabitLog, HabitFrequencyType, HabitColorKey,
@@ -76,6 +76,20 @@ export function SortHandleIcon() {
       <rect x="2" y="13.5" width="10" height="1.5" rx="0.75" />
       <path d="M7 20 3 16h8l-4 4Z" />
     </svg>
+  );
+}
+
+/** Fast-appearing hover label — the native `title` attribute's tooltip delay is OS-controlled
+ *  and can take several seconds, so today-stepper buttons use this CSS-only tooltip instead
+ *  (a short 150ms delay via group-hover, not the browser default). */
+export function Tip({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <span className="relative group inline-flex">
+      {children}
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap rounded-md border border-[#334155] bg-[#0F172A] px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity delay-150 duration-100 group-hover:opacity-100 z-20">
+        {label}
+      </span>
+    </span>
   );
 }
 
@@ -494,40 +508,44 @@ export default function HabitTabBox({
       <div className="flex flex-col items-center gap-2 mb-5 px-3 py-2 rounded-lg bg-black/20">
         <span className="text-xs font-medium text-[#94A3B8]">Today</span>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => onDecrementToday(selected)}
-            disabled={(logsByDate.get(todayISO)?.count || 0) <= 0}
-            title="Reduce"
-            aria-label="Remove one for today"
-            className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold bg-[#334155] text-white hover:bg-[#475569] disabled:opacity-30"
-          >
-            −
-          </button>
+          <Tip label="Reduce">
+            <button
+              onClick={() => onDecrementToday(selected)}
+              disabled={(logsByDate.get(todayISO)?.count || 0) <= 0}
+              aria-label="Remove one for today"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold bg-[#334155] text-white hover:bg-[#475569] disabled:opacity-30"
+            >
+              −
+            </button>
+          </Tip>
           <span className="text-sm font-semibold text-white w-4 text-center">{Math.max(0, logsByDate.get(todayISO)?.count || 0)}</span>
-          <button
-            onClick={() => onIncrementToday(selected)}
-            title="Add"
-            aria-label="Add one for today"
-            className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold bg-[#334155] text-white hover:bg-[#475569]"
-          >
-            +
-          </button>
-          <button
-            onClick={() => onMarkFailedToday(selected)}
-            title="Didn't happen"
-            aria-label="Didn't happen"
-            className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${logsByDate.get(todayISO)?.count === -1 ? 'bg-red-500/80 text-white' : 'bg-[#334155] text-white hover:bg-[#475569]'}`}
-          >
-            ×
-          </button>
-          <button
-            onClick={() => onSkipToday(selected)}
-            title="Skip for today"
-            aria-label="Skip for today"
-            className={`w-7 h-7 rounded-full flex items-center justify-center ${logsByDate.get(todayISO)?.count === -2 ? 'bg-slate-400/80 text-white' : 'bg-[#334155] text-white hover:bg-[#475569]'}`}
-          >
-            <SkipForward size={14} fill="currentColor" />
-          </button>
+          <Tip label="Add">
+            <button
+              onClick={() => onIncrementToday(selected)}
+              aria-label="Add one for today"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold bg-[#334155] text-white hover:bg-[#475569]"
+            >
+              +
+            </button>
+          </Tip>
+          <Tip label="Didn't happen">
+            <button
+              onClick={() => onMarkFailedToday(selected)}
+              aria-label="Didn't happen"
+              className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${logsByDate.get(todayISO)?.count === -1 ? 'bg-red-500/80 text-white' : 'bg-[#334155] text-white hover:bg-[#475569]'}`}
+            >
+              ×
+            </button>
+          </Tip>
+          <Tip label="Skip for today">
+            <button
+              onClick={() => onSkipToday(selected)}
+              aria-label="Skip for today"
+              className={`w-7 h-7 rounded-full flex items-center justify-center ${logsByDate.get(todayISO)?.count === -2 ? 'bg-slate-400/80 text-white' : 'bg-[#334155] text-white hover:bg-[#475569]'}`}
+            >
+              <SkipForward size={14} fill="currentColor" />
+            </button>
+          </Tip>
         </div>
       </div>
 

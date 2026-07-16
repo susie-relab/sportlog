@@ -4,7 +4,7 @@ import { SkipForward } from 'lucide-react';
 import { Habit, HabitLog, HabitFrequencyType, HabitColorKey, HABIT_COLORS } from '@/types';
 import { todayLocalISO } from '@/lib/utils';
 import { periodProgress } from '@/lib/habitStats';
-import { FrequencyFields, PencilIcon, TimeOfDayField } from '@/components/HabitTabBox';
+import { FrequencyFields, PencilIcon, TimeOfDayField, Tip } from '@/components/HabitTabBox';
 
 interface CategoryOption { key: string; label: string; emoji: string }
 
@@ -149,44 +149,48 @@ const toggleEditor = () => {
           <span className="text-sm font-semibold text-white truncate min-w-0 flex-1">{habit.name}</span>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="text-[10px] text-[#94A3B8] hidden sm:inline">{sum}/{periodTarget} · {periodLabel}</span>
-            <button
-              onClick={e => { e.stopPropagation(); onDecrement(); }}
-              onPointerDown={e => e.stopPropagation()}
-              disabled={todayCount <= 0}
-              title="Reduce"
-              aria-label="Remove one for today"
-              className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold bg-black/25 text-white hover:bg-black/40 disabled:opacity-30"
-            >
-              −
-            </button>
+            <Tip label="Reduce">
+              <button
+                onClick={e => { e.stopPropagation(); onDecrement(); }}
+                onPointerDown={e => e.stopPropagation()}
+                disabled={todayCount <= 0}
+                aria-label="Remove one for today"
+                className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold bg-black/25 text-white hover:bg-black/40 disabled:opacity-30"
+              >
+                −
+              </button>
+            </Tip>
             <span className="text-xs font-semibold text-white w-3 text-center">{todayCount}</span>
-            <button
-              onClick={e => { e.stopPropagation(); onIncrement(); }}
-              onPointerDown={e => e.stopPropagation()}
-              title="Add"
-              aria-label="Add one for today"
-              className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold bg-black/25 text-white hover:bg-black/40"
-            >
-              +
-            </button>
-            <button
-              onClick={e => { e.stopPropagation(); onMarkFailed(); }}
-              onPointerDown={e => e.stopPropagation()}
-              title="Didn't happen"
-              aria-label="Didn't happen"
-              className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${isFailedToday ? 'bg-red-500/80 text-white' : 'bg-black/25 text-white/70 hover:bg-black/40'}`}
-            >
-              ×
-            </button>
-            <button
-              onClick={e => { e.stopPropagation(); onSkip(); }}
-              onPointerDown={e => e.stopPropagation()}
-              title="Skip for today"
-              aria-label="Skip for today"
-              className={`w-5 h-5 rounded-full flex items-center justify-center ${isSkippedToday ? 'bg-slate-400/80 text-white' : 'bg-black/25 text-white/70 hover:bg-black/40'}`}
-            >
-              <SkipForward size={11} fill="currentColor" />
-            </button>
+            <Tip label="Add">
+              <button
+                onClick={e => { e.stopPropagation(); onIncrement(); }}
+                onPointerDown={e => e.stopPropagation()}
+                aria-label="Add one for today"
+                className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold bg-black/25 text-white hover:bg-black/40"
+              >
+                +
+              </button>
+            </Tip>
+            <Tip label="Didn't happen">
+              <button
+                onClick={e => { e.stopPropagation(); onMarkFailed(); }}
+                onPointerDown={e => e.stopPropagation()}
+                aria-label="Didn't happen"
+                className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${isFailedToday ? 'bg-red-500/80 text-white' : 'bg-black/25 text-white/70 hover:bg-black/40'}`}
+              >
+                ×
+              </button>
+            </Tip>
+            <Tip label="Skip for today">
+              <button
+                onClick={e => { e.stopPropagation(); onSkip(); }}
+                onPointerDown={e => e.stopPropagation()}
+                aria-label="Skip for today"
+                className={`w-5 h-5 rounded-full flex items-center justify-center ${isSkippedToday ? 'bg-slate-400/80 text-white' : 'bg-black/25 text-white/70 hover:bg-black/40'}`}
+              >
+                <SkipForward size={11} fill="currentColor" />
+              </button>
+            </Tip>
             <button
               onClick={e => { e.stopPropagation(); toggleEditor(); }}
               onPointerDown={e => e.stopPropagation()}
