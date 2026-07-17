@@ -312,7 +312,7 @@ const ArmsIcon = makeIcon(({ size, className }) => (
 const LegsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <path d="M14 4 17.5 10 15 20" strokeWidth={3} />
-    <path d="M14 4 8.5 8.5 3.5 9" strokeWidth={3} />
+    <path d="M14 4 8.5 8.5 4.5 12" strokeWidth={3} />
   </Svg>
 ));
 

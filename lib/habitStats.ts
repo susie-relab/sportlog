@@ -79,6 +79,113 @@ const isDoneAt = (target: number, logsByDate: Map<string, HabitLog>, dateISO: st
   return !!log && log.count >= target;
 };
 
+/** A fixed Monday used to bucket fortnightly/every-N-days habits into stable, non-overlapping
+ *  periods that tile consistently across history (any Monday works — it's just an anchor). */
+const PERIOD_EPOCH_MONDAY = '2020-01-06';
+
+function daysBetweenISO(aISO: string, bISO: string): number {
+  const [ay, am, ad] = aISO.split('-').map(Number);
+  const [by, bm, bd] = bISO.split('-').map(Number);
+  return Math.round((new Date(by, bm - 1, bd).getTime() - new Date(ay, am - 1, ad).getTime()) / 86400000);
+}
+
+const isPeriodBasedType = (freq: HabitFrequencyConfig['frequency_type']) =>
+  freq === 'weekly' || freq === 'fortnightly' || freq === 'monthly' || freq === 'every_n_days';
+
+/** The stable, non-overlapping period [start, end] containing dateISO for a period-based
+ *  habit (weekly/fortnightly/monthly/every_n_days) — e.g. "3 times a week" is judged against
+ *  the whole calendar week's total, not each individual day, so a single "didn't happen" day
+ *  doesn't wrongly break a streak the user already made up elsewhere in the same period. */
+function periodBoundsFor(cfg: HabitFrequencyConfig, dateISO: string): [string, string] {
+  switch (cfg.frequency_type) {
+    case 'weekly': {
+      const days = getWeekDays(dateISO);
+      return [days[0], days[6]];
+    }
+    case 'monthly': {
+      const year = Number(dateISO.slice(0, 4));
+      const month0 = Number(dateISO.slice(5, 7)) - 1;
+      const days = getMonthDays(year, month0);
+      return [days[0], days[days.length - 1]];
+    }
+    case 'fortnightly': {
+      const offset = daysBetweenISO(PERIOD_EPOCH_MONDAY, dateISO);
+      const blockStart = addDaysISO(PERIOD_EPOCH_MONDAY, Math.floor(offset / 14) * 14);
+      return [blockStart, addDaysISO(blockStart, 13)];
+    }
+    case 'every_n_days': {
+      const n = cfg.frequency_interval_days || 2;
+      const offset = daysBetweenISO(PERIOD_EPOCH_MONDAY, dateISO);
+      const blockStart = addDaysISO(PERIOD_EPOCH_MONDAY, Math.floor(offset / n) * n);
+      return [blockStart, addDaysISO(blockStart, n - 1)];
+    }
+    default:
+      return [dateISO, dateISO];
+  }
+}
+
+function periodSum(logsByDate: Map<string, HabitLog>, start: string, end: string): number {
+  let sum = 0;
+  let cursor = start;
+  while (cursor <= end) {
+    sum += Math.max(0, logsByDate.get(cursor)?.count || 0);
+    cursor = addDaysISO(cursor, 1);
+  }
+  return sum;
+}
+
+/** Current consecutive-PERIOD streak for a period-based habit (weekly/fortnightly/monthly/
+ *  every_n_days) — a period counts if its total logged sum met the target, regardless of how
+ *  that total was distributed across its days. Mirrors the daily currentStreak's rules: the
+ *  in-progress period doesn't have to be finished yet to keep the streak alive, and one missed
+ *  period gets a single streak-freeze. */
+function currentPeriodStreak(habit: Habit, logsByDate: Map<string, HabitLog>, todayISO: string, history: HabitFrequencyChange[]): number {
+  const todayCfg = resolveFrequencyAt(habit, history, todayISO);
+  const [todayStart, todayEnd] = periodBoundsFor(todayCfg, todayISO);
+  const sumSoFar = periodSum(logsByDate, todayStart, todayISO);
+  let cursor = sumSoFar < todayCfg.target_per_period ? addDaysISO(todayStart, -1) : todayEnd;
+
+  let streak = 0;
+  let freezesLeft = 1;
+  for (let i = 0; i < 520; i++) {
+    const cfg = resolveFrequencyAt(habit, history, cursor);
+    const [start, end] = periodBoundsFor(cfg, cursor);
+    const sum = periodSum(logsByDate, start, end);
+    if (sum >= cfg.target_per_period) {
+      streak++;
+    } else if (freezesLeft > 0) {
+      freezesLeft--;
+    } else {
+      break;
+    }
+    cursor = addDaysISO(start, -1);
+  }
+  return streak;
+}
+
+/** Longest-ever consecutive-PERIOD streak for a period-based habit — same "judge the whole
+ *  period's total, not each day" rule as currentPeriodStreak, but no streak-freeze (matching
+ *  bestStreak's day-based equivalent, which also doesn't apply a freeze). */
+function bestPeriodStreak(habit: Habit, logsByDate: Map<string, HabitLog>, sortedDates: string[], history: HabitFrequencyChange[]): number {
+  const firstDate = sortedDates[0];
+  const lastDate = sortedDates[sortedDates.length - 1];
+  let best = 0, running = 0;
+  const seenPeriodStarts = new Set<string>();
+  let cursor = firstDate;
+  while (cursor <= lastDate) {
+    const cfg = resolveFrequencyAt(habit, history, cursor);
+    const [start, end] = periodBoundsFor(cfg, cursor);
+    if (!seenPeriodStarts.has(start)) {
+      seenPeriodStarts.add(start);
+      const sum = periodSum(logsByDate, start, end);
+      if (sum >= cfg.target_per_period) { running++; best = Math.max(best, running); }
+      else running = 0;
+    }
+    cursor = addDaysISO(cursor, 1);
+  }
+  return best;
+}
+
 /** Current consecutive-day streak of fully-completed scheduled days, walking backward from
  *  today. A day the habit isn't scheduled on doesn't break the streak, it's just skipped over —
  *  and neither does a day explicitly marked "skip for today". A "streak freeze" grants one
@@ -87,6 +194,9 @@ const isDoneAt = (target: number, logsByDate: Map<string, HabitLog>, dateISO: st
  *  was actually in effect that day (see resolveFrequencyAt), not the habit's current settings. */
 export function currentStreak(habit: Habit, logs: HabitLog[], todayISO: string, history: HabitFrequencyChange[] = []): number {
   const logsByDate = new Map(logs.map(l => [l.date, l]));
+  if (isPeriodBasedType(resolveFrequencyAt(habit, history, todayISO).frequency_type)) {
+    return currentPeriodStreak(habit, logsByDate, todayISO, history);
+  }
   let streak = 0;
   let freezesLeft = 1;
   let cursor = todayISO;
@@ -115,6 +225,9 @@ export function bestStreak(habit: Habit, logs: HabitLog[], history: HabitFrequen
   if (logs.length === 0) return 0;
   const logsByDate = new Map(logs.map(l => [l.date, l]));
   const sortedDates = [...logsByDate.keys()].sort();
+  if (isPeriodBasedType(resolveFrequencyAt(habit, history, sortedDates[sortedDates.length - 1]).frequency_type)) {
+    return bestPeriodStreak(habit, logsByDate, sortedDates, history);
+  }
   const firstDate = sortedDates[0];
   const lastDate = sortedDates[sortedDates.length - 1];
   let best = 0, running = 0;
@@ -156,9 +269,31 @@ export function displayTarget(habit: Habit): { amount: number; unit: string } {
   }
 }
 
-/** % of scheduled days fully completed within an inclusive date range. */
+/** % of scheduled days fully completed within an inclusive date range — for a period-based
+ *  habit (weekly/fortnightly/monthly/every_n_days) this instead measures % of PERIODS whose
+ *  total met the target, so a "3/week" habit is judged on the week's sum, not each day. */
 export function completionPctInRange(habit: Habit, logs: HabitLog[], startISO: string, endISO: string, history: HabitFrequencyChange[] = []): number {
   const logsByDate = new Map(logs.map(l => [l.date, l]));
+
+  if (isPeriodBasedType(resolveFrequencyAt(habit, history, endISO).frequency_type)) {
+    let periods = 0, achieved = 0;
+    const seenPeriodStarts = new Set<string>();
+    let cursor = startISO;
+    while (cursor <= endISO) {
+      const cfg = resolveFrequencyAt(habit, history, cursor);
+      if (isHabitScheduledOn(cfg, cursor)) {
+        const [start, end] = periodBoundsFor(cfg, cursor);
+        if (!seenPeriodStarts.has(start)) {
+          seenPeriodStarts.add(start);
+          periods++;
+          if (periodSum(logsByDate, start, end) >= cfg.target_per_period) achieved++;
+        }
+      }
+      cursor = addDaysISO(cursor, 1);
+    }
+    return periods > 0 ? Math.round((achieved / periods) * 100) : 0;
+  }
+
   let scheduled = 0, done = 0;
   let cursor = startISO;
   while (cursor <= endISO) {
