@@ -209,7 +209,7 @@ export type SnowStyle = 'downhill' | 'cross_country' | 'half_pipe' | 'freestyle'
 export type SwimSubType = 'ocean' | 'pool' | 'water_jogging' | 'aqua_aerobics';
 export type SwimFocus = 'endurance' | 'sprint' | 'technique' | 'power' | 'recovery' | 'distance' | 'interval_set' | 'time_trial';
 export type SwimStyle = 'mixed' | 'freestyle' | 'backstroke' | 'breaststroke' | 'butterfly' | 'im' | 'kick_only' | 'pull_only';
-export type FitnessSubType = 'boxing' | 'jump_rope' | 'dance' | 'skateboard' | 'rock_climbing' | 'trampoline' | 'martial_arts' | 'cleaning' | 'gymnastics' | 'calisthenics' | 'sandboarding' | 'unicycling' | 'archery' | 'slack_lining' | 'rollerskate' | 'abseiling' | 'athletics';
+export type FitnessSubType = 'boxing' | 'jump_rope' | 'dance' | 'skateboard' | 'rock_climbing' | 'trampoline' | 'martial_arts' | 'cleaning' | 'gymnastics' | 'acrobats' | 'calisthenics' | 'sandboarding' | 'unicycling' | 'archery' | 'slack_lining' | 'rollerskate' | 'abseiling' | 'athletics' | 'obstacle_course';
 export type BikeSubType = 'mtb' | 'road' | 'mixed_terrain' | 'commute' | 'electric' | 'indoor_spin' | 'bmx' | 'track' | 'bikepacking';
 export type StretchSubType = 'pilates' | 'flexibility' | 'physio';
 export type WalkSubType = 'multi_day' | 'stroll' | 'speed' | 'urban' | 'bush' | 'mountain' | 'farm' | 'road' | 'track_oval' | 'treadmill' | 'beach' | 'push_buggy';
@@ -299,9 +299,9 @@ export const SWIM_STYLE_COLORS: Record<SwimStyle, string> = {
 export const FITNESS_SUB_LABELS: Record<FitnessSubType, string> = {
   boxing: 'Boxing', jump_rope: 'Jump Rope', dance: 'Dance', skateboard: 'Skateboard',
   rock_climbing: 'Rock Climbing', trampoline: 'Trampoline', martial_arts: 'Martial Arts', cleaning: 'Cleaning',
-  gymnastics: 'Gymnastics', calisthenics: 'Calisthenics', sandboarding: 'Sandboarding', unicycling: 'Unicycling',
+  gymnastics: 'Gymnastics', acrobats: 'Acrobats', calisthenics: 'Calisthenics', sandboarding: 'Sandboarding', unicycling: 'Unicycling',
   archery: 'Archery', slack_lining: 'Slacklining',
-  rollerskate: 'Rollerskate', abseiling: 'Abseiling', athletics: 'Athletics',
+  rollerskate: 'Rollerskate', abseiling: 'Abseiling', athletics: 'Athletics', obstacle_course: 'Obstacle Course',
 };
 export const BIKE_SUB_LABELS: Record<BikeSubType, string> = {
   mtb: 'MTB', road: 'Road', mixed_terrain: 'Mixed Terrain', commute: 'Commute', electric: 'Electric',

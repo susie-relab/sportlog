@@ -384,15 +384,18 @@ const BoxingIcon = makeIcon(({ size, className }) => (
 // per reference — reads as a rope mid-swing rather than a plain arc between two handles.
 // Two offset handles, each with a grip band and rivet dot, joined by one simple scooping
 // rope curve — per reference, instead of a crossed teardrop loop between two level handles.
+// A person mid-jump (head sitting directly on the shoulders, no gap) holding the rope,
+// with the rope itself drawn as a much thinner line than the body — per reference, instead
+// of two disembodied handles joined by a body-thickness rope.
 const JumpRopeIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <rect x="3" y="2" width="4" height="9" rx="2" />
-    <rect x="3" y="7.3" width="4" height="2.4" rx="0.6" />
-    <circle cx="5" cy="4.5" r="0.6" fill="currentColor" stroke="none" />
-    <rect x="17" y="13" width="4" height="9" rx="2" />
-    <rect x="17" y="13" width="4" height="2.4" rx="0.6" />
-    <circle cx="19" cy="19.5" r="0.6" fill="currentColor" stroke="none" />
-    <path d="M5 11c-3 3-3 8 2 10 5 2 10-2 10-7v-1" />
+    <circle cx="12" cy="4" r="2" fill="currentColor" stroke="none" />
+    <path d="M12 6v6" />
+    <path d="M12 7.5 7.5 9.5" />
+    <path d="M12 7.5 16.5 9.5" />
+    <path d="M12 12 11 20" />
+    <path d="M12 12 16 19" />
+    <path d="M7.5 9.5c-2.5 3-2.5 9 2 12s9 0 9-5c0-4-2.5-7-4.5-9" strokeWidth={0.6} />
   </Svg>
 ));
 
@@ -467,14 +470,50 @@ const CleaningIcon = makeIcon(({ size, className }) => (
 // splayed up and out — per reference, instead of a figure standing on a beam.
 // Arms now reach the floor below the head (hands are the lowest point, head sits just
 // above them), instead of the head being lower than the arms.
+// A dynamic flip/cartwheel pose per reference — head low, torso on the diagonal, one short
+// arm reaching to the floor near the head and one long arm flung up and out, legs splayed
+// at different angles rather than a symmetric handstand.
+// A symmetric handstand — clearer and more reliably legible at icon size than a fully
+// asymmetric tumbling pose, which read as an ambiguous squiggle rather than a person.
+// A stickman mid-cartwheel — an X/star shape with both hands touching the ground and both
+// legs splayed up in the air, head clearly visible above the centre (not at the ground).
+// An upside-down tumbling stickman: arms splayed up in a wide V, legs splayed down, head
+// (filled circle) at the bottom, touching directly onto the legs' junction point — frozen
+// mid-cartwheel, per reference.
 const GymnasticsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <circle cx="12" cy="17.5" r="1.8" fill="currentColor" stroke="none" />
-    <path d="M12 15.5V9" />
-    <path d="M11 17c-1.5 2-3 3-4.5 3.5" />
-    <path d="M13 17c1.5 2 3 3 4.5 3.5" />
-    <path d="M12 9 6 2" />
-    <path d="M12 9 18 2" />
+    <path d="M12 10 2 3" />
+    <path d="M12 10 21 7" />
+    <path d="M12 10v5" />
+    <path d="M12 15 5 21" />
+    <path d="M12 15 18 18" />
+    <circle cx="12" cy="17.2" r="2.2" fill="currentColor" stroke="none" />
+  </Svg>
+));
+
+// Two posts with rings hanging from them, no figure — a simple obstacle-course rig marker.
+const ObstacleCourseIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <path d="M5 2v11" />
+    <path d="M19 2v11" />
+    <circle cx="5" cy="15.3" r="2.3" />
+    <circle cx="19" cy="15.3" r="2.3" />
+  </Svg>
+));
+
+// A trapeze acrobat hanging by both arms from a bar, head visible between the arms, torso
+// and legs dangling below.
+const TrapezeIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <path d="M4 2v4" />
+    <path d="M20 2v4" />
+    <path d="M4 6h16" strokeWidth={1.5} />
+    <path d="M7 6 12 11" />
+    <path d="M17 6 12 11" />
+    <path d="M12 11.2v6" />
+    <path d="M12 17.2 9 22" />
+    <path d="M12 17.2 15 22" />
+    <circle cx="12" cy="8" r="1.5" fill="currentColor" stroke="none" />
   </Svg>
 ));
 
@@ -489,18 +528,19 @@ const CalisthenicsIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
-// A rider crouched on the board (head, torso, raised balance arm, bent front leg, back
-// leg) with the board's upturned tip, per reference — instead of a bare dune-line arc.
+// A normal standing stickman, both feet planted on a board with short upturned lips at
+// each end, the whole scene tilted onto a diagonal to read as riding down a slope.
 const SandboardingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <circle cx="15.5" cy="6" r="1.8" fill="currentColor" stroke="none" />
-    <path d="M14.3 7.3 11 10" />
-    <path d="M11 10 16 5.5" />
-    <path d="M11 10 5.5 11" />
-    <path d="M11 10 8.5 15" />
-    <path d="M11 10 13 16" />
-    <path d="M4 18 20 14" />
-    <path d="M3 18.5 5 17.5" />
+    <g transform="rotate(-18 12 14)">
+      <circle cx="12" cy="5" r="2" fill="currentColor" stroke="none" />
+      <path d="M12 7v6" />
+      <path d="M12 9 8.5 11.5" />
+      <path d="M12 9 15.5 11.5" />
+      <path d="M12 13 9.5 16.5" />
+      <path d="M12 13 14.5 16.5" />
+      <path d="M4.5 15.5c0 1.6 1.2 2 2.3 2h10.4c1.1 0 2.3-.4 2.3-2" strokeWidth={1.2} />
+    </g>
   </Svg>
 ));
 
@@ -520,13 +560,18 @@ const ArcheryIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A person balancing on a thin diagonal slackline — both arms up for balance, one leg
+// planted forward and one lifted back behind — per reference, instead of two posts with a
+// seated figure on a level line.
 const SlackLiningIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <rect x="2" y="14" width="3" height="7" />
-    <rect x="19" y="14" width="3" height="7" />
-    <path d="M5 17h14" />
-    <circle cx="12" cy="12" r="2" />
-    <path d="M12 14v2" />
+    <circle cx="13" cy="5" r="2" fill="currentColor" stroke="none" />
+    <path d="M13 7v8" />
+    <path d="M12.3 9 7.5 3.5" />
+    <path d="M13.3 9 17.5 4.5" />
+    <path d="M13 15 10 19.7" />
+    <path d="M13 15 17.5 13" />
+    <path d="M3 22 21 16" strokeWidth={1.2} />
   </Svg>
 ));
 
@@ -972,6 +1017,7 @@ export const SUBTYPE_ICON_OVERRIDES: Record<string, LucideIcon> = {
   treadmill: WalkTreadmillIcon,
   push_buggy: WalkPushBuggyIcon,
   gymnastics: GymnasticsIcon,
+  acrobats: TrapezeIcon,
   calisthenics: CalisthenicsIcon,
   sandboarding: SandboardingIcon,
   unicycling: UnicyclingIcon,
@@ -980,4 +1026,5 @@ export const SUBTYPE_ICON_OVERRIDES: Record<string, LucideIcon> = {
   rollerskate: RollerskateIcon,
   abseiling: AbseilingIcon,
   athletics: AthleticsIcon,
+  obstacle_course: ObstacleCourseIcon,
 };
