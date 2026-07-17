@@ -376,10 +376,8 @@ const SkiErgIcon = makeIcon(({ size, className }) => (
 const BoxingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <g transform="rotate(8 12 12)">
-      <path d="M9.3 8C9.3 4.7 11.4 2 14 2s4.7 2.7 4.7 6c0 .3 0 .5-.1.8L16.7 19H9" />
-      <path d="M9.3 8c-.2-1-1-1.7-2.1-1.7C5.6 6.3 4.3 7.7 4.3 9.5c0 2.3 1.1 4.2 2.7 5.8.8.8 1.6 1.5 2.1 2.1" />
-      <path d="M8.6 8.3v3.2" />
-      <path d="M6 19h11" strokeWidth={1.4} />
+      <path d="M13 2C16 2 18 4.5 18 7.5L17.5 17H8C6 17 4.3 15.5 4.3 13C4.3 10.8 5.5 9.3 7.3 9C7.6 7 8.5 4.5 10.5 3C11.2 2.5 12 2 13 2Z" />
+      <rect x="6" y="17" width="10" height="4" rx="1.3" />
     </g>
   </Svg>
 ));
