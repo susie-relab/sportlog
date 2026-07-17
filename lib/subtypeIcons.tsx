@@ -293,30 +293,26 @@ const HyroxIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
-// A flexed bicep + fist glyph, following the same two-curve-down-to-a-base technique as
-// LegsIcon (outer bicep bulge + inner arm line) so it reads clearly at small sizes.
-// Filled circles at the fist and base (instead of a thin baseline that all but vanishes at
-// small sizes) keep both ends of the arm clearly visible instead of trailing off.
+// A front-on figure double-bicep flexing — head, shoulders, both arms bent up with a
+// defined bicep bulge on each side, fists near the shoulders, per reference (no face).
 const ArmsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <circle cx="16.5" cy="4.5" r="2.1" fill="currentColor" stroke="none" />
-    <path d="M16.5 6.6c-1 1.3-2.1 2.2-3.4 2.9" />
-    <path d="M13.1 9.5c-4 1-6.2 3.7-5.4 7.1.8 3.4 4.3 4.6 8 4.6" />
-    <circle cx="15.7" cy="21.2" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="4.3" r="2" />
+    <path d="M7.3 9.3c1.3-2 2.9-3 4.7-3s3.4 1 4.7 3" />
+    <path d="M7.3 9.3c-2.8 0-4.8-1.5-4.6-3.7" />
+    <circle cx="2.5" cy="5.2" r="1.4" fill="currentColor" stroke="none" />
+    <path d="M16.7 9.3c2.8 0 4.8-1.5 4.6-3.7" />
+    <circle cx="21.5" cy="5.2" r="1.4" fill="currentColor" stroke="none" />
+    <path d="M12 6.3v9.5" />
   </Svg>
 ));
 
-// A single bent leg, front-on, per reference — a bent-knee silhouette reads more clearly
-// as "legs" at small sizes than a pair of straight legs from a hip bar.
-// Filled foot circles (instead of a thin baseline that all but vanishes at small sizes)
-// keep both feet clearly visible instead of the legs looking like they trail off.
+// A mid-stride running-leg silhouette (chunky rounded strokes standing in for the solid
+// shape), one leg driving forward bent at the knee, the other trailing back, per reference.
 const LegsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M9 3h5" />
-    <path d="M9 3c2.2 2.6 3.6 5.3 3.2 7.4-.3 1.3-1.2 1.8-1.2 3.6 0 1.9.2 3.5.3 4.5" />
-    <path d="M14 3c1 3.6 1.2 6.6 1 8.7-.3 1.8 0 3.5 0 5.3v1.5" />
-    <circle cx="11.6" cy="19.8" r="1.4" fill="currentColor" stroke="none" />
-    <circle cx="15" cy="19.8" r="1.4" fill="currentColor" stroke="none" />
+    <path d="M14 4 17.5 10 15 20" strokeWidth={3} />
+    <path d="M14 4 8.5 8.5 2.5 5" strokeWidth={3} />
   </Svg>
 ));
 
@@ -328,6 +324,8 @@ const BackShouldersIcon = makeIcon(({ size, className }) => (
     <path d="M4 9c-1 4 0 8 2 11" />
     <path d="M20 9c1 4 0 8-2 11" />
     <path d="M12 3v18" />
+    <circle cx="6" cy="20" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="18" cy="20" r="1.3" fill="currentColor" stroke="none" />
   </Svg>
 ));
 
@@ -349,7 +347,8 @@ const RowIndoorIcon = makeIcon(({ size, className }) => (
     <path d="M7 6v3.5" />
     <path d="M7 9.5c-2 1-3.2 2.8-3.2 5" />
     <path d="M7 9.5c1.8.2 3.3 1.2 4.6 2.6" />
-    <path d="M11.6 12.1 19 5.5" />
+    <path d="M11.6 12.1 19 12.1" strokeWidth={1} />
+    <path d="M19 19.5v-9.5" />
     <path d="M4 15h9" />
     <path d="M2 19.5h20" />
   </Svg>
@@ -763,11 +762,19 @@ const SnowboardIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A crouched skier leaning forward, one arm/pole reaching forward, both legs bent down to
+// a single diagonal ski board, per reference.
+// A thin-lined crouched skier: hollow head, a long pole crossing diagonally through the
+// body, an S-bent back, a hooked hand near the face, and two parallel diagonal skis, per
+// reference — all strokes thin rather than the usual bold weight.
 const SkiingIcon = makeIcon(({ size, className }) => (
-  <Svg size={size} className={className}>
-    <path d="M5 21 8 3" />
-    <path d="M14 21 17 3" />
-    <path d="M20 3 16 15" />
+  <Svg size={size} className={className} strokeWidth={1.3}>
+    <circle cx="17" cy="4" r="2" />
+    <path d="M7 .5 16 11.5" />
+    <path d="M14.5 6.5c-1.5 1-2.5 2.3-2.3 4 .2 1.7 1.7 2 1.7 3.8 0 1.3-.5 2.6-1.4 4" />
+    <path d="M13.5 8c1 .3 1.8 1 2.3 2" />
+    <path d="M2 16.5 20 21" strokeWidth={0.9} />
+    <path d="M3 19.5 21 23" strokeWidth={0.9} />
   </Svg>
 ));
 
