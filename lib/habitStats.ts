@@ -17,7 +17,10 @@ export function resolveFrequencyAt(habit: Habit, history: HabitFrequencyChange[]
     frequency_days: latest.frequency_days,
     frequency_interval_days: latest.frequency_interval_days,
     target_per_period: latest.target_per_period,
-    start_date: habit.start_date,
+    // A backdated frequency change (effective_date before the habit's own start_date)
+    // must still make the habit eligible from that date on — otherwise isHabitScheduledOn's
+    // start_date gate silently discards a history row that was explicitly applied to the past.
+    start_date: habit.start_date && habit.start_date < latest.effective_date ? habit.start_date : latest.effective_date,
   };
 }
 

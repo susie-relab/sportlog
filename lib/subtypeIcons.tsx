@@ -371,11 +371,16 @@ const SkiErgIcon = makeIcon(({ size, className }) => (
 
 // --- Fitness Training subtypes ---
 
+// A solid boxing-glove silhouette on a diagonal, per reference, instead of a bare
+// three-finger outline.
 const BoxingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M6 12V8a2 2 0 0 1 4 0v3" />
-    <path d="M10 11V6a2 2 0 0 1 4 0v5" />
-    <path d="M14 11V7a2 2 0 0 1 4 0v6a5 5 0 0 1-5 5H9a4 4 0 0 1-4-4v-2a2 2 0 0 1 2-2Z" />
+    <g transform="rotate(8 12 12)">
+      <path d="M9.3 8C9.3 4.7 11.4 2 14 2s4.7 2.7 4.7 6c0 .3 0 .5-.1.8L16.7 19H9" />
+      <path d="M9.3 8c-.2-1-1-1.7-2.1-1.7C5.6 6.3 4.3 7.7 4.3 9.5c0 2.3 1.1 4.2 2.7 5.8.8.8 1.6 1.5 2.1 2.1" />
+      <path d="M8.6 8.3v3.2" />
+      <path d="M6 19h11" strokeWidth={1.4} />
+    </g>
   </Svg>
 ));
 
@@ -756,9 +761,19 @@ const RaftingIcon = makeIcon(({ size, className }) => (
 
 // --- Snow subtypes ---
 
+// A standing stickman with both feet on a flat board (no lipped ends), tilted onto the
+// opposite diagonal from Sandboarding, per reference.
 const SnowboardIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <rect x="4" y="10" width="16" height="4" rx="2" transform="rotate(-20 12 12)" />
+    <g transform="rotate(18 12 14)">
+      <circle cx="12" cy="5" r="2" fill="currentColor" stroke="none" />
+      <path d="M12 7v6" />
+      <path d="M12 9 8.5 11.5" />
+      <path d="M12 9 15.5 11.5" />
+      <path d="M12 13 9.5 16.5" />
+      <path d="M12 13 14.5 16.5" />
+      <rect x="3.5" y="15.8" width="16" height="1.6" rx="0.8" strokeWidth={0.8} />
+    </g>
   </Svg>
 ));
 
@@ -778,20 +793,28 @@ const SkiingIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A thin-lined sled: top rail, three vertical slats, and a bottom runner that curls up at
+// the front, per reference.
 const SleddingIcon = makeIcon(({ size, className }) => (
-  <Svg size={size} className={className}>
-    <path d="M3 18h14" />
-    <path d="M5 18c0-2 1-3 2-3h8c1 0 2 1 2 3" />
-    <path d="M5 18 3 21" />
-    <path d="M19 18 21 21" />
+  <Svg size={size} className={className} strokeWidth={1.3}>
+    <path d="M4 9h15" />
+    <path d="M7 9v6" />
+    <path d="M11 9v6" />
+    <path d="M15 9v6" />
+    <path d="M2 15h16c2 0 3-2 3-4" />
   </Svg>
 ));
 
+// An ice-skate boot outline with a heel curve, two blade-mount tabs, and a blade line
+// beneath, per reference, instead of a plain rounded-rect boot.
+// A simple shoe-outline silhouette sitting on the skate base (two mount tabs + blade line),
+// per reference, instead of a boot with a separate ankle cuff.
 const SkatingIcon = makeIcon(({ size, className }) => (
-  <Svg size={size} className={className}>
-    <path d="M4 15h9v4H7a3 3 0 0 1-3-3Z" />
-    <path d="M4 19h14" />
-    <path d="M13 11V15" />
+  <Svg size={size} className={className} strokeWidth={1}>
+    <path d="M6 7 8 6c3.3.3 6.6 2 8.7 5.1.8 1.2 1.3 2.6 1.3 3.9H6Z" />
+    <path d="M8 15.6v1.7" />
+    <path d="M15 15.6v1.7" />
+    <path d="M4.5 17.8h14" strokeWidth={0.8} />
   </Svg>
 ));
 
