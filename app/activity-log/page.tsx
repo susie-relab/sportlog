@@ -295,16 +295,16 @@ export default function ActivityLogPage() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={a.image_urls[0]} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-[#334155]" />
                 )}
-                <div className="text-right flex-shrink-0">
-                  <div className="text-sm text-white font-medium">{formatDuration(a.duration_minutes, a.duration_seconds)}</div>
-                  {a.distance_km && <div className="text-xs text-[#64748B]">{formatDistance(a.distance_km, a.exercise_type)}</div>}
-                </div>
                 {(a.companions || a.conditions) && (
                   <span className="text-sm flex-shrink-0" title="With / Conditions">
                     {(a.companions?.split(',') as Companion[] | undefined)?.map(k => COMPANION_EMOJI[k]).join('')}
                     {(a.conditions?.split(',') as WeatherCondition[] | undefined)?.map(k => CONDITION_EMOJI[k]).join('')}
                   </span>
                 )}
+                <div className="text-right flex-shrink-0">
+                  <div className="text-sm text-white font-medium">{formatDuration(a.duration_minutes, a.duration_seconds)}</div>
+                  {a.distance_km && <div className="text-xs text-[#64748B]">{formatDistance(a.distance_km, a.exercise_type)}</div>}
+                </div>
                 <span className="text-[#475569] text-xs ml-1">{isOpen ? '▲' : '▼'}</span>
               </div>
 
