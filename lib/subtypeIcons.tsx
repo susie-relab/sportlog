@@ -312,7 +312,7 @@ const ArmsIcon = makeIcon(({ size, className }) => (
 const LegsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <path d="M14 4 17.5 10 15 20" strokeWidth={3} />
-    <path d="M14 4 8.5 8.5 2.5 5" strokeWidth={3} />
+    <path d="M14 4 8.5 8.5 3.5 9" strokeWidth={3} />
   </Svg>
 ));
 
@@ -376,8 +376,10 @@ const SkiErgIcon = makeIcon(({ size, className }) => (
 const BoxingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <g transform="rotate(8 12 12)">
-      <path d="M13 2C16 2 18 4.5 18 7.5L17.5 17H8C6 17 4.3 15.5 4.3 13C4.3 10.8 5.5 9.3 7.3 9C7.6 7 8.5 4.5 10.5 3C11.2 2.5 12 2 13 2Z" />
-      <rect x="6" y="17" width="10" height="4" rx="1.3" />
+      <path d="M13 2C16 2 18 4.5 18 7.5L17.5 17H8C6 17 4.3 15.5 4.3 13C4.3 10.8 5.5 9.3 7.3 9C7.6 7 8.5 4.5 10.5 3C11.2 2.5 12 2 13 2Z" fill="currentColor" stroke="none" />
+      <rect x="6" y="17" width="10" height="4" rx="1.3" fill="currentColor" stroke="none" />
+      <path d="M7.3 9c.3 2.5 1 5.5 1 8" stroke="white" strokeWidth={1} fill="none" />
+      <path d="M6.3 17.2h9.4" stroke="white" strokeWidth={1} fill="none" />
     </g>
   </Svg>
 ));
@@ -521,12 +523,14 @@ const TrapezeIcon = makeIcon(({ size, className }) => (
 
 const CalisthenicsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M3 4h18" />
-    <circle cx="12" cy="8" r="2" />
-    <path d="M9 4 12 10" />
-    <path d="M15 4 12 10" />
-    <path d="M12 10v6" />
-    <path d="M9 20l3-4 3 4" />
+    <g transform="rotate(90 12 12)">
+      <path d="M3 4h18" />
+      <circle cx="12" cy="9" r="2" />
+      <path d="M8.5 4 12 11" />
+      <path d="M15.5 4 12 11" />
+      <path d="M12 11v5" />
+      <path d="M9 20l3-4 3 4" />
+    </g>
   </Svg>
 ));
 
