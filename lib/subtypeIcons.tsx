@@ -376,10 +376,10 @@ const SkiErgIcon = makeIcon(({ size, className }) => (
 const BoxingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <g transform="rotate(8 12 12)">
-      <path d="M13 2C16 2 18 4.5 18 7.5L17.5 17H8C6 17 4.3 15.5 4.3 13C4.3 10.8 5.5 9.3 7.3 9C7.6 7 8.5 4.5 10.5 3C11.2 2.5 12 2 13 2Z" fill="currentColor" stroke="none" />
-      <rect x="6" y="17" width="10" height="4" rx="1.3" fill="currentColor" stroke="none" />
-      <path d="M7.3 9c.3 2.5 1 5.5 1 8" stroke="white" strokeWidth={1} fill="none" />
-      <path d="M6.3 17.2h9.4" stroke="white" strokeWidth={1} fill="none" />
+      <path d="M13 2C16 2 18 4.5 18 7.5L17.5 17H8C6 17 4.3 15.5 4.3 13C4.3 10.8 5.5 9.3 7.3 9C7.6 7 8.5 4.5 10.5 3C11.2 2.5 12 2 13 2Z" fill="#94A3B8" stroke="currentColor" />
+      <rect x="6" y="17" width="10" height="4" rx="1.3" fill="#94A3B8" stroke="currentColor" />
+      <path d="M7.3 9c.3 2.5 1 5.5 1 8" strokeWidth={1} fill="none" />
+      <path d="M6.3 18.6h9.4" strokeWidth={1} fill="none" />
     </g>
   </Svg>
 ));
@@ -525,10 +525,10 @@ const CalisthenicsIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <g transform="rotate(90 12 12)">
       <path d="M3 4h18" />
-      <circle cx="12" cy="9" r="2" />
-      <path d="M8.5 4 12 11" />
-      <path d="M15.5 4 12 11" />
-      <path d="M12 11v5" />
+      <circle cx="12" cy="11" r="1.5" />
+      <path d="M8.5 4 12 12.5" />
+      <path d="M15.5 4 12 12.5" />
+      <path d="M12 12.5v3.5" />
       <path d="M9 20l3-4 3 4" />
     </g>
   </Svg>
@@ -615,8 +615,6 @@ const AthleticsIcon = makeIcon(({ size, className }) => (
     <path d="M19 4v16" />
     <path d="M5 5h14" />
     <path d="M5 8h14" />
-    <rect x="3.5" y="20" width="3" height="2.5" />
-    <rect x="17.5" y="20" width="3" height="2.5" />
   </Svg>
 ));
 
@@ -836,19 +834,18 @@ const PoolIcon = makeIcon(({ size, className }) => (
 const WaterJoggingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <circle cx="12" cy="5" r="2" fill="currentColor" stroke="none" />
-    <path d="M12 8v4" />
-    <path d="M12 8 9 5" />
-    <path d="M12 8l3-3" />
+    <path d="M12 9v6" />
+    <path d="M12 9 9 8" />
+    <path d="M12 9 15 8" />
     <path d="M2 17c3-2 6-2 9 0s6 2 9 0" />
   </Svg>
 ));
 
-// A simpler two-line swell, for open-water/ocean swims — the earlier curling-crest
-// version was more elaborate than this icon set's other water glyphs.
+// A cresting wave with a curling top, plus a calmer swell line below, per reference.
 const OceanIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M2 10c3-2 6-2 9 0s6 2 9 0" />
-    <path d="M2 16c3-2 6-2 9 0s6 2 9 0" />
+    <path d="M2 14c2.5-1 3.5-3.5 3.5-6c0 2.8 2 4.6 4.3 4.6c1 0 1.7-.5 1.7-1.3c0 1.6 1.6 2.4 3.5 2.4c2 0 4-.9 5.5-2.2" />
+    <path d="M2 18c3-1.3 6-1.3 9 0s6 1.3 9 0" />
   </Svg>
 ));
 
