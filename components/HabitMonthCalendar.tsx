@@ -152,8 +152,9 @@ export default function HabitMonthCalendar({ habits, logs, frequencyHistory, onC
                 return (
                   <button
                     key={h.id}
-                    onClick={() => onCycle(h, selectedDate)}
-                    className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-[#334155] hover:border-[#475569] text-left"
+                    onClick={() => { if (!skipped) onCycle(h, selectedDate); }}
+                    disabled={skipped}
+                    className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-[#334155] text-left ${skipped ? 'opacity-50 cursor-not-allowed' : 'hover:border-[#475569]'}`}
                     style={{ background: ratio > 0 ? hexToRgba(h.color, Math.max(0.12, ratio * 0.3)) : 'transparent' }}
                   >
                     <span className="flex items-center gap-2 min-w-0">

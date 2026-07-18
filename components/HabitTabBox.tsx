@@ -6,7 +6,7 @@ import {
   HABIT_COLORS, HABIT_FREQUENCY_LABELS, isHabitScheduledOn,
 } from '@/types';
 import { todayLocalISO } from '@/lib/utils';
-import { getMonthDays, completionPctInRange, completionRatio, habitDayStats, addDaysISO, displayTarget, resolveFrequencyAt } from '@/lib/habitStats';
+import { getMonthDays, completionPctInRange, completionRatio, habitDayStats, addDaysISO, displayTarget, resolveFrequencyAt, isSkippableFrequency, periodBoundsFor } from '@/lib/habitStats';
 
 interface CategoryDef { key: string; label: string; emoji: string; isCustom: boolean; habitCount: number }
 
@@ -290,7 +290,6 @@ export default function HabitTabBox({
   const [showEdit, setShowEdit] = useState(false);
   const [showManageCategories, setShowManageCategories] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const categoryDragRef = useRef<{ fromKey: string; moved: boolean } | null>(null);
   const habitManageDragRef = useRef<{ fromId: string } | null>(null);
   const categoryManageDragRef = useRef<{ fromKey: string } | null>(null);
 
@@ -322,6 +321,7 @@ export default function HabitTabBox({
   const [renameValue, setRenameValue] = useState('');
   const [newCatName, setNewCatName] = useState('');
   const [newCatEmoji, setNewCatEmoji] = useState('⭐');
+  const [showLastDayNotice, setShowLastDayNotice] = useState(false);
 
   const todayISO = todayLocalISO();
   const year = Number(todayISO.slice(0, 4));
@@ -366,40 +366,6 @@ export default function HabitTabBox({
     setEditInterval(String(h.frequency_interval_days || 2));
     setEditTarget(String(h.target_per_period));
     setEditTimeOfDay(h.time_of_day || '');
-  };
-
-  // Press-and-hold drag to reorder category tabs — a tap (no movement) selects the category
-  // instead. The box currently under the pointer gets a ring highlight so it's clear where
-  // the dragged tab will land, cleared again on drop.
-  const handleCategoryPointerDown = (key: string) => (e: React.PointerEvent) => {
-    e.preventDefault();
-    categoryDragRef.current = { fromKey: key, moved: false };
-    window.addEventListener('pointermove', handleCategoryPointerMove);
-    window.addEventListener('pointerup', handleCategoryPointerUp);
-  };
-  const handleCategoryPointerMove = (e: PointerEvent) => {
-    const drag = categoryDragRef.current;
-    if (!drag) return;
-    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-    const overEl = el?.closest('[data-category-key]') as HTMLElement | null;
-    document.querySelectorAll('[data-category-key]').forEach(t => t.classList.remove('ring-2', 'ring-blue-400', 'ring-inset'));
-    if (overEl && overEl.dataset.categoryKey !== drag.fromKey) {
-      drag.moved = true;
-      overEl.classList.add('ring-2', 'ring-blue-400', 'ring-inset');
-    }
-  };
-  const handleCategoryPointerUp = (e: PointerEvent) => {
-    const drag = categoryDragRef.current;
-    categoryDragRef.current = null;
-    window.removeEventListener('pointermove', handleCategoryPointerMove);
-    window.removeEventListener('pointerup', handleCategoryPointerUp);
-    document.querySelectorAll('[data-category-key]').forEach(t => t.classList.remove('ring-2', 'ring-blue-400', 'ring-inset'));
-    if (!drag) return;
-    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-    const overEl = el?.closest('[data-category-key]') as HTMLElement | null;
-    const toKey = overEl?.dataset.categoryKey;
-    if (drag.moved && toKey && toKey !== drag.fromKey) onReorderCategory(drag.fromKey, toKey);
-    else onSelectCategory(drag.fromKey);
   };
 
   // Press-and-hold drag on the sort handle to reorder habits within the "Reorder & Edit" list —
@@ -536,12 +502,10 @@ export default function HabitTabBox({
           return (
             <button
               key={c.key}
-              data-category-key={c.key}
-              onPointerDown={handleCategoryPointerDown(c.key)}
+              onClick={() => onSelectCategory(c.key)}
               className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors select-none ${
                 active ? 'bg-[#293548] border-blue-500 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
               }`}
-              style={{ touchAction: 'none' }}
             >
               {c.emoji} {c.label}
             </button>
@@ -621,16 +585,32 @@ export default function HabitTabBox({
               ×
             </button>
           </Tip>
+          {isSkippableFrequency(selected.frequency_type) && (
           <Tip label="Skip for today">
             <button
-              onClick={() => onSkipToday(selected)}
+              onClick={() => {
+                const alreadySkipped = logsByDate.get(todayISO)?.count === -2;
+                if (!alreadySkipped && periodBoundsFor(selected, todayISO)[1] === todayISO) { setShowLastDayNotice(true); return; }
+                onSkipToday(selected);
+              }}
               aria-label="Skip for today"
               className={`w-7 h-7 rounded-full flex items-center justify-center ${logsByDate.get(todayISO)?.count === -2 ? 'bg-slate-400/80 text-white' : 'bg-[#334155] text-white hover:bg-[#475569]'}`}
             >
               <SkipForward size={14} fill="currentColor" />
             </button>
           </Tip>
+          )}
         </div>
+        {showLastDayNotice && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowLastDayNotice(false)}>
+            <div className="card max-w-xs text-center" onClick={e => e.stopPropagation()}>
+              <p className="text-sm text-white leading-relaxed">
+                Can&apos;t skip as this is the last chance to complete habit this {selected.frequency_type === 'monthly' ? 'month' : 'week'} — mark as didn&apos;t complete if you are unable to achieve habit today.
+              </p>
+              <button onClick={() => setShowLastDayNotice(false)} className="btn-secondary w-full mt-3 text-sm">OK</button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="text-center mb-5">

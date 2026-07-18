@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { SkipForward } from 'lucide-react';
 import { Habit, HabitLog, HabitFrequencyType, HabitColorKey, HABIT_COLORS } from '@/types';
 import { todayLocalISO } from '@/lib/utils';
-import { periodProgress } from '@/lib/habitStats';
+import { periodProgress, isSkippableFrequency, periodBoundsFor } from '@/lib/habitStats';
 import { ApplyOption, FrequencyApplyPicker, FrequencyFields, PencilIcon, TimeOfDayField, Tip } from '@/components/HabitTabBox';
 
 interface CategoryOption { key: string; label: string; emoji: string }
@@ -63,6 +63,9 @@ export default function HabitListRow({ habit, logs, categories, onIncrement, onD
   const isFailedToday = rawTodayCount === -1;
   const isSkippedToday = rawTodayCount === -2;
   const todayCount = (isFailedToday || isSkippedToday) ? 0 : rawTodayCount;
+  const canSkip = isSkippableFrequency(habit.frequency_type);
+  const isLastDayOfPeriod = canSkip && periodBoundsFor(habit, todayISO)[1] === todayISO;
+  const [showLastDayNotice, setShowLastDayNotice] = useState(false);
 
   // A tap toggles the editor open/closed (like the Cancel button); opening also refreshes
   // the form fields to the habit's current values.
@@ -213,9 +216,14 @@ const toggleEditor = () => {
                 ×
               </button>
             </Tip>
+            {canSkip && (
             <Tip label="Skip for today">
               <button
-                onClick={e => { e.stopPropagation(); onSkip(); }}
+                onClick={e => {
+                  e.stopPropagation();
+                  if (isLastDayOfPeriod && !isSkippedToday) { setShowLastDayNotice(true); return; }
+                  onSkip();
+                }}
                 onPointerDown={e => e.stopPropagation()}
                 aria-label="Skip for today"
                 className={`w-5 h-5 rounded-full flex items-center justify-center ${isSkippedToday ? 'bg-slate-400/80 text-white' : 'bg-black/25 text-white/70 hover:bg-black/40'}`}
@@ -223,6 +231,17 @@ const toggleEditor = () => {
                 <SkipForward size={11} fill="currentColor" />
               </button>
             </Tip>
+            )}
+            {showLastDayNotice && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={e => { e.stopPropagation(); setShowLastDayNotice(false); }}>
+                <div className="card max-w-xs text-center" onClick={e => e.stopPropagation()}>
+                  <p className="text-sm text-white leading-relaxed">
+                    Can&apos;t skip as this is the last chance to complete habit this {habit.frequency_type === 'monthly' ? 'month' : 'week'} — mark as didn&apos;t complete if you are unable to achieve habit today.
+                  </p>
+                  <button onClick={() => setShowLastDayNotice(false)} className="btn-secondary w-full mt-3 text-sm">OK</button>
+                </div>
+              </div>
+            )}
             <button
               onClick={e => { e.stopPropagation(); toggleEditor(); }}
               onPointerDown={e => e.stopPropagation()}

@@ -89,14 +89,20 @@ function daysBetweenISO(aISO: string, bISO: string): number {
   return Math.round((new Date(by, bm - 1, bd).getTime() - new Date(ay, am - 1, ad).getTime()) / 86400000);
 }
 
-const isPeriodBasedType = (freq: HabitFrequencyConfig['frequency_type']) =>
+export const isPeriodBasedType = (freq: HabitFrequencyConfig['frequency_type']) =>
   freq === 'weekly' || freq === 'fortnightly' || freq === 'monthly' || freq === 'every_n_days';
+
+/** Week/month-style habits only — the ones a "period" (rather than a single day) applies to,
+ *  and so the only ones a Skip makes sense for (skipping a daily habit's one-and-only day
+ *  would just be identical to marking it failed). */
+export const isSkippableFrequency = (freq: HabitFrequencyConfig['frequency_type']) =>
+  freq === 'weekly' || freq === 'monthly';
 
 /** The stable, non-overlapping period [start, end] containing dateISO for a period-based
  *  habit (weekly/fortnightly/monthly/every_n_days) — e.g. "3 times a week" is judged against
  *  the whole calendar week's total, not each individual day, so a single "didn't happen" day
  *  doesn't wrongly break a streak the user already made up elsewhere in the same period. */
-function periodBoundsFor(cfg: HabitFrequencyConfig, dateISO: string): [string, string] {
+export function periodBoundsFor(cfg: HabitFrequencyConfig, dateISO: string): [string, string] {
   switch (cfg.frequency_type) {
     case 'weekly': {
       const days = getWeekDays(dateISO);
