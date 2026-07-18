@@ -6,7 +6,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, subTypeLabel, combinedRunTypeLabel, YearTotalTile, Habit, HabitLog } from '@/types';
 import { formatDuration, daysAgo, calcDayStreak, calcWeekStreak, todayLocalISO } from '@/lib/utils';
 import { completionPctInRange, addDaysISO } from '@/lib/habitStats';
-import { PlanRecord, PlanData, Session, Weekday, runPlanDisplayName, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS, movePlanSession, addSessionToDay, sessionParts } from '@/lib/runPlanGenerator';
+import { PlanRecord, PlanData, PlanConfig, Session, Weekday, runPlanDisplayName, todaysSession, nextSession, isRunSession, planSessionHref, WEEKDAYS, movePlanSession, addSessionToDay, sessionParts } from '@/lib/runPlanGenerator';
 import PlanWeekTable, { sessionColor, sessionTarget, exerciseTypeTag } from '@/components/PlanWeekTable';
 import PlanDaySheet from '@/components/PlanDaySheet';
 import Link from 'next/link';
@@ -696,6 +696,13 @@ export default function DashPage() {
           onSave={persistDetailPlan}
           onClose={() => setDetail(null)}
           onLogAndComplete={(s, partIndex) => router.push(planSessionHref(s, detailPlan.id, detail.week, detail.day, partIndex, true))}
+          cfg={detailPlan.plan_kind === 'run' ? ({
+            distance: detailPlan.distance, customDistanceKm: detailPlan.custom_distance_km || undefined,
+            level: detailPlan.level, weeks: detailPlan.weeks, daysPerWeek: detailPlan.days_per_week,
+            daysPerWeekMin: detailPlan.days_per_week_min || detailPlan.days_per_week,
+            trainDays: detailPlan.train_days, goalTimeSeconds: detailPlan.goal_time_seconds, startDistanceKm: detailPlan.start_distance_km,
+            startDate: detailPlan.start_date,
+          } as PlanConfig) : undefined}
         />
       )}
 

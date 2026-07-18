@@ -142,6 +142,7 @@ function DayCell({ s, onClick, compact, drag }: {
         onClick={drag ? undefined : onClick}
         onPointerDown={drag?.onPointerDown}
         aria-label={drag ? 'Tap to view, press and hold to drag to another day' : undefined}
+        style={drag ? { touchAction: 'none' } : undefined}
         className={`w-full text-left rounded-lg transition-all select-none ${
           isCombined ? 'p-1 flex flex-col gap-1' : 'p-2.5'
         } border ${
