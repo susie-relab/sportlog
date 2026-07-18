@@ -696,6 +696,7 @@ export default function DashPage() {
           onSave={persistDetailPlan}
           onClose={() => setDetail(null)}
           onLogAndComplete={(s, partIndex) => router.push(planSessionHref(s, detailPlan.id, detail.week, detail.day, partIndex, true))}
+          showGoalLabel
           cfg={detailPlan.plan_kind === 'run' ? ({
             distance: detailPlan.distance, customDistanceKm: detailPlan.custom_distance_km || undefined,
             level: detailPlan.level, weeks: detailPlan.weeks, daysPerWeek: detailPlan.days_per_week,

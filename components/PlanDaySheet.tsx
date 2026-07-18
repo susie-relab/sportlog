@@ -21,9 +21,12 @@ interface Props {
   onLogAndComplete?: (session: Session, partIndex?: number) => void;
   /** Needed for the easier/harder/reset buttons; omit to hide them. */
   cfg?: PlanConfig;
+  /** Appends " goal" after the planned distance/time (e.g. "92 min goal") — used on Dash to
+   *  make clear the figure shown is the target, not what was actually done. */
+  showGoalLabel?: boolean;
 }
 
-export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAndComplete, cfg }: Props) {
+export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAndComplete, cfg, showGoalLabel }: Props) {
   const { user } = useAuth();
   const [assigningPart, setAssigningPart] = useState<number | null>(null);
   const [recentActivities, setRecentActivities] = useState<Activity[] | null>(null);
@@ -235,7 +238,11 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
                           <div className="min-w-0">
                             <h3 className="text-base font-bold text-white">{p.title}</h3>
                             {exerciseTypeTag(p) && <p className="text-xs text-[#64748B]">{exerciseTypeTag(p)}</p>}
-                            {sessionTarget(p) && <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(p) }}>{sessionTarget(p)}</p>}
+                            {sessionTarget(p) && (
+                              <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(p) }}>
+                                {sessionTarget(p)}{showGoalLabel && !p.completed ? ' goal' : ''}
+                              </p>
+                            )}
                             {p.repLabel && p.estKm != null && (
                               <p className="text-xs text-[#64748B] mt-0.5">≈ {p.estKm} km total (incl. warm-up/cooldown)</p>
                             )}
@@ -335,7 +342,11 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
               <>
                 <h3 className="text-lg font-bold text-white">{sel.title}</h3>
                 {exerciseTypeTag(sel) && <p className="text-xs text-[#64748B]">{exerciseTypeTag(sel)}</p>}
-                {sessionTarget(sel) && <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(sel) }}>{sessionTarget(sel)}</p>}
+                {sessionTarget(sel) && (
+                  <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(sel) }}>
+                    {sessionTarget(sel)}{showGoalLabel && !sel.completed ? ' goal' : ''}
+                  </p>
+                )}
                 {sel.repLabel && sel.estKm != null && (
                   <p className="text-xs text-[#64748B] mt-0.5">≈ {sel.estKm} km total (incl. warm-up/cooldown)</p>
                 )}
