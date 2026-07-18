@@ -306,7 +306,7 @@ export const FITNESS_SUB_LABELS: Record<FitnessSubType, string> = {
   rollerskate: 'Rollerskate', abseiling: 'Abseiling', athletics: 'Athletics', obstacle_course: 'Obstacle Course',
 };
 export const BIKE_SUB_LABELS: Record<BikeSubType, string> = {
-  mtb: 'MTB', road: 'Road', mixed_terrain: 'Mixed Terrain', commute: 'Commute', electric: 'Electric',
+  mixed_terrain: 'Mixed Terrain', mtb: 'MTB', road: 'Road', commute: 'Commute', electric: 'Electric',
   indoor_spin: 'Indoor Spin', bmx: 'BMX', track: 'Track', bikepacking: 'Bikepacking',
 };
 export const STRETCH_SUB_LABELS: Record<StretchSubType, string> = {
