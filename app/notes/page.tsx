@@ -6,6 +6,7 @@ import { Activity, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
 import { formatDate, todayLocalISO, openDatePicker, formatDistance } from '@/lib/utils';
 import ImageUploader from '@/components/ImageUploader';
 import ImageGallery from '@/components/ImageGallery';
+import AccountSwitcher from '@/components/AccountSwitcher';
 
 interface StandaloneNote {
   id: string;
@@ -173,9 +174,12 @@ export default function NotesPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-1 gap-2">
+      <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
         <h1 className="text-xl font-bold text-white">Notes</h1>
-        <button onClick={openAdd} className="btn-primary text-sm px-4 py-2 flex-shrink-0">+ Add Note</button>
+        <div className="flex items-center gap-3">
+          <button onClick={openAdd} className="btn-primary text-sm px-4 py-2 flex-shrink-0">+ Add Note</button>
+          <AccountSwitcher compact />
+        </div>
       </div>
       <p className="text-sm text-[#64748B] mb-4">Training diary: including notes from activities</p>
 

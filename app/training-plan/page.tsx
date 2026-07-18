@@ -9,6 +9,7 @@ import SportPlanBuilder from '@/components/SportPlanBuilder';
 import CustomPlanBuilder from '@/components/CustomPlanBuilder';
 import PlanView from '@/components/PlanView';
 import GoalsPanel from '@/components/GoalsPanel';
+import AccountSwitcher from '@/components/AccountSwitcher';
 
 type Mode = 'plans' | 'goals';
 type BuildKind = 'run' | 'sport' | 'custom';
@@ -235,7 +236,10 @@ export default function PlanPage() {
 
   return (
     <div className="max-w-2xl lg:max-w-4xl mx-auto">
-      <h1 className="text-xl font-bold text-white mb-4">Training Plan</h1>
+      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+        <h1 className="text-xl font-bold text-white">Training Plan</h1>
+        <AccountSwitcher compact />
+      </div>
 
       {/* Mode toggle */}
       <div className="grid grid-cols-2 gap-1.5 mb-6 p-1 bg-[#0F172A] rounded-xl border border-[#293548]">

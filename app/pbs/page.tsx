@@ -7,6 +7,7 @@ import { formatPaceMinKm, formatDuration, formatDate, openDatePicker, formatDist
 import ShareCard, { ShareStat } from '@/components/ShareCard';
 import EditActivityModal from '@/components/EditActivityModal';
 import { PB_SHARE_ICON } from '@/lib/shareIcons';
+import AccountSwitcher from '@/components/AccountSwitcher';
 import { DISTANCE_PB_KM, DISTANCE_LABELS } from '@/lib/pbDetect';
 
 const EXERCISE_TYPES: ExerciseType[] = ['run', 'walk', 'sport', 'hiit', 'stretch', 'bike', 'swim', 'solo_fitness', 'water', 'snow'];
@@ -397,7 +398,10 @@ export default function PBsPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-xl font-bold text-white mb-5">Personal Bests ⭐</h1>
+      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
+        <h1 className="text-xl font-bold text-white">Personal Bests ⭐</h1>
+        <AccountSwitcher compact />
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-1.5 flex-wrap mb-5 overflow-x-auto pb-1">

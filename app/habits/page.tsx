@@ -12,6 +12,7 @@ import { todayLocalISO } from '@/lib/utils';
 import { currentStreak, totalCompletions, periodProgress, addDaysISO } from '@/lib/habitStats';
 import HabitListRow from '@/components/HabitListRow';
 import HabitMonthCalendar from '@/components/HabitMonthCalendar';
+import AccountSwitcher from '@/components/AccountSwitcher';
 import HabitTabBox, { ApplyOption, FrequencyFields, StartDateFields, StartOption, resolveStartDate } from '@/components/HabitTabBox';
 
 type SortKey = 'name' | 'category' | 'colour' | 'frequency' | 'amount' | 'streak' | 'most_done' | 'completion' | 'time_of_day';
@@ -604,11 +605,12 @@ export default function HabitsPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
         <h1 className="text-xl font-bold text-white">Habits</h1>
         <div className="flex items-center gap-3">
           <button onClick={() => { setShowArchived(true); loadArchived(); }} className="text-sm text-[#64748B] hover:text-white">Paused</button>
           <button onClick={() => setShowAdd(true)} className="btn-primary text-sm">+ Add Habit</button>
+          <AccountSwitcher compact />
         </div>
       </div>
 

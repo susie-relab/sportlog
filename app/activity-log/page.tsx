@@ -15,6 +15,7 @@ import ShareCard, { ShareStat } from '@/components/ShareCard';
 import ShareRangeMenu from '@/components/ShareRangeMenu';
 import { EXERCISE_TYPE_ICONS, THIRTY_DAY_SHARE_ICON } from '@/lib/shareIcons';
 import ExportModal from '@/components/ExportModal';
+import AccountSwitcher from '@/components/AccountSwitcher';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 type ChartWindow = '30d' | '90d' | '6m' | '1y' | 'all';
@@ -140,6 +141,7 @@ export default function ActivityLogPage() {
           >
             ↓ Export
           </button>
+          <AccountSwitcher compact />
         </div>
       </div>
 

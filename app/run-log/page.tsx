@@ -8,6 +8,7 @@ import EditActivityModal from '@/components/EditActivityModal';
 import ShareCard, { ShareStat } from '@/components/ShareCard';
 import ShareRangeMenu from '@/components/ShareRangeMenu';
 import { WEEK_SHARE_ICON } from '@/lib/shareIcons';
+import AccountSwitcher from '@/components/AccountSwitcher';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import ExportModal from '@/components/ExportModal';
 
@@ -99,6 +100,7 @@ export default function RunLogPage() {
           >
             ↓ Export
           </button>
+          <AccountSwitcher compact />
         </div>
       </div>
 

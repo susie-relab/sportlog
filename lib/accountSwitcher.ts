@@ -5,6 +5,7 @@ import type { Session } from '@supabase/supabase-js';
 export interface SavedAccount {
   userId: string;
   email: string;
+  username?: string | null;
   avatarUrl?: string | null;
   avatarColor?: string | null;
   accessToken: string;
@@ -36,6 +37,7 @@ export function rememberSession(session: Session) {
   const next: SavedAccount = {
     userId: session.user.id,
     email: session.user.email,
+    username: (session.user.user_metadata?.username as string | undefined) ?? null,
     avatarUrl: (session.user.user_metadata?.avatar_url as string | undefined) ?? null,
     avatarColor: (session.user.user_metadata?.avatar_color as string | undefined) ?? null,
     accessToken: session.access_token,

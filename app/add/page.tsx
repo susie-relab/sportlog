@@ -28,6 +28,7 @@ import { sessionParts, combineSessions, WEEKDAYS, isRunSession } from '@/lib/run
 import ConfettiBurst from '@/components/ConfettiBurst';
 import PbCelebrationModal from '@/components/PbCelebrationModal';
 import ActivitySavedModal, { randomEncouragement } from '@/components/ActivitySavedModal';
+import AccountSwitcher from '@/components/AccountSwitcher';
 import { detectAutoPBs } from '@/lib/pbDetect';
 import { todayLocalISO, openDatePicker, calcAge, formatDuration, formatDistance } from '@/lib/utils';
 
@@ -363,11 +364,14 @@ export default function AddPage() {
 
   return (
     <div className="max-w-lg lg:max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
         <h1 className="text-xl font-bold text-white">Add Exercise</h1>
-        <button type="button" onClick={openRepeatPicker} className="text-sm text-blue-400 hover:text-blue-300">
-          ↻ Repeat a recent activity
-        </button>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <button type="button" onClick={openRepeatPicker} className="text-sm text-blue-400 hover:text-blue-300">
+            ↻ Repeat a recent activity
+          </button>
+          <AccountSwitcher compact />
+        </div>
       </div>
 
       {confettiColor && <ConfettiBurst color={confettiColor} />}

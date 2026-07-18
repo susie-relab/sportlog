@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, subTypeLabel, RUN_TYPE_LABELS } from '@/types';
 import { formatDuration, formatPaceMinKm, formatDistance } from '@/lib/utils';
+import AccountSwitcher from '@/components/AccountSwitcher';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
@@ -250,7 +251,10 @@ export default function TotalStatsPage() {
 
   return (
     <div className="max-w-2xl lg:max-w-5xl mx-auto">
-      <h1 className="text-xl font-bold text-white mb-5">Stats</h1>
+      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
+        <h1 className="text-xl font-bold text-white">Stats</h1>
+        <AccountSwitcher compact />
+      </div>
 
       {/* Period selector */}
       <div className="flex gap-2 flex-wrap mb-4">

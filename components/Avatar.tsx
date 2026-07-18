@@ -11,10 +11,10 @@ export type AvatarColorKey = keyof typeof AVATAR_COLORS;
 
 /** Circular avatar — shows the user's uploaded photo, or a default panda (face colour
  *  configurable so different accounts/devices can be told apart at a glance). */
-export default function Avatar({ url, size = 32, color }: { url?: string | null; size?: number; color?: string | null }) {
+export default function Avatar({ url, size = 32, color, bare = false }: { url?: string | null; size?: number; color?: string | null; bare?: boolean }) {
   return (
     <span
-      className="inline-block rounded-full overflow-hidden bg-[#EAF2FF] flex-shrink-0"
+      className={`inline-block rounded-full overflow-hidden flex-shrink-0 ${bare ? '' : 'bg-[#EAF2FF]'}`}
       style={{ width: size, height: size }}
     >
       {url ? (
