@@ -135,7 +135,7 @@ export default function TrainingMonthCalendar({ activities, plans, todayISO }: P
               }`}
             >
               <span className="text-[9px] text-[#64748B] flex-shrink-0">{dayNum}</span>
-              <div className="flex-1 flex flex-wrap items-center justify-center content-center gap-0.5 overflow-hidden text-lg leading-none">
+              <div className="flex-1 flex flex-wrap items-center justify-center content-center gap-0.5 overflow-hidden text-[10px] leading-none sm:text-base">
                 {icons.slice(0, 6).map((icon, idx) => <span key={idx}>{icon.emoji}</span>)}
               </div>
             </button>
