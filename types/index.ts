@@ -204,7 +204,7 @@ export type SportStyle = 'indoor' | 'outdoor' | 'grass' | 'turf' | 'clay_dirt' |
 export type GymSubType = 'hiit_workout' | 'strength' | 'conditioning' | 'crossfit' | 'hyrox' | 'arms' | 'legs' | 'back_shoulders' | 'core' | 'row_indoor' | 'stair_climber' | 'ski_erg';
 export type WaterSubType = 'kayak' | 'sailing' | 'surf' | 'rowing' | 'waka_ama' | 'sup' | 'body_boarding' | 'bodysurfing' | 'windsurfing' | 'kitesurfing' | 'wakeboarding' | 'waterskiing' | 'diving' | 'spear_fishing' | 'fishing' | 'rafting' | 'canyoning' | 'coasteering';
 export type WaterStyle = 'recreational' | 'training' | 'competition' | 'whitewater' | 'hydrofoil' | 'park';
-export type SnowSubType = 'snowboard' | 'skiing' | 'sledding' | 'skating';
+export type SnowSubType = 'snowboard' | 'skiing' | 'sledding' | 'skating' | 'snowshoeing' | 'alpine_climbing';
 export type SnowStyle = 'downhill' | 'cross_country' | 'half_pipe' | 'freestyle' | 'park' | 'recreational' | 'training' | 'competition';
 export type SwimSubType = 'ocean' | 'pool' | 'water_jogging' | 'aqua_aerobics';
 export type SwimFocus = 'endurance' | 'sprint' | 'technique' | 'power' | 'recovery' | 'distance' | 'interval_set' | 'time_trial';
@@ -276,6 +276,7 @@ export const WATER_STYLE_LABELS: Record<WaterStyle, string> = {
 };
 export const SNOW_SUB_LABELS: Record<SnowSubType, string> = {
   snowboard: 'Snowboard', skiing: 'Skiing', sledding: 'Sledding', skating: 'Skating',
+  snowshoeing: 'Snowshoeing', alpine_climbing: 'Alpine Climbing',
 };
 export const SNOW_STYLE_LABELS: Record<SnowStyle, string> = {
   downhill: 'Downhill', cross_country: 'Cross-country', half_pipe: 'Half-pipe', freestyle: 'Freestyle', park: 'Park',

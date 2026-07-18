@@ -819,6 +819,36 @@ const SkatingIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A walking figure with both feet on oval snowshoes.
+const SnowshoeingIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <circle cx="12" cy="4" r="2" fill="currentColor" stroke="none" />
+    <path d="M12 6v5" />
+    <path d="M12 8 9 10" />
+    <path d="M12 8 15 10" />
+    <path d="M12 11 9 15" />
+    <path d="M12 11 15 15" />
+    <ellipse cx="9" cy="17.3" rx="3" ry="1.8" />
+    <ellipse cx="15" cy="17.3" rx="3" ry="1.8" />
+  </Svg>
+));
+
+// A climber on a steep slope, ice axe planted overhead, per the Skiing/Sandboarding
+// icons' "figure + tool + line" pattern.
+const AlpineClimbingIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <path d="M2 21 20 4" strokeWidth={1.2} />
+    <circle cx="14" cy="9" r="2" fill="currentColor" stroke="none" />
+    <path d="M14 11v4" />
+    <path d="M14 12 10 10" />
+    <path d="M10 10 7 6.5" strokeWidth={1} />
+    <path d="M7 6.5 5.3 6" strokeWidth={1} />
+    <path d="M14 12 17 14" />
+    <path d="M14 15 11 19" />
+    <path d="M14 15 16 19" />
+  </Svg>
+));
+
 // --- Swim subtypes ---
 
 const PoolIcon = makeIcon(({ size, className }) => (
@@ -1032,6 +1062,8 @@ export const SUBTYPE_ICON_OVERRIDES: Record<string, LucideIcon> = {
   rafting: RaftingIcon,
   sledding: SleddingIcon,
   skating: SkatingIcon,
+  snowshoeing: SnowshoeingIcon,
+  alpine_climbing: AlpineClimbingIcon,
   water_jogging: WaterJoggingIcon,
   ocean: OceanIcon,
   aqua_aerobics: AquaAerobicsIcon,

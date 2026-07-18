@@ -44,12 +44,12 @@ function IconSubtypeButton({ label, subtypeKey, active, onClick, activeClass }: 
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${
+      className={`flex items-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium border transition-all text-left ${
         active ? activeClass : 'border-transparent text-[#94A3B8] hover:text-white'
       }`}
     >
-      {Icon && <Icon size={16} className="flex-shrink-0" />}
-      <span>{label}</span>
+      {Icon && <Icon size={15} className="flex-shrink-0" />}
+      <span className="truncate">{label}</span>
     </button>
   );
 }
@@ -611,7 +611,7 @@ export default function AddPage() {
         {exerciseType === 'walk' && (
           <div>
             <label className="label">Walk Type <span className="text-[#64748B]">(optional + multi-select)</span></label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-3 gap-1.5">
               {(Object.keys(WALK_SUB_LABELS) as WalkSubType[]).map(t => {
                 const active = walkTypes.includes(t);
                 return (
