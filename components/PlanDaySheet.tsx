@@ -236,6 +236,9 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
                             <h3 className="text-base font-bold text-white">{p.title}</h3>
                             {exerciseTypeTag(p) && <p className="text-xs text-[#64748B]">{exerciseTypeTag(p)}</p>}
                             {sessionTarget(p) && <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(p) }}>{sessionTarget(p)}</p>}
+                            {p.repLabel && p.estKm != null && (
+                              <p className="text-xs text-[#64748B] mt-0.5">≈ {p.estKm} km total (incl. warm-up/cooldown)</p>
+                            )}
                           </div>
                           {p.completed && <span className="text-green-400 text-xs flex-shrink-0">✓ Completed</span>}
                         </div>
@@ -333,6 +336,9 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
                 <h3 className="text-lg font-bold text-white">{sel.title}</h3>
                 {exerciseTypeTag(sel) && <p className="text-xs text-[#64748B]">{exerciseTypeTag(sel)}</p>}
                 {sessionTarget(sel) && <p className="text-sm font-semibold mt-0.5" style={{ color: sessionColor(sel) }}>{sessionTarget(sel)}</p>}
+                {sel.repLabel && sel.estKm != null && (
+                  <p className="text-xs text-[#64748B] mt-0.5">≈ {sel.estKm} km total (incl. warm-up/cooldown)</p>
+                )}
                 {sel.detail && <p className="text-sm text-[#94A3B8] mt-2 whitespace-pre-line leading-relaxed">{sel.detail}</p>}
                 {sel.completed && sel.completedEffort != null && (
                   <p className="text-xs text-[#64748B] mt-1.5">Effort {sel.completedEffort}/10</p>
