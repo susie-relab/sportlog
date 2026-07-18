@@ -343,6 +343,7 @@ export default function AddPage() {
       setMaxHr(''); setAvgHr(''); setElevationGain(''); setIsPb(false); setPbDesc('');
       setImages([]);
       setDate(todayLocalISO());
+      setShowMore(false);
       // form is clean after save
 
       // Give the confetti/PB-celebration a moment to play before navigating away.

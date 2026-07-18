@@ -810,12 +810,21 @@ const SleddingIcon = makeIcon(({ size, className }) => (
 // beneath, per reference, instead of a plain rounded-rect boot.
 // A simple shoe-outline silhouette sitting on the skate base (two mount tabs + blade line),
 // per reference, instead of a boot with a separate ankle cuff.
+// A figure-skate boot (ankle cuff, curved toe, laces) sitting on the blade base, per
+// reference, instead of a plain triangular shoe outline.
 const SkatingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className} strokeWidth={1}>
-    <path d="M6 7 8 6c3.3.3 6.6 2 8.7 5.1.8 1.2 1.3 2.6 1.3 3.9H6Z" />
-    <path d="M8 15.6v1.7" />
-    <path d="M15 15.6v1.7" />
-    <path d="M4.5 17.8h14" strokeWidth={0.8} />
+    <path d="M7 3v7" />
+    <path d="M7 3c1.2-.9 2.3-.7 3 .4" />
+    <path d="M10 3.4v3.6" />
+    <path d="M10 7c3 .4 6 1.9 6 5" />
+    <path d="M16 12c0 1-.7 1.8-2 1.8H6c-1.8 0-3-1-3-2.6 0-1.3.9-2.2 2-2.2" />
+    <path d="M8.3 6.1 10.5 6.9" strokeWidth={0.7} />
+    <path d="M8.6 7.6 10.8 8.4" strokeWidth={0.7} />
+    <path d="M8.9 9.1 11.1 9.9" strokeWidth={0.7} />
+    <path d="M6 15.6v1.7" />
+    <path d="M13 15.6v1.7" />
+    <path d="M4.5 17.8h11" strokeWidth={0.8} />
   </Svg>
 ));
 

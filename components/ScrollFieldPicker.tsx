@@ -125,7 +125,7 @@ export default function ScrollFieldPicker({ label, unit, value, onChange, max, m
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
           onClick={commitAndClose}
         >
-          <div className="relative" onClick={e => e.stopPropagation()}>
+          <div className="relative bg-[#1E293B] border border-[#334155] rounded-xl p-4 overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-center gap-1">
               <NumberWheelColumn values={wholeValues} value={whole} onChange={setWhole} width={wholeWidth} />
               {decimals === 2 && (
