@@ -13,7 +13,7 @@ import { currentStreak, totalCompletions, periodProgress, addDaysISO, isPeriodBa
 import HabitListRow from '@/components/HabitListRow';
 import HabitMonthCalendar from '@/components/HabitMonthCalendar';
 import AccountSwitcher from '@/components/AccountSwitcher';
-import HabitTabBox, { ApplyOption, FrequencyFields, StartDateFields, StartOption, resolveStartDate } from '@/components/HabitTabBox';
+import HabitTabBox, { ApplyOption, FrequencyFields, StartDateFields, StartOption, resolveStartDate, CATEGORY_EMOJI_CHOICES } from '@/components/HabitTabBox';
 
 type SortKey = 'name' | 'category' | 'colour' | 'frequency' | 'amount' | 'streak' | 'most_done' | 'completion' | 'time_of_day';
 
@@ -37,6 +37,7 @@ export default function HabitsPage() {
   const [logs, setLogs] = useState<HabitLog[]>([]);
   const [frequencyHistory, setFrequencyHistory] = useState<HabitFrequencyChange[]>([]);
   const [customCategories, setCustomCategories] = useState<HabitCategoryRow[]>([]);
+  const [archivedCategories, setArchivedCategories] = useState<HabitCategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('health');
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
@@ -87,7 +88,9 @@ export default function HabitsPage() {
     ]);
     setHabits((h as Habit[]) || []);
     setLogs((l as HabitLog[]) || []);
-    setCustomCategories((c as HabitCategoryRow[]) || []);
+    const allCats = (c as HabitCategoryRow[]) || [];
+    setCustomCategories(allCats.filter(cat => !cat.archived));
+    setArchivedCategories(allCats.filter(cat => cat.archived));
     setFrequencyHistory((f as HabitFrequencyChange[]) || []);
     setLoading(false);
   };
@@ -137,6 +140,36 @@ export default function HabitsPage() {
     setCustomCategories(prev => prev.filter(c => c.id !== key));
     await supabase.from('habit_categories').delete().eq('id', key);
     if (categoryOrderPref.includes(key)) persistCategoryOrder(categoryOrderPref.filter(k => k !== key));
+  };
+
+  // Archiving a category hides it (like archiving a habit) without losing it — unlike Remove,
+  // it can be brought back later with the same name/emoji. Same "must be empty first" guard as
+  // Remove, since an archived category drops out of the tab list entirely and any habit still
+  // pointing at it would be left with no visible category.
+  const archiveCategory = async (key: string) => {
+    if (habits.some(h => h.category === key)) return;
+    const row = customCategories.find(c => c.id === key);
+    if (!row) return;
+    setCustomCategories(prev => prev.filter(c => c.id !== key));
+    setArchivedCategories(prev => [...prev, { ...row, archived: true }]);
+    await supabase.from('habit_categories').update({ archived: true }).eq('id', key);
+    if (categoryOrderPref.includes(key)) persistCategoryOrder(categoryOrderPref.filter(k => k !== key));
+  };
+
+  const unarchiveCategory = async (key: string) => {
+    const row = archivedCategories.find(c => c.id === key);
+    if (!row) return;
+    setArchivedCategories(prev => prev.filter(c => c.id !== key));
+    setCustomCategories(prev => [...prev, { ...row, archived: false }]);
+    await supabase.from('habit_categories').update({ archived: false }).eq('id', key);
+  };
+
+  // Clones just the category "shell" (name + emoji) as a new custom category — not the habits
+  // inside it. Works from any category, built-in or custom, since it never touches the source.
+  const duplicateCategory = async (key: string) => {
+    const def = allCategoryDefs.find(d => d.key === key);
+    if (!def) return;
+    await createCategoryWithFields(`${def.label} copy`, def.emoji);
   };
 
   const manageCategories = useMemo(() => {
@@ -688,6 +721,10 @@ export default function HabitsPage() {
               onReorderCategory={reorderCategories}
               onRenameCategory={renameCategory}
               onRemoveCategory={removeCategory}
+              onArchiveCategory={archiveCategory}
+              onDuplicateCategory={duplicateCategory}
+              archivedCategories={archivedCategories.map(c => ({ key: c.id, label: c.name, emoji: c.emoji }))}
+              onUnarchiveCategory={unarchiveCategory}
               onCreateCategory={createCategoryFromManagePanel}
               categoryLabel={categoryDefByKey.get(activeCategory)?.label || ''}
               habits={habitsInCategory}
@@ -936,7 +973,7 @@ export default function HabitsPage() {
                           <div>
                             <label className="label">Emoji</label>
                             <div className="flex flex-wrap gap-1.5 mb-2">
-                              {['⭐', '🎯', '💡', '🎨', '🎵', '📚', '🏠', '🚗', '💰', '🎮', '🐶', '🌟', '🔥', '✨', '🧠', '🧺'].map(e => (
+                              {CATEGORY_EMOJI_CHOICES.map(e => (
                                 <button
                                   key={e}
                                   onClick={() => setNewCategoryEmoji(e)}

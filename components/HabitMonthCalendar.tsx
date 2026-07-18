@@ -109,21 +109,30 @@ export default function HabitMonthCalendar({ habits, logs, frequencyHistory, onC
                   const log = logsByHabitDate.get(`${h.id}|${date}`);
                   const ratio = completionRatio(h, log, resolveFrequencyAt(h, frequencyHistory, date).target_per_period);
                   const failed = isFailedLog(log);
+                  // Once a day gets crowded (6x6 grid = 26+ habits) circles get too small for the
+                  // 1px outline to read as a distinct ring, so thin it down; a tiny dark dot in the
+                  // middle of any still-incomplete circle keeps "what's left today" scannable even
+                  // when the colour fill alone is too small to judge at a glance.
+                  const dense = gridSize >= 6;
                   return (
                     <div key={h.id} className="flex items-center justify-center min-w-0 min-h-0 p-px">
                       {failed ? (
                         <span
                           className="rounded-full w-full h-full"
-                          style={{ background: '#000000', border: '1px solid #000000' }}
+                          style={{ background: '#000000', border: `${dense ? 0.5 : 1}px solid #000000` }}
                         />
                       ) : (
                         <span
-                          className="rounded-full w-full h-full"
+                          className="relative rounded-full w-full h-full flex items-center justify-center"
                           style={{
                             background: ratio > 0 ? hexToRgba(h.color, Math.max(0.25, ratio)) : 'transparent',
-                            border: `1px solid ${h.color}`,
+                            border: `${dense ? 0.5 : 1}px solid ${h.color}`,
                           }}
-                        />
+                        >
+                          {dense && ratio === 0 && (
+                            <span className="rounded-full bg-black/70" style={{ width: '30%', height: '30%' }} />
+                          )}
+                        </span>
                       )}
                     </div>
                   );
@@ -149,19 +158,23 @@ export default function HabitMonthCalendar({ habits, logs, frequencyHistory, onC
                 const count = (failed || skipped) ? 0 : (log?.count ?? 0);
                 const dayTarget = resolveFrequencyAt(h, frequencyHistory, selectedDate).target_per_period;
                 const ratio = completionRatio(h, log, dayTarget);
+                const complete = ratio >= 1;
                 return (
                   <button
                     key={h.id}
                     onClick={() => { if (!skipped) onCycle(h, selectedDate); }}
                     disabled={skipped}
                     className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-[#334155] text-left ${skipped ? 'opacity-50 cursor-not-allowed' : 'hover:border-[#475569]'}`}
-                    style={{ background: ratio > 0 ? hexToRgba(h.color, Math.max(0.12, ratio * 0.3)) : 'transparent' }}
+                    style={{ background: complete ? h.color : ratio > 0 ? hexToRgba(h.color, Math.max(0.12, ratio * 0.3)) : 'transparent' }}
                   >
                     <span className="flex items-center gap-2 min-w-0">
-                      <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: h.color }} />
-                      <span className="text-sm text-white truncate">{h.name}</span>
+                      <span
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ background: h.color, boxShadow: complete ? '0 0 0 1.5px rgba(255,255,255,0.85)' : 'none' }}
+                      />
+                      <span className={`text-sm truncate ${complete ? 'text-white font-semibold' : 'text-white'}`}>{h.name}</span>
                     </span>
-                    <span className="text-xs font-medium text-[#94A3B8] flex-shrink-0">{failed ? "Didn't happen" : skipped ? 'Skipped' : `${count}/${dayTarget}`}</span>
+                    <span className={`text-xs font-medium flex-shrink-0 ${complete ? 'text-white/90' : 'text-[#94A3B8]'}`}>{failed ? "Didn't happen" : skipped ? 'Skipped' : `${count}/${dayTarget}`}</span>
                   </button>
                 );
               })}

@@ -19,6 +19,10 @@ interface Props {
   onReorderCategory: (fromKey: string, toKey: string) => void;
   onRenameCategory: (key: string, newName: string) => void;
   onRemoveCategory: (key: string) => void;
+  onArchiveCategory: (key: string) => void;
+  onDuplicateCategory: (key: string) => void;
+  archivedCategories: { key: string; label: string; emoji: string }[];
+  onUnarchiveCategory: (key: string) => void;
   onCreateCategory: (name: string, emoji: string) => void;
   categoryLabel: string;
   habits: Habit[];
@@ -53,7 +57,11 @@ const WEEKDAY_OPTIONS = [
 
 const FREQUENCY_ORDER: HabitFrequencyType[] = ['daily', 'every_n_days', 'weekly', 'fortnightly', 'monthly', 'custom_days'];
 
-const CATEGORY_EMOJI_CHOICES = ['⭐', '🎯', '💡', '🎨', '🎵', '📚', '🏠', '🚗', '💰', '🎮', '🐶', '🌟', '🔥', '✨', '🧠', '🧺'];
+export const CATEGORY_EMOJI_CHOICES = [
+  '⭐', '🎯', '💡', '🎨', '🎵', '📚', '🏠', '🚗', '💰', '🎮', '🐶', '🌟', '🔥', '✨', '🧠', '🧺',
+  '🙏', '❤️', '🧘', '🏃', '🥗', '💧', '😴', '📖', '✍️', '📵', '🌱', '☀️', '🌙', '🧹', '🛁', '🦷',
+  '💊', '🚴', '🏋️', '🎸', '🖌️', '📷', '🧵', '🪴', '🐱', '👨‍👩‍👧', '📞', '✈️', '🧾', '🎓', '🧩', '🕯️',
+];
 
 function hexToRgba(hex: string, alpha: number): string {
   const m = hex.replace('#', '');
@@ -148,7 +156,7 @@ export function TimeOfDayField({ value, setValue }: { value: string; setValue: (
 const TRACKING_STYLE_OPTIONS: { key: HabitTrackingStyle; label: string; hint: string }[] = [
   { key: 'count', label: 'Count', hint: 'Tap +/- any number of times, e.g. Cups of Water' },
   { key: 'tick', label: 'Tick', hint: 'One tap marks it done, e.g. Wake before 7am' },
-  { key: 'both', label: 'Both', hint: 'Tick for one, or tap +/- for more, e.g. Church' },
+  { key: 'both', label: 'Both', hint: 'Tick for one, or tap +/- for more, e.g. Read' },
 ];
 
 export function FrequencyFields({
@@ -310,11 +318,12 @@ export function FrequencyApplyPicker({
  *  category; one top-right opens a panel to manage categories themselves (add/rename/remove/
  *  reorder). */
 export default function HabitTabBox({
-  categories, activeCategory, onSelectCategory, onReorderCategory, onRenameCategory, onRemoveCategory, onCreateCategory,
+  categories, activeCategory, onSelectCategory, onReorderCategory, onRenameCategory, onRemoveCategory, onArchiveCategory, onDuplicateCategory, archivedCategories, onUnarchiveCategory, onCreateCategory,
   categoryLabel, habits, logsByHabit, frequencyHistory, selectedHabitId, onSelectHabit, onCreateHabit, onReorderHabit, onUpdateHabit, onChangeFrequency, onArchiveHabit, onDeleteHabit, onIncrementToday, onDecrementToday, onMarkFailedToday, onSkipToday, onTickToday,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const [showManageCategories, setShowManageCategories] = useState(false);
+  const [showArchivedCategories, setShowArchivedCategories] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const habitManageDragRef = useRef<{ fromId: string } | null>(null);
   const categoryManageDragRef = useRef<{ fromKey: string } | null>(null);
@@ -527,14 +536,14 @@ export default function HabitTabBox({
         <PencilIcon />
       </button>
 
-      <div className="flex flex-wrap gap-1.5 mb-3 pr-10">
+      <div className="grid grid-cols-3 gap-1.5 mb-3 pr-10">
         {categories.filter(c => c.habitCount > 0).map(c => {
           const active = activeCategory === c.key;
           return (
             <button
               key={c.key}
               onClick={() => onSelectCategory(c.key)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors select-none ${
+              className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors select-none truncate ${
                 active ? 'bg-[#293548] border-blue-500 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
               }`}
             >
@@ -826,16 +835,16 @@ export default function HabitTabBox({
 
       {showManageCategories && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowManageCategories(false); setRenamingKey(null); }} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowManageCategories(false); setRenamingKey(null); setShowArchivedCategories(false); }} />
           <div className="custom-scroll relative w-full md:max-w-md max-h-[85vh] flex flex-col bg-[#1E293B] border border-[#334155] rounded-t-2xl md:rounded-2xl p-5 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-white">Manage Categories</h3>
-              <button onClick={() => { setShowManageCategories(false); setRenamingKey(null); }} className="p-1 rounded-lg hover:bg-[#334155] text-[#94A3B8]"><X size={18} /></button>
+              <button onClick={() => { setShowManageCategories(false); setRenamingKey(null); setShowArchivedCategories(false); }} className="p-1 rounded-lg hover:bg-[#334155] text-[#94A3B8]"><X size={18} /></button>
             </div>
 
             <div className="flex flex-col gap-2 mb-5">
               {categories.map((c) => (
-                <div key={c.key} data-category-manage-key={c.key} className="rounded-lg border border-[#334155] px-3 py-2 flex items-center gap-2 transition-shadow">
+                <div key={c.key} data-category-manage-key={c.key} className="rounded-lg border border-[#334155] px-3 py-2 flex items-center gap-2 flex-wrap transition-shadow">
                   <button
                     onPointerDown={handleCategoryManagePointerDown(c.key)}
                     aria-label="Drag to reorder"
@@ -846,36 +855,73 @@ export default function HabitTabBox({
                   </button>
                   <span className="flex-shrink-0">{c.emoji}</span>
                   {renamingKey === c.key ? (
-                    <input className="input flex-1" value={renameValue} onChange={e => setRenameValue(e.target.value)} />
+                    <input className="input flex-1 min-w-[80px]" value={renameValue} onChange={e => setRenameValue(e.target.value)} />
                   ) : (
-                    <span className="flex-1 text-sm text-white truncate">
+                    <span className="flex-1 min-w-[60px] text-sm text-white truncate">
                       {c.label}
-                      {!c.isCustom && <span className="text-[10px] text-[#64748B] ml-1.5">(built-in)</span>}
                     </span>
                   )}
-                  {c.isCustom && (
-                    renamingKey === c.key ? (
+                  <span className="flex items-center gap-2 flex-wrap justify-end flex-shrink-0">
+                    {renamingKey === c.key ? (
                       <>
                         <button onClick={() => { onRenameCategory(c.key, renameValue.trim() || c.label); setRenamingKey(null); }} className="text-xs font-medium text-blue-400 hover:text-blue-300 flex-shrink-0">Save</button>
                         <button onClick={() => setRenamingKey(null)} className="text-xs text-[#64748B] hover:text-white flex-shrink-0">Cancel</button>
                       </>
                     ) : (
                       <>
-                        <button onClick={() => { setRenamingKey(c.key); setRenameValue(c.label); }} className="text-xs font-medium text-blue-400 hover:text-blue-300 flex-shrink-0">Rename</button>
-                        <button
-                          onClick={() => onRemoveCategory(c.key)}
-                          disabled={c.habitCount > 0}
-                          title={c.habitCount > 0 ? 'Move or delete its habits first' : 'Remove category'}
-                          className="text-xs font-medium text-red-400 hover:text-red-300 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
-                        >
-                          Remove
-                        </button>
+                        {/* Duplicate clones the category shell (name + emoji) as a new custom
+                            category — works from built-ins too, since it never touches the
+                            source, just creates a new row modelled on it. */}
+                        <button onClick={() => onDuplicateCategory(c.key)} className="text-xs font-medium text-[#94A3B8] hover:text-white flex-shrink-0">Duplicate</button>
+                        {c.isCustom && (
+                          <>
+                            <button onClick={() => { setRenamingKey(c.key); setRenameValue(c.label); }} className="text-xs font-medium text-blue-400 hover:text-blue-300 flex-shrink-0">Rename</button>
+                            <button
+                              onClick={() => onArchiveCategory(c.key)}
+                              disabled={c.habitCount > 0}
+                              title={c.habitCount > 0 ? 'Move or delete its habits first' : 'Archive category — can bring it back later'}
+                              className="text-xs font-medium text-amber-400 hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
+                            >
+                              Archive
+                            </button>
+                            <button
+                              onClick={() => onRemoveCategory(c.key)}
+                              disabled={c.habitCount > 0}
+                              title={c.habitCount > 0 ? 'Move or delete its habits first' : 'Remove category permanently'}
+                              className="text-xs font-medium text-red-400 hover:text-red-300 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
+                            >
+                              Remove
+                            </button>
+                          </>
+                        )}
                       </>
-                    )
-                  )}
+                    )}
+                  </span>
                 </div>
               ))}
             </div>
+
+            {archivedCategories.length > 0 && (
+              <div className="mb-5">
+                <button
+                  onClick={() => setShowArchivedCategories(v => !v)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-[#64748B] hover:text-white uppercase tracking-wide mb-2"
+                >
+                  {showArchivedCategories ? '▼' : '▶'} Archived Categories ({archivedCategories.length})
+                </button>
+                {showArchivedCategories && (
+                  <div className="flex flex-col gap-2">
+                    {archivedCategories.map(c => (
+                      <div key={c.key} className="rounded-lg border border-[#334155] px-3 py-2 flex items-center gap-2">
+                        <span className="flex-shrink-0">{c.emoji}</span>
+                        <span className="flex-1 min-w-0 text-sm text-[#94A3B8] truncate">{c.label}</span>
+                        <button onClick={() => onUnarchiveCategory(c.key)} className="text-xs font-medium text-blue-400 hover:text-blue-300 flex-shrink-0">Unarchive</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-2">Add a Category</p>
             <div className="flex flex-col gap-3">

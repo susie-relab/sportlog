@@ -166,7 +166,7 @@ const toggleEditor = () => {
   return (
     <div
       data-habit-key={habit.id}
-      className={`card p-0 overflow-hidden transition-opacity ${dragging ? 'opacity-60' : ''}`}
+      className={`bg-[#1E293B] border border-[#334155] rounded-xl overflow-hidden transition-opacity ${dragging ? 'opacity-60' : ''}`}
     >
       <div
         onPointerDown={handlePointerDown}
