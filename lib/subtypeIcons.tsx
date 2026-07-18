@@ -101,7 +101,8 @@ const VolleyballIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <circle cx="12" cy="12" r="9" />
     <path d="M7 4.5Q8.5 12 7 19.5" />
-    <path d="M12 3V21" />
+    <path d="M10.3 3V21" strokeWidth={1} />
+    <path d="M13.7 3V21" strokeWidth={1} />
     <path d="M17 4.5Q15.5 12 17 19.5" />
     <path d="M6.6 10H4.3" strokeWidth={1.1} />
     <path d="M6.6 14H4.3" strokeWidth={1.1} />
@@ -265,13 +266,12 @@ const GymIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
-const StrengthIcon = makeIcon(({ size, className }) => (
+// A plain gable-roofed shed/warehouse outline with a simple door — the "gym" subtype's own
+// building silhouette, no equipment clutter.
+const GymBuildingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M2 12h20" />
-    <rect x="4" y="8" width="3" height="8" rx="1" />
-    <rect x="17" y="8" width="3" height="8" rx="1" />
-    <rect x="9" y="10" width="2" height="4" />
-    <rect x="13" y="10" width="2" height="4" />
+    <path d="M4 21V12L12 6l8 6v9Z" />
+    <path d="M10 21v-5h4v5" />
   </Svg>
 ));
 
@@ -383,14 +383,13 @@ const SkiErgIcon = makeIcon(({ size, className }) => (
 // A solid boxing-glove silhouette on a diagonal, per reference, instead of a bare
 // three-finger outline.
 const BoxingIcon = makeIcon(({ size, className }) => (
+  // A single continuous mitt silhouette — flatter top, thumb flowing directly out of the
+  // same bottom-scoop line instead of sitting as its own separate shape — plus a scoop
+  // line across the face for the finger bend and a narrow strap at the wrist.
   <Svg size={size} className={className}>
-    <g transform="rotate(8 12 12)">
-      <path d="M13 2C16 2 18 4.5 18 7.5L17.5 17H8C6 17 4.3 15.5 4.3 13C4.3 10.8 5.5 9.3 7.3 9C7.6 7 8.5 4.5 10.5 3C11.2 2.5 12 2 13 2Z" fill="#94A3B8" stroke="currentColor" />
-      <rect x="6" y="17" width="10" height="4" rx="1.3" fill="#94A3B8" stroke="currentColor" />
-      <path d="M7.3 9c.3 2.5 1 5.5 1 8" strokeWidth={1} fill="none" />
-      <path d="M6.3 18.6h9.4" strokeWidth={1} fill="none" />
-      <path d="M8 10c3 2 6.5 2 8.5 0" strokeWidth={1} fill="none" />
-    </g>
+    <path d="M7 3Q11 2.3 15 3Q17 3 17 7L17 9Q20.5 8.8 21 11Q20.5 14.5 16 16.5Q11 19 6 16.5Q4 15 4 12Q3.3 9.5 4 7Q4 3 7 3Z" fill="currentColor" stroke="none" />
+    <path d="M4.5 8.2c2.5 2.3 9.5 2.3 12 0" stroke="#1E293B" strokeWidth={1.3} fill="none" strokeLinecap="round" />
+    <rect x="9" y="18" width="6" height="2" rx="0.5" fill="currentColor" stroke="none" />
   </Svg>
 ));
 
@@ -519,15 +518,15 @@ const ObstacleCourseIcon = makeIcon(({ size, className }) => (
 // and legs dangling below.
 const TrapezeIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M4 2v4" />
-    <path d="M20 2v4" />
-    <path d="M4 6h16" strokeWidth={1.5} />
-    <path d="M7 6 12 11" />
-    <path d="M17 6 12 11" />
-    <path d="M12 11.2v6" />
-    <path d="M12 17.2 9 22" />
-    <path d="M12 17.2 15 22" />
-    <circle cx="12" cy="8" r="1.5" fill="currentColor" stroke="none" />
+    <path d="M4 1v9" />
+    <path d="M20 1v9" />
+    <path d="M4 10h16" strokeWidth={1.5} />
+    <path d="M8 10 12 15" />
+    <path d="M16 10 12 15" />
+    <circle cx="12" cy="12.2" r="1.1" fill="currentColor" stroke="none" />
+    <path d="M12 15.2v2.3" />
+    <path d="M12 17.5 10.5 19.8" />
+    <path d="M12 17.5 13.5 19.8" />
   </Svg>
 ));
 
@@ -633,9 +632,9 @@ const AthleticsIcon = makeIcon(({ size, className }) => (
 const KayakIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <ellipse cx="12" cy="14" rx="9" ry="3" />
-    <path d="M6 4 18 16" />
-    <path d="M5 3 7 5" />
-    <path d="M17 15 19 17" />
+    <path d="M6 7 18 19" />
+    <path d="M5 6 7 8" />
+    <path d="M17 18 19 20" />
   </Svg>
 ));
 
@@ -648,40 +647,70 @@ const SailingIcon = makeIcon(({ size, className }) => (
 ));
 
 const SurfIcon = makeIcon(({ size, className }) => (
+  // One continuous line: a wave rising up and hooking over into a barrel curl.
   <Svg size={size} className={className}>
-    <path d="M2 16c4-6 8-6 10-2 2-6 6-8 10-4" />
-    <path d="M9 20 15 8" />
+    <path d="M2 18C4 18 5.5 15.5 5.5 12.5 5.5 8.5 9 6 13 6.5 16 6.9 17.5 9.5 16 12 14.8 14 12 14.5 11 12.8C12 14 14 15.5 16 16.5C17 17 17.5 17.5 17.5 18" strokeWidth={1.3} />
   </Svg>
 ));
 
+// A smaller wave (scaled down from the surf icon's, anchored at the same shoreline start)
+// so the swimmer riding out of it — head, torso, one forward arm, no legs — can be bigger.
+const BodysurfingIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className}>
+    <path d="M2 18C3.5 18 4.63 16.13 4.63 13.88 4.63 10.88 7.25 9 10.25 9.38 12.5 9.68 13.63 11.63 12.5 13.5 11.6 15 9.5 15.38 8.75 14.1 9.5 15 11 16.13 12.5 16.88 13.25 17.25 13.63 17.63 13.63 18" strokeWidth={1.3} />
+    <circle cx="21" cy="13.5" r="1.8" fill="currentColor" stroke="none" />
+    <path d="M13.6 17 17.9 15.3" strokeWidth={1} />
+    <path d="M17.9 15.3 23 17.5" strokeWidth={1} />
+  </Svg>
+));
+
+// A small open dinghy hull with two parallel oars angling down into the water.
 const RowingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M2 18c4-3 16-3 20 0" />
-    <path d="M4 5 20 19" />
+    <path d="M3 14c0 2.5 4 3.5 9 3.5s9-1 9-3.5" />
+    <path d="M10 12 8.5 21" />
+    <path d="M14 12 12.5 21" />
   </Svg>
 ));
 
+// A long canoe hull with a flat gunwale line on top, plus seven thin oars raised up out
+// of the boat (not dipped into the water), all going out at the same angle — reads as a
+// crewed canoe rather than a solo outrigger.
 const WakaAmaIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <ellipse cx="10" cy="14" rx="8" ry="2.5" />
-    <path d="M14 12 20 10" />
-    <path d="M14 16 20 18" />
-    <ellipse cx="20" cy="14" rx="2.5" ry="1.5" />
+    <path d="M2 13L22 13Q22 17 12 17Q2 17 2 13Z" />
+    <g strokeWidth={0.9}>
+      <path d="M3 13 6 7.3" />
+      <path d="M6 13 9 7.3" />
+      <path d="M9 13 12 7.3" />
+      <path d="M12 13 15 7.3" />
+      <path d="M15 13 18 7.3" />
+      <path d="M18 13 21 7.3" />
+      <path d="M21 13 24 7.3" />
+    </g>
   </Svg>
 ));
 
+// A thin, gently curved board with a stick figure standing on it, holding the paddle.
 const SupIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M2 17c4-2 16-2 20 0" />
-    <path d="M12 17V3" />
-    <path d="M9 3h6" />
+    <path d="M2 18c3 1 17 1 20 0" strokeWidth={1.2} />
+    <circle cx="12" cy="8" r="2" fill="currentColor" stroke="none" />
+    <path d="M12 10v5" />
+    <path d="M12 15 9.5 18" />
+    <path d="M12 15 14.5 18" />
+    <path d="M12 11 15 10" />
+    <path d="M12 11 9.5 13" />
+    <path d="M16 3v13" />
+    <path d="M14.5 3h3" />
   </Svg>
 ));
 
+// Just the board shape: a rounded-corner rectangle with a convex domed scoop across the
+// top edge for the nose, and the bottom edge bowed in slightly for the tail.
 const BodyBoardingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M3 15c3-5 15-5 18 0" />
-    <rect x="8" y="13" width="8" height="5" rx="2.5" transform="rotate(-15 8 13)" />
+    <path d="M6 6A6 4.5 0 0 1 18 6L18 17A2 2 0 0 1 16 19Q12 16.3 8 19A2 2 0 0 1 6 17Z" />
   </Svg>
 ));
 
@@ -693,11 +722,12 @@ const WindsurfingIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// The real crescent/banana kite shape — tips drooping down, belly arcing up in the middle.
 const KitesurfingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M12 2 17 7 12 12 7 7Z" />
-    <path d="M12 12 9 20" />
-    <path d="M5 20h8" />
+    <path d="M4 10Q12 2 20 10Q12 7 4 10Z" />
+    <path d="M12 7 10 17" />
+    <path d="M5 17h8" />
   </Svg>
 ));
 
@@ -905,11 +935,13 @@ const AquaAerobicsIcon = makeIcon(({ size, className }) => (
 
 // --- Shared (used across more than one exercise type) ---
 
+// Matches the beach icon used for runs (runStyleIcons.tsx) — same shape, so beach walks
+// and beach runs read as the same idea.
 const BeachIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M4 20c4-6 12-6 16 0" />
-    <ellipse cx="9" cy="10" rx="1.5" ry="2.5" transform="rotate(-10 9 10)" />
-    <ellipse cx="12" cy="7" rx="1" ry="1.6" transform="rotate(-10 12 7)" />
+    <circle cx="17" cy="6" r="2.5" />
+    <path d="M3 20c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0" />
+    <path d="M3 16c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0" />
   </Svg>
 ));
 
@@ -937,9 +969,8 @@ const StrollIcon = makeIcon(({ size, className }) => (
 const SpeedWalkIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <circle cx="15" cy="4" r="2" fill="currentColor" stroke="none" />
-    <path d="M15 6v5" />
-    <path d="M15 7l4 2" />
-    <path d="M15 11 11 13" />
+    <path d="M15 6 11 13" />
+    <path d="M14.4 7l4 2" />
     <path d="M11 13 8 20" />
     <path d="M11 13l6 5" />
     <path d="M2 9h4M2 13h5M2 17h3" />
@@ -955,12 +986,18 @@ const WalkUrbanIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
-// A fern/leafy clump, for bush walks.
+// Three different tree types for bush walks: a round/deciduous tree (scalloped, not a
+// plain circle), a two-tier layered pine, and a pointy conifer.
 const BushIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M12 21V9" />
-    <path d="M12 9c-3 0-5-2-5-5 2 0 4 1 5 3 1-2 3-3 5-3 0 3-2 5-5 5Z" />
-    <path d="M12 14c-2 0-3.5-1.3-3.5-3.3 1.3 0 2.7.7 3.5 2 .8-1.3 2.2-2 3.5-2 0 2-1.5 3.3-3.5 3.3Z" />
+    <path d="M2 18h20" />
+    <path d="M5 15v3" />
+    <path d="M5 8A2.2 2.2 0 0 1 7.9 10.1A2.2 2.2 0 0 1 6.8 13.4A2.2 2.2 0 0 1 3.2 13.4A2.2 2.2 0 0 1 2.1 10.1A2.2 2.2 0 0 1 5 8Z" />
+    <path d="M12 14.5v3.5" />
+    <path d="M12 6l2.5 4h-5l2.5-4Z" />
+    <path d="M12 10l3.5 4.5h-7l3.5-4.5Z" />
+    <path d="M18 15v3" />
+    <path d="M18 9l3 6h-6l3-6Z" />
   </Svg>
 ));
 
@@ -971,13 +1008,11 @@ const WalkMountainIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
-// A barn, for farm walks.
-// Two overlapping rolling hills, per reference — a filled silhouette rather than a barn,
-// which read too similarly to other building-shaped icons in this set.
+// Two distinct rolling hills of different heights, for farm walks — one continuous
+// skyline with a clear valley dip between the two peaks.
 const FarmIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M2 17c0-5 3.5-9 6.5-9 1.8 0 3 1 4 2.3-2.5 1.2-4.5 3.8-4.5 6.7Z" fill="currentColor" stroke="none" />
-    <path d="M7.5 17c0-5 3.5-9 6.5-9s6.5 4 6.5 9Z" fill="currentColor" stroke="none" />
+    <path d="M2 17Q7 10 12 14Q17 6 22 17Z" fill="currentColor" stroke="none" />
   </Svg>
 ));
 
@@ -1037,7 +1072,7 @@ export const SUBTYPE_ICON_OVERRIDES: Record<string, LucideIcon> = {
   hockey: HockeyIcon,
   frisbee: FrisbeeIcon,
   table_tennis: TableTennisIcon,
-  gym: StrengthIcon,
+  gym: GymBuildingIcon,
   hiit_workout: HiitWorkoutIcon,
   strength: GymIcon,
   conditioning: ConditioningIcon,
@@ -1061,6 +1096,7 @@ export const SUBTYPE_ICON_OVERRIDES: Record<string, LucideIcon> = {
   kayak: KayakIcon,
   sailing: SailingIcon,
   surf: SurfIcon,
+  bodysurfing: BodysurfingIcon,
   rowing: RowingIcon,
   waka_ama: WakaAmaIcon,
   sup: SupIcon,

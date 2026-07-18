@@ -39,7 +39,7 @@ const TrailIcon = makeIcon(({ size, className, style }) => (
   <Svg size={size} className={className} style={style}>
     <path d="M3 20c3-1 4-4 7-4s4 3 7 4" />
     <path d="M14 6l3 5h-6l3-5Z" />
-    <path d="M17 11l1 3" />
+    <path d="M14 11v3" />
   </Svg>
 ));
 
