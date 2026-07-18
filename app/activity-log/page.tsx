@@ -149,8 +149,11 @@ export default function ActivityLogPage() {
   if (loading) return <div className="text-[#64748B] text-sm">Loading...</div>;
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+    <div className="max-w-2xl mx-auto relative">
+      <div className="absolute top-0 right-0 z-10">
+        <AccountSwitcher compact />
+      </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2 pr-16 sm:pr-0">
         <h1 className="text-xl font-bold text-white">Activity Log</h1>
         <div className="flex gap-2">
           <ShareRangeMenu activities={activities} icon={THIRTY_DAY_SHARE_ICON} accentColor="#8B5CF6" nounSingular="Activity" nounPlural="Activities" defaultScopeKey="activity_share" />
@@ -161,7 +164,6 @@ export default function ActivityLogPage() {
           >
             ↓ Export
           </button>
-          <AccountSwitcher compact />
         </div>
       </div>
 

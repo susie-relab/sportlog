@@ -371,15 +371,15 @@ export default function AddPage() {
     : '#3B82F6';
 
   return (
-    <div className="max-w-lg lg:max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
+    <div className="max-w-lg lg:max-w-2xl mx-auto relative">
+      <div className="absolute top-0 right-0 z-10">
+        <AccountSwitcher compact />
+      </div>
+      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap pr-16 sm:pr-0">
         <h1 className="text-xl font-bold text-white">Add Exercise</h1>
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <button type="button" onClick={openRepeatPicker} className="text-sm text-blue-400 hover:text-blue-300">
-            ↻ Repeat a recent activity
-          </button>
-          <AccountSwitcher compact />
-        </div>
+        <button type="button" onClick={openRepeatPicker} className="text-sm text-blue-400 hover:text-blue-300">
+          ↻ Repeat a recent activity
+        </button>
       </div>
 
       {confettiColor && <ConfettiBurst color={confettiColor} />}
