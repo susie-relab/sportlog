@@ -731,20 +731,31 @@ const KitesurfingIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// A small rider standing on the wakeboard, tow line running from the boat's stern to
+// their raised arm — half a trapezoid for the boat (just the back, no artificial right
+// edge closing it off), so the line has room to run its full length.
 const WakeboardingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M2 19c3-4 17-4 20 0" />
-    <rect x="7" y="17" width="10" height="3" rx="1.5" />
-    <path d="M14 17 22 6" />
+    <path d="M12 5h4.5M16.5 8h-2.5L12 5" />
+    <path d="M13 8 8 14" strokeWidth={0.8} />
+    <circle cx="5.5" cy="11.1" r="1.2" fill="currentColor" stroke="none" />
+    <path d="M5.5 12.5v1.8" strokeWidth={1.3} />
+    <path d="M5.5 14.3 4.1 19" strokeWidth={1.3} />
+    <path d="M5.5 14.3 6.9 19" strokeWidth={1.3} />
+    <path d="M5.5 12.5 8 14" strokeWidth={1.3} />
+    <path d="M5.5 12.5 3.2 14" strokeWidth={1.3} />
+    <path d="M1.5 19h8" strokeWidth={1.2} />
   </Svg>
 ));
 
+// Same boat + tow line as wakeboarding, with two thin parallel ski lines instead of one
+// board.
 const WaterskiingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M4 20 9 8" />
-    <path d="M11 20 16 8" />
-    <path d="M16 8 22 3" />
-    <path d="M20 2h3v3" />
+    <path d="M12 5h9l-2 3h-5Z" />
+    <path d="M13 8 8 18" strokeWidth={0.8} />
+    <path d="M1.5 19h8" strokeWidth={1.2} />
+    <path d="M1.5 20.5h8" strokeWidth={1.2} />
   </Svg>
 ));
 
@@ -753,49 +764,61 @@ const DivingIcon = makeIcon(({ size, className }) => (
     <path d="M5 10a7 4 0 0 1 14 0v3a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4Z" />
     <circle cx="9" cy="11" r="1.5" />
     <circle cx="15" cy="11" r="1.5" />
-    <path d="M18 8c2-1 3-3 2-5" />
+    <path d="M18 8c2-1 3-5 2-8" />
   </Svg>
 ));
 
 const SpearFishingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M3 21 19 5" />
-    <path d="M19 5 22 2" />
-    <path d="M19 5 21 8" />
-    <path d="M4 15c2-2 5-2 6 0-1 2-4 2-6 0Z" />
-    <path d="M4 15 2 13" />
-    <path d="M4 15 2 17" />
+    <path d="M3 6h16" />
+    <path d="M19 6h3" />
+    <path d="M19 6v3" />
+    <path d="M4 16c2-2 5-2 6 0-1 2-4 2-6 0Z" />
+    <path d="M4 16 2 14" />
+    <path d="M4 16 2 18" />
   </Svg>
 ));
 
+// A small fish (body + tail, tail overlapping into the body) instead of a bare loop.
 const FishingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <path d="M3 21 18 4" />
-    <path d="M18 4 20 16" />
-    <path d="M20 16a2 2 0 1 0 0.5 2" />
+    <path d="M18 4 19.5 14.3" />
+    <ellipse cx="19.5" cy="16" rx="3.2" ry="1.8" fill="currentColor" stroke="none" />
+    <path d="M21.5 16 24 13 24 19Z" fill="currentColor" stroke="none" />
   </Svg>
 ));
 
+// Jagged, angular cliff faces instead of smooth straight diagonals.
 const CanyoningIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M2 21 8 3" />
-    <path d="M22 21 16 3" />
+    <path d="M2 21 4 17 3 14 6 10 5 7 8 3" />
+    <path d="M22 21 20 17 21 14 18 10 19 7 16 3" />
     <path d="M12 3v18" />
   </Svg>
 ));
 
+// Three distinct parts: an open mountain peak, a small rock, and a water wave.
 const CoasteeringIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M2 14 6 8 10 12 14 5 18 10 22 14" />
-    <path d="M2 19c5-2 15-2 20 0" />
+    <path d="M2 16 7 6 12 16" />
+    <circle cx="16" cy="13" r="2" />
+    <path d="M2 19c3-1.3 6-1.3 9 0s6 1.3 9 0" />
   </Svg>
 ));
 
+// Rounder, thinner outer/inner ellipses (tube/donut look), with two thin paddles over
+// each side, capped with oval blades.
 const RaftingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
-    <path d="M3 15a9 4 0 0 0 18 0" />
-    <path d="M3 15a9 3 0 0 1 18 0" />
-    <path d="M12 15 18 6" />
+    <ellipse cx="12" cy="13" rx="9" ry="5" strokeWidth={1.2} />
+    <ellipse cx="12" cy="13" rx="4.5" ry="2.5" strokeWidth={1.2} />
+    <path d="M6 5v15" strokeWidth={1} />
+    <ellipse cx="6" cy="4" rx="1.3" ry="2" />
+    <ellipse cx="6" cy="21" rx="1.3" ry="2" />
+    <path d="M18 5v15" strokeWidth={1} />
+    <ellipse cx="18" cy="4" rx="1.3" ry="2" />
+    <ellipse cx="18" cy="21" rx="1.3" ry="2" />
   </Svg>
 ));
 
