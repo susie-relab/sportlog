@@ -255,8 +255,10 @@ export default function ActivityLogPage() {
           onChange={e => { setSearch(e.target.value); setVisibleCount(PAGE_SIZE); }}
           disabled={!!reordering}
         />
+      </div>
+      <div className="flex gap-2 mb-4 items-center flex-wrap">
         <select
-          className="input w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+          className="input input-auto disabled:opacity-50 disabled:cursor-not-allowed"
           value={filterType}
           onChange={e => { setFilterType(e.target.value as ExerciseType | ''); setVisibleCount(PAGE_SIZE); }}
           disabled={!!reordering}
@@ -264,12 +266,9 @@ export default function ActivityLogPage() {
           <option value="">All types</option>
           {TYPES.map(t => <option key={t} value={t}>{EXERCISE_TYPE_LABELS[t]}</option>)}
         </select>
-      </div>
-      <div className="flex gap-2 mb-4 items-center flex-wrap">
-        <span className="text-xs text-[#64748B]">Date range</span>
         <input
           type="date"
-          className="input w-auto text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="input input-auto text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           value={dateFrom}
           onChange={e => { setDateFrom(e.target.value); setVisibleCount(PAGE_SIZE); }}
           disabled={!!reordering}
@@ -277,7 +276,7 @@ export default function ActivityLogPage() {
         <span className="text-xs text-[#64748B]">to</span>
         <input
           type="date"
-          className="input w-auto text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="input input-auto text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           value={dateTo}
           onChange={e => { setDateTo(e.target.value); setVisibleCount(PAGE_SIZE); }}
           disabled={!!reordering}

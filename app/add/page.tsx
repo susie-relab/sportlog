@@ -236,10 +236,20 @@ export default function AddPage() {
   };
 
   const handleSave = async () => {
-    if (!name.trim()) return setError('Please enter an activity name.');
-    if (!exerciseType) return setError('Please select an exercise type.');
-    if (durationSeconds <= 0) return setError('Please enter a valid duration.');
-    if (!effort) return setError('Please select effort level.');
+    // Collect every missing/invalid field at once instead of stopping at the first one, so
+    // the banner reads e.g. "Please enter a valid duration and select an effort level."
+    // rather than making the user fix one thing, hit Save, and discover the next.
+    const issues: string[] = [];
+    if (!name.trim()) issues.push('enter an activity name');
+    if (!exerciseType) issues.push('select an exercise type');
+    if (durationSeconds <= 0) issues.push('enter a valid duration');
+    if (!effort) issues.push('select an effort level');
+    if (issues.length > 0) {
+      const joined = issues.length === 1 ? issues[0]
+        : issues.length === 2 ? `${issues[0]} and ${issues[1]}`
+        : `${issues.slice(0, -1).join(', ')}, and ${issues[issues.length - 1]}`;
+      return setError(`Please ${joined}.`);
+    }
 
     setSaving(true);
     setError('');

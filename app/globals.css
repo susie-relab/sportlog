@@ -138,6 +138,10 @@ h1, h2, h3, h4, h5, h6,
   transition: border-color 0.2s;
 }
 
+/* .input's own width loads after Tailwind's utilities in this build, so a plain `w-auto` on
+   the element can't win the cascade — same issue as .btn-compact above; override here instead. */
+.input-auto { width: auto; }
+
 .input:focus {
   outline: none;
   border-color: #3B82F6;
