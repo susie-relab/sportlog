@@ -98,3 +98,22 @@ export function recapWithComparison(activities: Activity[], plans: PlanRecord[],
 export function upcomingCount(plans: PlanRecord[], start: string, end: string) {
   return planStats(plans, start, end).planned;
 }
+
+/** Every planned session (title + date) across active plans in a date range, in date order —
+ *  the detail behind `upcomingCount`, for previewing what's actually coming up rather than
+ *  just a number. */
+export function upcomingSessions(plans: PlanRecord[], start: string, end: string): { date: string; title: string }[] {
+  const out: { date: string; title: string }[] = [];
+  for (let d = start; d <= end; d = addDays(d, 1)) {
+    for (const p of plans) {
+      if (!p.active) continue;
+      const pos = todaysSession(p, d);
+      if (pos && isRunSession(pos.session)) {
+        for (const part of sessionParts(pos.session)) {
+          if (isRunSession(part)) out.push({ date: d, title: part.title });
+        }
+      }
+    }
+  }
+  return out;
+}
