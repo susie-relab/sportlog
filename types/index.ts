@@ -76,6 +76,8 @@ const SUBTYPE_EMOJI_OVERRIDES: Record<string, string> = {
   trampoline: '🤸',
   martial_arts: '🥋',
   cleaning: '🧹',
+  tidying: '🗂️',
+  lawnmowing: '🌱',
   // Water subtypes
   kayak: '🛶',
   sailing: '⛵',
@@ -210,7 +212,7 @@ export type SnowStyle = 'downhill' | 'cross_country' | 'half_pipe' | 'freestyle'
 export type SwimSubType = 'ocean' | 'pool' | 'water_jogging' | 'aqua_aerobics';
 export type SwimFocus = 'endurance' | 'sprint' | 'technique' | 'power' | 'recovery' | 'distance' | 'interval_set' | 'time_trial';
 export type SwimStyle = 'mixed' | 'freestyle' | 'backstroke' | 'breaststroke' | 'butterfly' | 'im' | 'kick_only' | 'pull_only';
-export type FitnessSubType = 'dance' | 'skateboard' | 'jump_rope' | 'boxing' | 'trampoline' | 'athletics' | 'gymnastics' | 'calisthenics' | 'acrobats' | 'slack_lining' | 'obstacle_course' | 'rock_climbing' | 'abseiling' | 'martial_arts' | 'kapa_haka' | 'juggling_act' | 'unicycling' | 'rollerskate' | 'sandboarding' | 'extreme_air_sport' | 'archery' | 'axe_throwing' | 'cleaning' | 'gardening';
+export type FitnessSubType = 'dance' | 'skateboard' | 'jump_rope' | 'boxing' | 'trampoline' | 'athletics' | 'gymnastics' | 'calisthenics' | 'acrobats' | 'slack_lining' | 'obstacle_course' | 'rock_climbing' | 'abseiling' | 'martial_arts' | 'kapa_haka' | 'juggling_act' | 'unicycling' | 'rollerskate' | 'sandboarding' | 'extreme_air_sport' | 'archery' | 'axe_throwing' | 'cleaning' | 'tidying' | 'lawnmowing' | 'gardening';
 export type BikeSubType = 'mtb' | 'road' | 'mixed_terrain' | 'commute' | 'electric' | 'indoor_spin' | 'bmx' | 'track' | 'bikepacking';
 export type StretchSubType = 'pilates' | 'flexibility' | 'physio';
 export type WalkSubType = 'multi_day' | 'stroll' | 'speed' | 'urban' | 'bush' | 'mountain' | 'farm' | 'road' | 'track_oval' | 'treadmill' | 'beach' | 'push_buggy';
@@ -305,7 +307,7 @@ export const FITNESS_SUB_LABELS: Record<FitnessSubType, string> = {
   rock_climbing: 'Rock Climbing', abseiling: 'Abseiling', martial_arts: 'Martial Arts', kapa_haka: 'Kapa Haka',
   juggling_act: 'Juggling Act', unicycling: 'Unicycling', rollerskate: 'Rollerskate', sandboarding: 'Sandboarding',
   extreme_air_sport: 'Extreme Air Sport', archery: 'Archery', axe_throwing: 'Axe Throwing', cleaning: 'Cleaning',
-  gardening: 'Gardening',
+  tidying: 'Tidying', lawnmowing: 'Lawnmowing', gardening: 'Gardening',
 };
 export const BIKE_SUB_LABELS: Record<BikeSubType, string> = {
   mixed_terrain: 'Mixed Terrain', mtb: 'MTB', road: 'Road', commute: 'Commute', electric: 'Electric',
