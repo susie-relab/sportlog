@@ -153,9 +153,9 @@ export default function ActivityLogPage() {
       <div className="absolute top-0 right-0 z-10">
         <AccountSwitcher compact />
       </div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2 pr-16 sm:pr-0">
+      <div className="flex items-center justify-between mb-4 gap-2 pr-16 sm:pr-0">
         <h1 className="text-xl font-bold text-white">Activity Log</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
           <ShareRangeMenu activities={activities} icon={THIRTY_DAY_SHARE_ICON} accentColor="#8B5CF6" nounSingular="Activity" nounPlural="Activities" defaultScopeKey="activity_share" />
           <button
             onClick={() => setExporting(true)}
