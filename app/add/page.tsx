@@ -24,7 +24,7 @@ import DistancePicker from '@/components/DistancePicker';
 import ScrollFieldPicker from '@/components/ScrollFieldPicker';
 import ImageUploader from '@/components/ImageUploader';
 import { useDirtyForm } from '@/components/DirtyFormContext';
-import { sessionParts, combineSessions, WEEKDAYS, isRunSession } from '@/lib/runPlanGenerator';
+import { sessionParts, combineSessions, WEEKDAYS, isRunSession, todaysSession } from '@/lib/runPlanGenerator';
 import ConfettiBurst from '@/components/ConfettiBurst';
 import PbCelebrationModal from '@/components/PbCelebrationModal';
 import ActivitySavedModal, { randomEncouragement } from '@/components/ActivitySavedModal';
@@ -118,6 +118,7 @@ export default function AddPage() {
   const [planLink, setPlanLink] = useState<{ planId: string; week: number; day: string; part?: number } | null>(null);
   const [fromDash, setFromDash] = useState(false);
   const [planCompleted, setPlanCompleted] = useState<{ planId: string; totalRuns: number; totalKm: number; totalMin: number } | null>(null);
+  const [planMatchPrompt, setPlanMatchPrompt] = useState<{ planId: string; week: number; day: string; sessionTitle: string; activityId: string; distanceKm: number | null; durationMinutes: number; effort: number | null } | null>(null);
   // Holds the pending "auto-return to Dash/Plan" timeout so an explicit nav choice
   // in the saved/PB celebration modal (e.g. "View in Activity Log") can cancel it —
   // otherwise it fires ~1.8s later and yanks the user back regardless of their pick.
@@ -354,6 +355,33 @@ export default function AddPage() {
       setPlanLink(null);
     }
 
+    // If not a Dash/plan-initiated log, check if the saved exercise type matches an unlogged
+    // plan session on this date — if so, offer to apply it to the plan.
+    if (!dbErr && inserted?.id && !planLink && !fromDash) {
+      const { data: plans } = await supabase
+        .from('training_plans')
+        .select('id, plan_data, start_date, weeks')
+        .eq('user_id', user!.id);
+      if (plans) {
+        for (const plan of plans) {
+          const pos = todaysSession(plan, date);
+          if (pos && !pos.session.completed && pos.session.exerciseType === exerciseType) {
+            setPlanMatchPrompt({
+              planId: plan.id,
+              week: pos.week,
+              day: pos.day,
+              sessionTitle: pos.session.title || exerciseType,
+              activityId: inserted.id,
+              distanceKm: distanceKm,
+              durationMinutes: durationMinutes || 0,
+              effort,
+            });
+            break;
+          }
+        }
+      }
+    }
+
     setSaving(false);
 
     if (dbErr) {
@@ -380,6 +408,26 @@ export default function AddPage() {
         autoNavTimeoutRef.current = setTimeout(() => router.push('/dash'), 1800);
       }
     }
+  };
+
+  const applyPlanMatch = async () => {
+    if (!planMatchPrompt) return;
+    const { planId, week, day, activityId, distanceKm: matchDist, durationMinutes: matchDur, effort: matchEffort } = planMatchPrompt;
+    const { data: planRow } = await supabase.from('training_plans').select('plan_data').eq('id', planId).single();
+    if (planRow?.plan_data) {
+      const pd = planRow.plan_data;
+      const wk = pd.weeks.find((w: { weekNumber: number }) => w.weekNumber === week);
+      if (wk && wk.days[day]) {
+        const parts = sessionParts(wk.days[day]);
+        const newParts = parts.map((p, i) => i === 0 ? {
+          ...p, completed: true, completedActivityId: activityId,
+          completedDistanceKm: matchDist ?? null, completedTimeMin: matchDur || null, completedEffort: matchEffort,
+        } : p);
+        wk.days[day] = newParts.length === 1 ? newParts[0] : combineSessions(newParts);
+        await supabase.from('training_plans').update({ plan_data: pd, updated_at: new Date().toISOString() }).eq('id', planId);
+      }
+    }
+    setPlanMatchPrompt(null);
   };
 
   const accentColor = exerciseType === 'run' && runType
@@ -952,6 +1000,31 @@ export default function AddPage() {
       )}
       {savedTitle && (
         <ActivitySavedModal title={savedTitle} onClose={() => setSavedTitle(null)} onNavigate={navigateFromModal} />
+      )}
+      {planMatchPrompt && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/70" onClick={() => setPlanMatchPrompt(null)}>
+          <div className="w-full max-w-sm bg-[#1E293B] border border-blue-500/40 rounded-2xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="text-3xl mb-3 text-center">📋</div>
+            <h2 className="text-white font-bold text-lg text-center mb-1">Apply to your plan?</h2>
+            <p className="text-[#94A3B8] text-sm text-center mb-5">
+              This matches your planned <span className="text-white font-medium">{planMatchPrompt.sessionTitle}</span> session. Count it as done?
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={applyPlanMatch}
+                className="btn-primary w-full"
+              >
+                Yes, apply to plan ✓
+              </button>
+              <button
+                onClick={() => setPlanMatchPrompt(null)}
+                className="btn-secondary w-full"
+              >
+                No, skip
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
