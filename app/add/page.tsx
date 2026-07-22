@@ -832,7 +832,24 @@ export default function AddPage() {
           onClick={() => setShowMore(v => !v)}
           className="flex items-center gap-2 text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors py-1"
         >
-          <span>{showMore ? '▼' : '▶'}</span>
+          {showMore ? (
+            <span>▼</span>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="flex-shrink-0">
+              {/* rays */}
+              {[0,45,90,135,180,225,270,315].map(deg => (
+                <line key={deg}
+                  x1={9 + Math.cos((deg - 90) * Math.PI / 180) * 6.5}
+                  y1={9 + Math.sin((deg - 90) * Math.PI / 180) * 6.5}
+                  x2={9 + Math.cos((deg - 90) * Math.PI / 180) * 8.5}
+                  y2={9 + Math.sin((deg - 90) * Math.PI / 180) * 8.5}
+                  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+                />
+              ))}
+              {/* centre dot */}
+              <circle cx="9" cy="9" r="3" fill="currentColor" />
+            </svg>
+          )}
           {showMore ? 'Hide optional details' : 'More optional details'}
         </button>
 
