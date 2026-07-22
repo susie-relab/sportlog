@@ -472,10 +472,113 @@ const MartialArtsIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
+// Axe: crescent blade on the left, two narrow parallel handle lines going diagonally right.
+const AxeThrowingIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className} strokeWidth={1.1}>
+    <line x1="5" y1="2" x2="13" y2="2" />
+    <path d="M5 2 C2 5 2 10 5 13" />
+    <line x1="5" y1="13" x2="13" y2="5" />
+    <path d="M6.5 4.5 C4.3 7 4.3 10 6.5 12" strokeWidth={0.6} />
+    <line x1="13" y1="2" x2="22" y2="13" strokeWidth={1.2} />
+    <line x1="13" y1="5" x2="22" y2="16" strokeWidth={1.2} />
+    <line x1="22" y1="13" x2="22" y2="16" />
+  </Svg>
+));
+
+// Mop: diagonal handle with long thin curved strands hanging from the head like mop hair.
 const CleaningIcon = makeIcon(({ size, className }) => (
-  <Svg size={size} className={className}>
-    <path d="M14 3 6 21" />
-    <path d="M4 21h6l2-6H6Z" />
+  <Svg size={size} className={className} strokeWidth={1.3}>
+    <path d="M17 2 L9 17" />
+    <path d="M9 17 C7.5 19 6.5 20 6 21.5" strokeWidth={0.75} />
+    <path d="M9 17 C8 19.5 7.5 20.5 7 22" strokeWidth={0.75} />
+    <path d="M9 17 C8.5 19.5 8.5 21 8.5 22.5" strokeWidth={0.75} />
+    <path d="M9 17 C9.5 19.5 9.5 21 9.5 22.5" strokeWidth={0.75} />
+    <path d="M9 17 C10 19 10.5 20.5 10.5 22" strokeWidth={0.75} />
+    <path d="M9 17 C11 18.5 11.5 20 12 21.5" strokeWidth={0.75} />
+    <path d="M9 17 C12 18 12.5 19.5 13 21" strokeWidth={0.75} />
+  </Svg>
+));
+
+// Stickman sorting toys into a box — person standing next to an open box, dropping a ball in.
+const TidyingIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className} strokeWidth={1.1}>
+    <circle cx="20" cy="4" r="1.6" fill="currentColor" stroke="none" />
+    <line x1="20" y1="5.6" x2="19" y2="13" />
+    <line x1="19" y1="9" x2="15" y2="11.5" strokeWidth={1} />
+    <line x1="19" y1="9" x2="22" y2="11" strokeWidth={1} />
+    <line x1="19" y1="13" x2="17" y2="22" />
+    <line x1="19" y1="13" x2="21" y2="22" />
+    <circle cx="14" cy="11" r="1.7" strokeWidth={0.9} />
+    <path d="M3 15 L3 22 L13 22 L13 15" />
+    <line x1="6" y1="15" x2="6" y2="20" strokeWidth={0.9} />
+    <rect x="8" y="17" width="2" height="3" strokeWidth={0.75} />
+    <line x1="11" y1="16" x2="11.5" y2="21" strokeWidth={0.9} />
+  </Svg>
+));
+
+const ExtremeAirSportIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className} strokeWidth={1.1}>
+    <path d="M3 9 A9 9 0 0 1 21 9" />
+    <path d="M3 9 Q5 11 7 9 Q9 11 12 9 Q15 11 17 9 Q19 11 21 9" strokeWidth={0.8} />
+    <line x1="4.5" y1="9" x2="10" y2="18" strokeWidth={0.9} />
+    <line x1="8.5" y1="9" x2="10" y2="18" strokeWidth={0.9} />
+    <line x1="15.5" y1="9" x2="14" y2="18" strokeWidth={0.9} />
+    <line x1="19.5" y1="9" x2="14" y2="18" strokeWidth={0.9} />
+    <circle cx="12" cy="15.5" r="0.8" fill="currentColor" stroke="none" />
+    <line x1="12" y1="16.3" x2="12" y2="20" strokeWidth={1} />
+    <line x1="10" y1="18" x2="14" y2="18" strokeWidth={1} />
+    <line x1="12" y1="20" x2="10" y2="22.5" strokeWidth={1} />
+    <line x1="12" y1="20" x2="14" y2="22.5" strokeWidth={1} />
+  </Svg>
+));
+
+const KapaHakaIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className} strokeWidth={1.1}>
+    <line x1="11" y1="3" x2="9.5" y2="1" strokeWidth={0.6} />
+    <line x1="11" y1="3" x2="12" y2="1" strokeWidth={0.6} />
+    <line x1="11" y1="3" x2="12.5" y2="1.2" strokeWidth={0.6} />
+    <line x1="12" y1="10" x2="11" y2="3" strokeWidth={0.75} />
+    <circle cx="12" cy="16" r="5.5" strokeWidth={1.1} />
+    <path d="M6.5 16 Q12 13.5 17.5 16 Q12 18.5 6.5 16" strokeWidth={0.55} fill="none" />
+    <path d="M12 10.5 Q15 13 12 21.5 Q9 13 12 10.5" strokeWidth={0.55} fill="none" />
+    <path d="M7.8 12.5 Q12 14.5 16.2 19.5 Q12 17.5 7.8 12.5" strokeWidth={0.5} fill="none" />
+    <path d="M16.2 12.5 Q12 14.5 7.8 19.5 Q12 17.5 16.2 12.5" strokeWidth={0.5} fill="none" />
+  </Svg>
+));
+
+const JugglingActIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className} strokeWidth={1.1}>
+    <circle cx="7" cy="10" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="7" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="17" cy="10" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="15" r="1.1" fill="currentColor" stroke="none" />
+    <line x1="12" y1="16.1" x2="12" y2="21" />
+    <line x1="12" y1="18" x2="9" y2="16.5" />
+    <line x1="12" y1="18" x2="15" y2="16.5" />
+    <line x1="12" y1="21" x2="10.5" y2="23" />
+    <line x1="12" y1="21" x2="13.5" y2="23" />
+  </Svg>
+));
+
+const GardeningIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className} strokeWidth={1.1}>
+    <line x1="2" y1="21" x2="22" y2="21" strokeWidth={0.9} />
+    <line x1="9" y1="21" x2="9" y2="11" />
+    <path d="M9 18 C7 16 4 13 6 10 C7.5 12 9 15 9 18" fill="none" />
+    <path d="M9 14 C11 12 14 9 12 7 C10.5 9 9 12 9 14" fill="none" />
+    <path d="M9 11 C8.5 8 9 5 10 5 C11 5 10.5 8 9 11" fill="none" />
+    <line x1="19" y1="11" x2="16" y2="17" strokeWidth={1.3} />
+    <path d="M15.5 16.5 Q12.5 17.5 11.5 20 L14 23 L17 20 Q18 17.5 16.5 16.5 Z" fill="none" />
+  </Svg>
+));
+
+const LawnmowingIcon = makeIcon(({ size, className }) => (
+  <Svg size={size} className={className} strokeWidth={1.1}>
+    <rect x="5" y="19" width="14" height="3" rx={0.5} />
+    <rect x="7" y="16" width="10" height="3" rx={0.3} strokeWidth={1} />
+    <line x1="15" y1="19" x2="19" y2="4" strokeWidth={1.2} />
+    <line x1="18" y1="19" x2="22" y2="4" strokeWidth={1.2} />
+    <line x1="19" y1="4" x2="22" y2="4" strokeWidth={1.2} />
   </Svg>
 ));
 
@@ -1115,7 +1218,14 @@ export const SUBTYPE_ICON_OVERRIDES: Record<string, LucideIcon> = {
   rock_climbing: RockClimbingIcon,
   trampoline: TrampolineIcon,
   martial_arts: MartialArtsIcon,
+  axe_throwing: AxeThrowingIcon,
   cleaning: CleaningIcon,
+  tidying: TidyingIcon,
+  lawnmowing: LawnmowingIcon,
+  extreme_air_sport: ExtremeAirSportIcon,
+  kapa_haka: KapaHakaIcon,
+  juggling_act: JugglingActIcon,
+  gardening: GardeningIcon,
   kayak: KayakIcon,
   sailing: SailingIcon,
   surf: SurfIcon,
