@@ -472,30 +472,28 @@ const MartialArtsIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
-// Axe: crescent blade on the left, two narrow parallel handle lines going diagonally right.
+// Axe: crescent blade on the left, filled handle parallelogram going diagonally right.
 const AxeThrowingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className} strokeWidth={1.1}>
     <line x1="5" y1="2" x2="13" y2="2" />
     <path d="M5 2 C2 5 2 10 5 13" />
     <line x1="5" y1="13" x2="13" y2="5" />
     <path d="M6.5 4.5 C4.3 7 4.3 10 6.5 12" strokeWidth={0.6} />
-    <line x1="13" y1="2" x2="22" y2="13" strokeWidth={1.2} />
-    <line x1="13" y1="5" x2="22" y2="16" strokeWidth={1.2} />
-    <line x1="22" y1="13" x2="22" y2="16" />
+    <path d="M13 2 L22 13 L22 16 L13 5 Z" fill="currentColor" strokeWidth={0.5} />
   </Svg>
 ));
 
-// Mop: diagonal handle with long thin curved strands hanging from the head like mop hair.
+// Mop: shorter diagonal handle with long thin curved strands hanging from the head.
 const CleaningIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className} strokeWidth={1.3}>
-    <path d="M17 2 L9 17" />
-    <path d="M9 17 C7.5 19 6.5 20 6 21.5" strokeWidth={0.75} />
-    <path d="M9 17 C8 19.5 7.5 20.5 7 22" strokeWidth={0.75} />
-    <path d="M9 17 C8.5 19.5 8.5 21 8.5 22.5" strokeWidth={0.75} />
-    <path d="M9 17 C9.5 19.5 9.5 21 9.5 22.5" strokeWidth={0.75} />
-    <path d="M9 17 C10 19 10.5 20.5 10.5 22" strokeWidth={0.75} />
-    <path d="M9 17 C11 18.5 11.5 20 12 21.5" strokeWidth={0.75} />
-    <path d="M9 17 C12 18 12.5 19.5 13 21" strokeWidth={0.75} />
+    <path d="M16 4 L10 15" />
+    <path d="M10 15 C8.5 17.5 7.5 19.5 7 23" strokeWidth={0.75} />
+    <path d="M10 15 C9 18 8.5 20 8 23.5" strokeWidth={0.75} />
+    <path d="M10 15 C9.5 18 9.5 20.5 9.5 24" strokeWidth={0.75} />
+    <path d="M10 15 C10.5 18 10.5 20.5 10.5 24" strokeWidth={0.75} />
+    <path d="M10 15 C11 17.5 11.5 20 11.5 23.5" strokeWidth={0.75} />
+    <path d="M10 15 C12 17 12.5 19.5 13 23" strokeWidth={0.75} />
+    <path d="M10 15 C13 17 13.5 19 14 22.5" strokeWidth={0.75} />
   </Svg>
 ));
 
@@ -520,6 +518,10 @@ const ExtremeAirSportIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className} strokeWidth={1.1}>
     <path d="M3 9 A9 9 0 0 1 21 9" />
     <path d="M3 9 Q5 11 7 9 Q9 11 12 9 Q15 11 17 9 Q19 11 21 9" strokeWidth={0.8} />
+    <path d="M5 10 Q7 3 12 0" strokeWidth={0.65} />
+    <path d="M9.25 10 Q10.5 3 12 0" strokeWidth={0.65} />
+    <path d="M14.75 10 Q13.5 3 12 0" strokeWidth={0.65} />
+    <path d="M19 10 Q17 3 12 0" strokeWidth={0.65} />
     <line x1="4.5" y1="9" x2="10" y2="18" strokeWidth={0.9} />
     <line x1="8.5" y1="9" x2="10" y2="18" strokeWidth={0.9} />
     <line x1="15.5" y1="9" x2="14" y2="18" strokeWidth={0.9} />
@@ -534,10 +536,10 @@ const ExtremeAirSportIcon = makeIcon(({ size, className }) => (
 
 const KapaHakaIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className} strokeWidth={1.1}>
-    <line x1="11" y1="3" x2="9.5" y2="1" strokeWidth={0.6} />
-    <line x1="11" y1="3" x2="12" y2="1" strokeWidth={0.6} />
-    <line x1="11" y1="3" x2="12.5" y2="1.2" strokeWidth={0.6} />
-    <line x1="12" y1="10" x2="11" y2="3" strokeWidth={0.75} />
+    <line x1="11" y1="3" x2="9" y2="0" strokeWidth={1.0} />
+    <line x1="11" y1="3" x2="11.5" y2="0" strokeWidth={1.0} />
+    <line x1="11" y1="3" x2="13" y2="0.2" strokeWidth={1.0} />
+    <line x1="12" y1="10" x2="11" y2="3" strokeWidth={1.6} />
     <circle cx="12" cy="16" r="5.5" strokeWidth={1.1} />
     <path d="M6.5 16 Q12 13.5 17.5 16 Q12 18.5 6.5 16" strokeWidth={0.55} fill="none" />
     <path d="M12 10.5 Q15 13 12 21.5 Q9 13 12 10.5" strokeWidth={0.55} fill="none" />
@@ -548,15 +550,19 @@ const KapaHakaIcon = makeIcon(({ size, className }) => (
 
 const JugglingActIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className} strokeWidth={1.1}>
-    <circle cx="7" cy="10" r="1.4" fill="currentColor" stroke="none" />
-    <circle cx="12" cy="7" r="1.4" fill="currentColor" stroke="none" />
-    <circle cx="17" cy="10" r="1.4" fill="currentColor" stroke="none" />
-    <circle cx="12" cy="15" r="1.1" fill="currentColor" stroke="none" />
-    <line x1="12" y1="16.1" x2="12" y2="21" />
-    <line x1="12" y1="18" x2="9" y2="16.5" />
-    <line x1="12" y1="18" x2="15" y2="16.5" />
-    <line x1="12" y1="21" x2="10.5" y2="23" />
-    <line x1="12" y1="21" x2="13.5" y2="23" />
+    <path d="M6 10 L7.9 10 A1.9 1.9 0 0 0 6 8.1 Z" transform="rotate(20,6,10)" fill="currentColor" stroke="none" />
+    <path d="M6 10 L4.1 10 A1.9 1.9 0 0 0 6 11.9 Z" transform="rotate(20,6,10)" fill="currentColor" stroke="none" />
+    <circle cx="6" cy="10" r="1.9" strokeWidth={0.85} />
+    <path d="M12 6.5 L13.9 6.5 A1.9 1.9 0 0 0 12 4.6 Z" transform="rotate(65,12,6.5)" fill="currentColor" stroke="none" />
+    <path d="M12 6.5 L10.1 6.5 A1.9 1.9 0 0 0 12 8.4 Z" transform="rotate(65,12,6.5)" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="6.5" r="1.9" strokeWidth={0.85} />
+    <path d="M18 10 L19.9 10 A1.9 1.9 0 0 0 18 8.1 Z" transform="rotate(-30,18,10)" fill="currentColor" stroke="none" />
+    <path d="M18 10 L16.1 10 A1.9 1.9 0 0 0 18 11.9 Z" transform="rotate(-30,18,10)" fill="currentColor" stroke="none" />
+    <circle cx="18" cy="10" r="1.9" strokeWidth={0.85} />
+    <circle cx="12" cy="15" r="2.0" fill="currentColor" stroke="none" />
+    <line x1="12" y1="17" x2="12" y2="20.5" strokeWidth={1.3} />
+    <line x1="12" y1="18.5" x2="8" y2="16.5" strokeWidth={1.2} />
+    <line x1="12" y1="18.5" x2="16" y2="16.5" strokeWidth={1.2} />
   </Svg>
 ));
 
