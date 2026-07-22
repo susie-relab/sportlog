@@ -4,7 +4,8 @@ import { SkipForward } from 'lucide-react';
 import { Habit, HabitLog, HabitFrequencyType, HabitColorKey, HabitTrackingStyle, HABIT_COLORS } from '@/types';
 import { todayLocalISO } from '@/lib/utils';
 import { periodProgress, isSkippableFrequency, periodBoundsFor, addDaysISO } from '@/lib/habitStats';
-import { ApplyOption, FrequencyApplyPicker, FrequencyFields, PencilIcon, TimeOfDayField, Tip } from '@/components/HabitTabBox';
+import { ApplyOption, FrequencyApplyPicker, FrequencyFields, PencilIcon, TimeOfDayField, Tip, frequencyLabel } from '@/components/HabitTabBox';
+import { currentStreak } from '@/lib/habitStats';
 
 interface CategoryOption { key: string; label: string; emoji: string }
 
@@ -29,6 +30,7 @@ interface Props {
   daySkipped?: boolean;
 }
 
+type Mode = 'detail' | 'edit' | null;
 type RevealSection = 'name' | 'colour' | 'category' | null;
 
 function hexToRgba(hex: string, alpha: number): string {
@@ -45,7 +47,7 @@ function hexToRgba(hex: string, alpha: number): string {
  *  quick editor; press-and-hold anywhere else drags the row to reorder it within the full
  *  habit list (across every category). */
 export default function HabitListRow({ habit, logs, categories, onIncrement, onDecrement, onMarkFailed, onSkip, onTick, onUpdateHabit, onChangeFrequency, onReorder, onArchive, onDelete, onDuplicate, daySkipped }: Props) {
-  const [editing, setEditing] = useState(false);
+  const [mode, setMode] = useState<Mode>(null);
   const [dragging, setDragging] = useState(false);
   const dragMovedRef = useRef(false);
   const draggingRef = useRef(false);
@@ -57,6 +59,7 @@ export default function HabitListRow({ habit, logs, categories, onIncrement, onD
   const [timeOfDay, setTimeOfDay] = useState(habit.time_of_day || '');
   const [revealed, setRevealed] = useState<RevealSection>(null);
   const [nameValue, setNameValue] = useState(habit.name);
+  const [descValue, setDescValue] = useState(habit.description || '');
   const [showApplyPicker, setShowApplyPicker] = useState(false);
   const [applyOption, setApplyOption] = useState<ApplyOption>('today');
   const [applyCustomDate, setApplyCustomDate] = useState('');
@@ -82,10 +85,13 @@ export default function HabitListRow({ habit, logs, categories, onIncrement, onD
   const [showLastDayNotice, setShowLastDayNotice] = useState(false);
   const [showTomorrowWarning, setShowTomorrowWarning] = useState(false);
 
-  // A tap toggles the editor open/closed (like the Cancel button); opening also refreshes
-  // the form fields to the habit's current values.
-const toggleEditor = () => {
-    if (editing) { setEditing(false); setRevealed(null); setShowApplyPicker(false); return; }
+  const close = () => { setMode(null); setRevealed(null); setShowApplyPicker(false); };
+
+  // Tap on the row body → detail view. Second tap collapses.
+  const toggleDetail = () => setMode(prev => prev === 'detail' ? null : 'detail');
+
+  // Pencil button → edit mode, refreshing all form fields first.
+  const openEditor = () => {
     setFrequency(habit.frequency_type);
     setDays(habit.frequency_days ? habit.frequency_days.split(',') : []);
     setIntervalDays(String(habit.frequency_interval_days || 2));
@@ -93,13 +99,18 @@ const toggleEditor = () => {
     setTrackingStyle(habit.tracking_style || 'count');
     setTimeOfDay(habit.time_of_day || '');
     setNameValue(habit.name);
+    setDescValue(habit.description || '');
     setRevealed(null);
     setShowApplyPicker(false);
-    setEditing(true);
+    setMode('edit');
   };
 
   const saveName = () => {
-    if (nameValue.trim() && nameValue.trim() !== habit.name) onUpdateHabit({ name: nameValue.trim() });
+    const patch: Partial<Habit> = {};
+    if (nameValue.trim() && nameValue.trim() !== habit.name) patch.name = nameValue.trim();
+    const newDesc = descValue.trim() || null;
+    if (newDesc !== (habit.description || null)) patch.description = newDesc;
+    if (Object.keys(patch).length) onUpdateHabit(patch);
     setRevealed(null);
   };
 
@@ -123,7 +134,7 @@ const toggleEditor = () => {
       setShowApplyPicker(true);
       return;
     }
-    setEditing(false);
+    setMode(null);
   };
 
   const confirmApplyFrequency = () => {
@@ -135,7 +146,7 @@ const toggleEditor = () => {
     };
     onChangeFrequency(newFreq, applyOption, applyOption === 'custom' ? applyCustomDate : undefined);
     setShowApplyPicker(false);
-    setEditing(false);
+    setMode(null);
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -172,7 +183,7 @@ const toggleEditor = () => {
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
     const overId = (el?.closest('[data-habit-key]') as HTMLElement | null)?.dataset.habitKey;
     if (moved && overId && overId !== habit.id) onReorder(overId);
-    else toggleEditor();
+    else toggleDetail();
   };
 
   return (
@@ -182,7 +193,7 @@ const toggleEditor = () => {
     >
       <div
         onPointerDown={handlePointerDown}
-        onClick={e => { if (!(e.target as HTMLElement).closest('button')) toggleEditor(); }}
+        onClick={e => { if (!(e.target as HTMLElement).closest('button')) toggleDetail(); }}
         className="relative h-9 select-none cursor-pointer"
         style={{ background: '#1E293B', touchAction: 'none' }}
       >
@@ -294,7 +305,7 @@ const toggleEditor = () => {
               </div>
             )}
             <button
-              onClick={e => { e.stopPropagation(); toggleEditor(); }}
+              onClick={e => { e.stopPropagation(); openEditor(); }}
               onPointerDown={e => e.stopPropagation()}
               aria-label="Edit habit"
               className="w-5 h-5 rounded-full flex items-center justify-center text-white/70 hover:text-white bg-black/25 hover:bg-black/40"
@@ -311,7 +322,61 @@ const toggleEditor = () => {
         </div>
       </div>
 
-      {editing && (
+      {/* ── Detail view ── */}
+      {mode === 'detail' && (() => {
+        const catDef = categories.find(c => c.key === habit.category);
+        const streak = currentStreak(habit, logs, todayLocalISO(), []);
+        const TOD_LABELS: Record<string, string> = { morning: '🌅 Morning', daytime: '☀️ Daytime', night: '🌙 Night time' };
+        const STYLE_LABELS: Record<string, string> = { count: 'Count (+/−)', tick: 'Tick (once)', both: 'Tick or count' };
+        return (
+          <div className="p-4 border-t border-[#334155] flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <span className="w-3 h-3 rounded-full flex-shrink-0 mt-1" style={{ background: habit.color }} />
+              <div className="min-w-0 flex-1">
+                <p className="text-base font-bold text-white leading-snug">{habit.name}</p>
+                {habit.description && (
+                  <p className="text-sm text-[#94A3B8] mt-1 leading-relaxed">{habit.description}</p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              <div>
+                <span className="text-[#64748B] uppercase tracking-wide font-semibold">Category</span>
+                <p className="text-white mt-0.5">{catDef ? `${catDef.emoji} ${catDef.label}` : habit.category}</p>
+              </div>
+              <div>
+                <span className="text-[#64748B] uppercase tracking-wide font-semibold">Repeat</span>
+                <p className="text-white mt-0.5">{frequencyLabel(habit)}</p>
+              </div>
+              <div>
+                <span className="text-[#64748B] uppercase tracking-wide font-semibold">Tracking</span>
+                <p className="text-white mt-0.5">{STYLE_LABELS[habit.tracking_style || 'count']}</p>
+              </div>
+              {habit.time_of_day && TOD_LABELS[habit.time_of_day] && (
+                <div>
+                  <span className="text-[#64748B] uppercase tracking-wide font-semibold">Time</span>
+                  <p className="text-white mt-0.5">{TOD_LABELS[habit.time_of_day]}</p>
+                </div>
+              )}
+              <div>
+                <span className="text-[#64748B] uppercase tracking-wide font-semibold">Streak</span>
+                <p className="text-white mt-0.5">{streak > 0 ? `🔥 ${streak}` : '—'}</p>
+              </div>
+              <div>
+                <span className="text-[#64748B] uppercase tracking-wide font-semibold">Progress</span>
+                <p className="text-white mt-0.5">{sum}/{periodTarget} this {periodLabel}</p>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={openEditor} className="btn-secondary text-xs px-3 py-1.5">Edit</button>
+              <button onClick={close} className="text-xs text-[#64748B] hover:text-white px-3">Close</button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Edit panel ── */}
+      {mode === 'edit' && (
         <div className="p-3 border-t border-[#334155] flex flex-col gap-3">
           <div className="flex flex-wrap gap-1.5">
             {(['name', 'colour', 'category'] as const).map(section => (
@@ -326,9 +391,16 @@ const toggleEditor = () => {
           </div>
 
           {revealed === 'name' && (
-            <div className="flex gap-2">
-              <input className="input flex-1" value={nameValue} onChange={e => setNameValue(e.target.value)} />
-              <button onClick={saveName} className="btn-primary px-3 text-sm">Save</button>
+            <div className="flex flex-col gap-2">
+              <input className="input" value={nameValue} onChange={e => setNameValue(e.target.value)} placeholder="Habit name" />
+              <textarea
+                className="input resize-none text-sm"
+                rows={2}
+                value={descValue}
+                onChange={e => setDescValue(e.target.value)}
+                placeholder="Description (optional)"
+              />
+              <button onClick={saveName} className="btn-primary px-3 text-sm self-start">Save</button>
             </div>
           )}
 
@@ -377,7 +449,7 @@ const toggleEditor = () => {
           ) : (
             <div className="flex gap-2">
               <button onClick={save} className="btn-primary flex-1">Save</button>
-              <button onClick={() => setEditing(false)} className="text-sm text-[#64748B] hover:text-white px-3">Cancel</button>
+              <button onClick={close} className="text-sm text-[#64748B] hover:text-white px-3">Cancel</button>
               {onDuplicate && <button onClick={onDuplicate} className="text-sm text-[#94A3B8] hover:text-white px-2">Duplicate</button>}
               <button onClick={onArchive} className="text-sm text-[#94A3B8] hover:text-white px-2">Pause</button>
               <button onClick={onDelete} className="text-sm text-red-400 hover:text-red-300 px-2">Delete</button>
