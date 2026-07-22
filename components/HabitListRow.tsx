@@ -140,6 +140,9 @@ const toggleEditor = () => {
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('button')) return;
+    // Only the left 44 px strip initiates drag — tapping elsewhere just opens the editor via onClick.
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (e.clientX - rect.left > 44) return;
     e.preventDefault();
     draggingRef.current = true;
     dragMovedRef.current = false;
@@ -179,6 +182,7 @@ const toggleEditor = () => {
     >
       <div
         onPointerDown={handlePointerDown}
+        onClick={e => { if (!(e.target as HTMLElement).closest('button')) toggleEditor(); }}
         className="relative h-9 select-none cursor-pointer"
         style={{ background: '#1E293B', touchAction: 'none' }}
       >

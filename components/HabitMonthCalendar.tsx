@@ -16,6 +16,15 @@ interface Props {
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WEEKDAY_HEADERS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const TOD_ORDER: Record<string, number> = { morning: 0, daytime: 1, night: 2 };
+function sortForPopover(habits: Habit[]): Habit[] {
+  return [...habits].sort((a, b) => {
+    const ta = TOD_ORDER[a.time_of_day ?? ''] ?? 3;
+    const tb = TOD_ORDER[b.time_of_day ?? ''] ?? 3;
+    if (ta !== tb) return ta - tb;
+    return (a.category || '').localeCompare(b.category || '');
+  });
+}
 
 function hexToRgba(hex: string, alpha: number): string {
   const m = hex.replace('#', '');
@@ -152,37 +161,36 @@ export default function HabitMonthCalendar({ habits, logs, frequencyHistory, onC
               <span className="text-sm font-semibold text-white">{selectedDate}</span>
               <button onClick={() => setSelectedDate(null)} className="p-1 rounded-lg hover:bg-[#334155] text-[#94A3B8]"><X size={18} /></button>
             </div>
-            <div className="flex flex-col gap-2">
-              {habitsForDate(selectedDate).map(h => {
+            {(() => {
+              const allScheduled = habitsForDate(selectedDate);
+              const active = sortForPopover(allScheduled.filter(h => !isSkippedLog(logsByHabitDate.get(`${h.id}|${selectedDate}`))));
+              const skippedHabits = sortForPopover(allScheduled.filter(h => isSkippedLog(logsByHabitDate.get(`${h.id}|${selectedDate}`))));
+              const isFuture = selectedDate > todayISO;
+              const renderHabitRow = (h: Habit, forceSkipped = false) => {
                 const log = logsByHabitDate.get(`${h.id}|${selectedDate}`);
                 const failed = isFailedLog(log);
-                const skipped = isSkippedLog(log);
+                const skipped = forceSkipped || isSkippedLog(log);
                 const count = (failed || skipped) ? 0 : (log?.count ?? 0);
                 const dayTarget = resolveFrequencyAt(h, frequencyHistory, selectedDate).target_per_period;
                 const ratio = completionRatio(h, log, dayTarget);
-                const complete = ratio >= 1;
+                const complete = !skipped && ratio >= 1;
                 const locked = failed || skipped;
                 const canSkip = isSkippableFrequency(h.frequency_type);
-                const isFuture = selectedDate > todayISO;
                 return (
                   <div
                     key={h.id}
                     className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-[#334155]"
-                    style={{ background: complete ? h.color : ratio > 0 ? hexToRgba(h.color, Math.max(0.12, ratio * 0.3)) : 'transparent' }}
+                    style={{ background: complete ? h.color : ratio > 0 && !skipped ? hexToRgba(h.color, Math.max(0.12, ratio * 0.3)) : 'transparent' }}
                   >
                     <button
                       onClick={() => { if (!locked && !complete) onCycle(h, selectedDate); }}
                       disabled={locked || complete || isFuture}
                       className={`flex items-center gap-2 min-w-0 flex-1 text-left ${(locked || complete || isFuture) ? 'cursor-default' : 'hover:opacity-80'}`}
                     >
-                      {/* Circle hidden when complete — no need, it's done */}
                       {!complete && (
-                        <span
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ background: h.color }}
-                        />
+                        <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: h.color }} />
                       )}
-                      <span className={`text-sm truncate ${complete ? 'text-white font-semibold' : 'text-white'}`}>{h.name}</span>
+                      <span className={`text-sm truncate ${complete ? 'text-white font-semibold' : skipped ? 'text-[#64748B] italic' : 'text-white'}`}>{h.name}</span>
                     </button>
                     <span className="flex items-center gap-1.5 flex-shrink-0">
                       {locked ? (
@@ -219,11 +227,26 @@ export default function HabitMonthCalendar({ habits, logs, frequencyHistory, onC
                     </span>
                   </div>
                 );
-              })}
-              {habitsForDate(selectedDate).length === 0 && (
-                <p className="text-xs text-[#64748B]">No habits scheduled this day.</p>
-              )}
-            </div>
+              };
+              return (
+                <div className="flex flex-col gap-2">
+                  {active.map(h => renderHabitRow(h))}
+                  {skippedHabits.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-2 my-1">
+                        <div className="flex-1 border-t border-[#334155]" />
+                        <span className="text-[10px] font-semibold text-[#475569] uppercase tracking-wide">Skipped</span>
+                        <div className="flex-1 border-t border-[#334155]" />
+                      </div>
+                      {skippedHabits.map(h => renderHabitRow(h, true))}
+                    </>
+                  )}
+                  {allScheduled.length === 0 && (
+                    <p className="text-xs text-[#64748B]">No habits scheduled this day.</p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

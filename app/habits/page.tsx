@@ -55,6 +55,9 @@ export default function HabitsPage() {
   const [showSort, setShowSort] = useState(false);
   const [sortCriteria, setSortCriteria] = useState<{ key: SortKey; dir: 'asc' | 'desc' }[]>([]);
   const [sortLoaded, setSortLoaded] = useState(false);
+  const [sortAppliedCriteria, setSortAppliedCriteria] = useState<{ key: SortKey; dir: 'asc' | 'desc' }[]>([]);
+  const [hasManualReordered, setHasManualReordered] = useState(false);
+  const [showStatBreakdown, setShowStatBreakdown] = useState<'today' | 'week' | null>(null);
   const [skippedDays, setSkippedDays] = useState<string[]>([]);
   const [skippedDaysLoaded, setSkippedDaysLoaded] = useState(false);
   const [focusIds, setFocusIds] = useState<string[]>([]);
@@ -275,6 +278,16 @@ export default function HabitsPage() {
     [habits, logsByHabit, frequencyHistory, skippedDays]
   );
 
+  const categoryBreakdown = useMemo(() => {
+    const cats = [...new Set(habits.map(h => h.category))];
+    return cats.map(cat => {
+      const catHabits = habits.filter(h => h.category === cat);
+      const stats = todayAndWeekProgress(catHabits, logsByHabit, frequencyHistory, todayLocalISO(), skippedDays);
+      const def = categoryDefByKey.get(cat);
+      return { key: cat, label: def?.label || cat, emoji: def?.emoji || '', todayPct: stats.todayPct, weekPct: stats.weekPct };
+    }).sort((a, b) => a.label.localeCompare(b.label));
+  }, [habits, logsByHabit, frequencyHistory, skippedDays, categoryDefByKey]);
+
   const resetAddForm = () => {
     setAddStep('presets');
     setSelectedPresetNames(new Set());
@@ -423,6 +436,7 @@ export default function HabitsPage() {
     const [moved] = reordered.splice(from, 1);
     reordered.splice(to, 0, moved);
     persistHabitOrder(reordered);
+    if (sortAppliedCriteria.length > 0) setHasManualReordered(true);
   };
 
   const updateHabit = async (habitId: string, patch: Partial<Habit>) => {
@@ -599,15 +613,17 @@ export default function HabitsPage() {
       case 'streak': return currentStreak(h, logsByHabit.get(h.id) || [], todayLocalISO(), frequencyHistory);
       case 'most_done': return totalCompletions(logsByHabit.get(h.id) || []);
       case 'completion': return periodProgress(h, logsByHabit.get(h.id) || [], todayLocalISO()).pct;
-      // Habits with no time set sort after every timed habit, regardless of direction.
-      case 'time_of_day': return h.time_of_day || '99:99';
+      case 'time_of_day': {
+        const TOD_SORT: Record<string, number> = { morning: 0, daytime: 1, night: 2 };
+        return h.time_of_day && h.time_of_day in TOD_SORT ? TOD_SORT[h.time_of_day] : 99;
+      }
     }
   };
 
-  const applySort = () => {
-    if (sortCriteria.length === 0) { setShowSort(false); return; }
+  const runSort = (criteria: { key: SortKey; dir: 'asc' | 'desc' }[]) => {
+    if (criteria.length === 0) return;
     const sorted = [...habits].sort((a, b) => {
-      for (const { key, dir } of sortCriteria) {
+      for (const { key, dir } of criteria) {
         const va = sortMetric(key, a);
         const vb = sortMetric(key, b);
         let cmp = 0;
@@ -619,6 +635,13 @@ export default function HabitsPage() {
       return 0;
     });
     persistHabitOrder(sorted);
+    setSortAppliedCriteria(criteria);
+    setHasManualReordered(false);
+  };
+
+  const applySort = () => {
+    if (sortCriteria.length === 0) { setShowSort(false); return; }
+    runSort(sortCriteria);
     supabase.auth.updateUser({ data: { ...user?.user_metadata, habit_sort_criteria: sortCriteria } });
     setShowSort(false);
   };
@@ -829,6 +852,27 @@ export default function HabitsPage() {
         <div className="card text-[#64748B] text-sm">No habits yet — tap "+ Add Habit" to get started.</div>
       ) : (
         <>
+          {showStatBreakdown && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60" onClick={() => setShowStatBreakdown(null)}>
+              <div className="card w-full sm:w-96 max-h-[70vh] overflow-y-auto rounded-b-none sm:rounded-b-xl" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-white">{showStatBreakdown === 'today' ? 'Today' : 'This Week'} — by Category</h3>
+                  <button onClick={() => setShowStatBreakdown(null)} className="p-1 rounded-lg hover:bg-[#334155] text-[#94A3B8]"><X size={18} /></button>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {categoryBreakdown.map(c => (
+                    <div key={c.key} className="flex items-center gap-3 py-2">
+                      <span className="text-base">{c.emoji}</span>
+                      <span className="text-sm text-white flex-1">{c.label}</span>
+                      <span className="text-sm font-semibold text-white tabular-nums">{showStatBreakdown === 'today' ? c.todayPct : c.weekPct}%</span>
+                    </div>
+                  ))}
+                  {categoryBreakdown.length === 0 && <p className="text-xs text-[#64748B]">No data yet.</p>}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3 mb-3">
             {showSkipChoice && <div className="fixed inset-0 z-10" onClick={() => setShowSkipChoice(false)} />}
             <div className="card text-center relative">
@@ -838,10 +882,10 @@ export default function HabitsPage() {
                   <p className="text-xs text-[#64748B] mt-0.5">Today</p>
                 </>
               ) : (
-                <>
+                <button onClick={() => setShowStatBreakdown('today')} className="w-full">
                   <p className="text-2xl font-bold text-white">{progressStats.todayPct}%</p>
-                  <p className="text-xs text-[#64748B] mt-0.5">Today</p>
-                </>
+                  <p className="text-xs text-[#64748B] mt-0.5">Today · tap for breakdown</p>
+                </button>
               )}
               <button
                 onClick={toggleSkipToday}
@@ -869,10 +913,12 @@ export default function HabitsPage() {
               )}
             </div>
             <div className="card text-center">
-              <p className="text-2xl font-bold text-white">{progressStats.weekPct}%</p>
-              <p className="text-xs text-[#64748B] mt-0.5">
-                This Week{progressStats.pastTotal > 0 ? ` · ${progressStats.pastDone}/${progressStats.pastTotal} so far` : ''}
-              </p>
+              <button onClick={() => setShowStatBreakdown('week')} className="w-full">
+                <p className="text-2xl font-bold text-white">{progressStats.weekPct}%</p>
+                <p className="text-xs text-[#64748B] mt-0.5">
+                  This Week{progressStats.pastTotal > 0 ? ` · ${progressStats.pastDone}/${progressStats.pastTotal}` : ''} · tap
+                </p>
+              </button>
             </div>
           </div>
 
@@ -956,6 +1002,15 @@ export default function HabitsPage() {
                   </button>
                 ))}
               </div>
+              {hasManualReordered && sortAppliedCriteria.length > 0 && (
+                <div className="flex items-center justify-between px-2.5 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <span className="text-xs text-amber-300">Manually reordered since last sort</span>
+                  <button
+                    onClick={() => { runSort(sortAppliedCriteria); setSortCriteria(sortAppliedCriteria); }}
+                    className="text-xs font-semibold text-amber-400 hover:text-amber-300 ml-3"
+                  >Re-apply?</button>
+                </div>
+              )}
               <div className="flex gap-2">
                 <button onClick={applySort} disabled={sortCriteria.length === 0} className="btn-primary flex-1 disabled:opacity-40">Apply</button>
                 <button onClick={() => setSortCriteria([])} className="text-sm text-[#64748B] hover:text-white px-3">Clear</button>

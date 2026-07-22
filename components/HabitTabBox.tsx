@@ -133,22 +133,32 @@ export function resolveStartDate(option: StartOption, dateValue: string, todayIS
   return dateValue || todayISO;
 }
 
-const TIME_OF_DAY_OPTIONS = Array.from({ length: 24 }, (_, hour) => {
-  const label = hour === 0 ? '12:00 AM' : hour < 12 ? `${hour}:00 AM` : hour === 12 ? '12:00 PM' : `${hour - 12}:00 PM`;
-  return { value: `${String(hour).padStart(2, '0')}:00`, label };
-});
+const TOD_PILL_OPTIONS = [
+  { value: 'morning', label: 'Morning', emoji: '🌅' },
+  { value: 'daytime', label: 'Daytime', emoji: '☀️' },
+  { value: 'night', label: 'Night time', emoji: '🌙' },
+] as const;
 
-/** Optional hour-increment time-of-day cue for a habit (e.g. "take vitamins at 8am") — purely
- *  informational, not enforced anywhere, so a plain select is enough (no need for a full
- *  scroll-picker like Distance/Elevation). */
 export function TimeOfDayField({ value, setValue }: { value: string; setValue: (v: string) => void }) {
+  const known = ['morning', 'daytime', 'night'];
+  const current = known.includes(value) ? value : '';
   return (
     <div>
       <label className="label">Time of day (optional)</label>
-      <select className="input" value={value} onChange={e => setValue(e.target.value)}>
-        <option value="">No specific time</option>
-        {TIME_OF_DAY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
+      <div className="flex gap-2">
+        {TOD_PILL_OPTIONS.map(o => (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => setValue(current === o.value ? '' : o.value)}
+            className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-all flex flex-col items-center gap-0.5
+              ${current === o.value ? 'border-blue-500 bg-blue-500/15 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
+          >
+            <span>{o.emoji}</span>
+            <span className="text-xs">{o.label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -592,7 +602,7 @@ export default function HabitTabBox({
         <p className="text-xs text-[#64748B] mb-0.5">Repeat</p>
         <p className="text-sm font-medium text-white mb-3">
           {frequencyLabel(selected)}
-          {selected.time_of_day && <span className="text-[#64748B] font-normal"> · {TIME_OF_DAY_OPTIONS.find(o => o.value === selected.time_of_day)?.label}</span>}
+          {selected.time_of_day && <span className="text-[#64748B] font-normal"> · {TOD_PILL_OPTIONS.find(o => o.value === selected.time_of_day)?.label ?? selected.time_of_day}</span>}
         </p>
         <p className="text-xs text-[#64748B] mb-0.5">Target</p>
         <p className="text-sm font-medium text-white">{displayTarget(selected).amount} / {displayTarget(selected).unit}</p>

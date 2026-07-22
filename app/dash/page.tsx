@@ -410,10 +410,6 @@ export default function DashPage() {
         )}
       </div>
 
-      {/* This Year — full width on mobile; moves beside Today's Plan on desktop (see grid below) */}
-      <div className="lg:hidden">
-        <YearTotalsCard activities={activities} config={user?.user_metadata?.year_total_tiles} onSave={saveYearTotalTiles} />
-      </div>
 
       {/* Desktop: today's plan + this year side by side instead of one long column */}
       <div className="lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start">
@@ -507,9 +503,6 @@ export default function DashPage() {
 
       </div>
 
-      <div className="hidden lg:block">
-      <YearTotalsCard activities={activities} config={user?.user_metadata?.year_total_tiles} onSave={saveYearTotalTiles} />
-      </div>
       </div>
 
       {/* This week's plan — one PlanWeekTable per active plan, so drag-to-reorder (press and
@@ -567,24 +560,22 @@ export default function DashPage() {
         </div>
       )}
 
-      {/* Combined training month calendar — past days show what was logged, upcoming days
-          (up to 3 months out) show what the active plan(s) have scheduled. */}
-      <div className="card mb-5">
-        <button onClick={() => setShowTrainingMonth(v => !v)} className="text-sm font-semibold text-[#94A3B8] hover:text-white transition-colors uppercase tracking-wide">
-          {showTrainingMonth ? '▼' : '▶'} View Month&apos;s Training
-        </button>
-        {showTrainingMonth && (
-          <div className="mt-3">
-            <TrainingMonthCalendar activities={activities} plans={plans} todayISO={todayISO} />
-          </div>
-        )}
-      </div>
-
-      {/* Desktop: last week + favourites side by side, mirroring the Today's Plan / This Year grid above */}
+      {/* Desktop: last week + favourites side by side */}
       <div className="lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start">
         <div>
           <LastWeekSummaryCard activities={activities} plans={plans} weekStartDay={weekStartPref} todayISO={todayISO} />
           <HabitsLastWeekSummaryCard habits={habits} logsByHabit={habitsLogsByHabit} weekStartDay={weekStartPref} todayISO={todayISO} />
+          {/* Combined training month calendar */}
+          <div className="card mb-5">
+            <button onClick={() => setShowTrainingMonth(v => !v)} className="text-sm font-semibold text-[#94A3B8] hover:text-white transition-colors uppercase tracking-wide">
+              {showTrainingMonth ? '▼' : '▶'} View Month&apos;s Training
+            </button>
+            {showTrainingMonth && (
+              <div className="mt-3">
+                <TrainingMonthCalendar activities={activities} plans={plans} todayISO={todayISO} />
+              </div>
+            )}
+          </div>
         </div>
         <div>
           <FavouritesCard favourites={user?.user_metadata?.favourite_activities ?? []} activities={activities} />

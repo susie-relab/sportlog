@@ -2,9 +2,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
-import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, subTypeLabel, RUN_TYPE_LABELS } from '@/types';
+import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, subTypeLabel, RUN_TYPE_LABELS, YearTotalTile } from '@/types';
 import { formatDuration, formatPaceMinKm, formatDistance } from '@/lib/utils';
 import AccountSwitcher from '@/components/AccountSwitcher';
+import YearTotalsCard from '@/components/YearTotalsCard';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
@@ -183,6 +184,10 @@ export default function TotalStatsPage() {
   const [chartMetric, setChartMetric] = useState<ChartMetric>('count');
   const [loading, setLoading] = useState(true);
 
+  const saveYearTotalTiles = (tiles: YearTotalTile[]) => {
+    supabase.auth.updateUser({ data: { ...user?.user_metadata, year_total_tiles: tiles } });
+  };
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -255,6 +260,8 @@ export default function TotalStatsPage() {
         <h1 className="text-xl font-bold text-white">Stats</h1>
         <AccountSwitcher compact />
       </div>
+
+      <YearTotalsCard activities={allActivities} config={user?.user_metadata?.year_total_tiles} onSave={saveYearTotalTiles} />
 
       {/* Period selector */}
       <div className="flex gap-2 flex-wrap mb-4">
