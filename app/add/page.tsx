@@ -831,9 +831,9 @@ export default function AddPage() {
           <button
             type="button"
             onClick={() => setShowMore(v => !v)}
-            className="flex items-center gap-2 text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors px-3 py-1.5 border border-[#334155]/60 rounded-lg"
+            className="flex items-center gap-2 text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors px-3 py-1.5 border border-transparent rounded-lg"
           >
-            <span className="text-xs">{showMore ? '▼' : '✦'}</span>
+            <span className="text-xs">{showMore ? '▼' : '▶'}</span>
             {showMore ? 'Hide optional details' : 'More optional details'}
           </button>
           {!showMore && (
@@ -843,22 +843,22 @@ export default function AddPage() {
               style={{overflow: 'visible'}}
             >
               {/* top edge rays */}
-              {[12,28,45,62,78,92].map(p => (
+              {[5,14,23,32,41,50,59,68,77,86,95].map(p => (
                 <line key={`t${p}`} x1={`${p}%`} y1="0" x2={`${p}%`} y2="-8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
               ))}
-              {/* bottom edge rays — group translated to SVG bottom */}
+              {/* bottom edge rays */}
               <g style={{transform:'translateY(100%)', transformBox:'view-box' as never, transformOrigin:'0 0'}}>
-                {[12,28,45,62,78,92].map(p => (
+                {[5,14,23,32,41,50,59,68,77,86,95].map(p => (
                   <line key={`b${p}`} x1={`${p}%`} y1="0" x2={`${p}%`} y2="8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
                 ))}
               </g>
               {/* left edge rays */}
-              {[25,50,75].map(p => (
+              {[10,25,40,55,70,85].map(p => (
                 <line key={`l${p}`} x1="0" y1={`${p}%`} x2="-8" y2={`${p}%`} stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
               ))}
-              {/* right edge rays — group translated to SVG right */}
+              {/* right edge rays */}
               <g style={{transform:'translateX(100%)', transformBox:'view-box' as never, transformOrigin:'0 0'}}>
-                {[25,50,75].map(p => (
+                {[10,25,40,55,70,85].map(p => (
                   <line key={`r${p}`} x1="0" y1={`${p}%`} x2="8" y2={`${p}%`} stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
                 ))}
               </g>
