@@ -3,13 +3,15 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Habit, HabitLog, HabitFrequencyChange, isHabitScheduledOn } from '@/types';
 import { todayLocalISO } from '@/lib/utils';
-import { completionRatio, isFailedLog, isSkippedLog, resolveFrequencyAt } from '@/lib/habitStats';
+import { completionRatio, isFailedLog, isSkippedLog, isSkippableFrequency, resolveFrequencyAt } from '@/lib/habitStats';
 
 interface Props {
   habits: Habit[];
   logs: HabitLog[];
   frequencyHistory: HabitFrequencyChange[];
   onCycle: (habit: Habit, date: string) => void;
+  onMarkFailed: (habit: Habit, date: string) => void;
+  onSkipForDate: (habit: Habit, date: string) => void;
 }
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -33,7 +35,7 @@ function gridSizeForCount(habitCount: number): number {
 
 /** Combined month calendar — every scheduled habit shows as a small density-filled
  *  circle in its day cell. Tapping a day opens a popover to tap-cycle each habit. */
-export default function HabitMonthCalendar({ habits, logs, frequencyHistory, onCycle }: Props) {
+export default function HabitMonthCalendar({ habits, logs, frequencyHistory, onCycle, onMarkFailed, onSkipForDate }: Props) {
   const todayISO = todayLocalISO();
   const [year, setYear] = useState(Number(todayISO.slice(0, 4)));
   const [month0, setMonth0] = useState(Number(todayISO.slice(5, 7)) - 1);
@@ -159,23 +161,63 @@ export default function HabitMonthCalendar({ habits, logs, frequencyHistory, onC
                 const dayTarget = resolveFrequencyAt(h, frequencyHistory, selectedDate).target_per_period;
                 const ratio = completionRatio(h, log, dayTarget);
                 const complete = ratio >= 1;
+                const locked = failed || skipped;
+                const canSkip = isSkippableFrequency(h.frequency_type);
+                const isFuture = selectedDate > todayISO;
                 return (
-                  <button
+                  <div
                     key={h.id}
-                    onClick={() => { if (!skipped) onCycle(h, selectedDate); }}
-                    disabled={skipped}
-                    className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-[#334155] text-left ${skipped ? 'opacity-50 cursor-not-allowed' : 'hover:border-[#475569]'}`}
+                    className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-[#334155]"
                     style={{ background: complete ? h.color : ratio > 0 ? hexToRgba(h.color, Math.max(0.12, ratio * 0.3)) : 'transparent' }}
                   >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ background: h.color, boxShadow: complete ? '0 0 0 1.5px rgba(255,255,255,0.85)' : 'none' }}
-                      />
+                    <button
+                      onClick={() => { if (!locked && !complete) onCycle(h, selectedDate); }}
+                      disabled={locked || complete || isFuture}
+                      className={`flex items-center gap-2 min-w-0 flex-1 text-left ${(locked || complete || isFuture) ? 'cursor-default' : 'hover:opacity-80'}`}
+                    >
+                      {/* Circle hidden when complete — no need, it's done */}
+                      {!complete && (
+                        <span
+                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          style={{ background: h.color }}
+                        />
+                      )}
                       <span className={`text-sm truncate ${complete ? 'text-white font-semibold' : 'text-white'}`}>{h.name}</span>
+                    </button>
+                    <span className="flex items-center gap-1.5 flex-shrink-0">
+                      {locked ? (
+                        <span className={`text-xs font-medium ${failed ? 'text-red-400' : 'text-[#64748B]'}`}>
+                          {failed ? "Didn't happen" : 'Skipped'}
+                        </span>
+                      ) : (
+                        <>
+                          <span className={`text-xs font-medium ${complete ? 'text-white/90' : 'text-[#94A3B8]'}`}>
+                            {`${count}/${dayTarget}`}
+                          </span>
+                          {!isFuture && (
+                            <>
+                              <button
+                                onClick={() => onMarkFailed(h, selectedDate)}
+                                className="w-5 h-5 rounded-full bg-black/25 text-white/70 hover:bg-red-500/70 hover:text-white flex items-center justify-center text-xs font-bold"
+                                aria-label="Didn't happen"
+                                title="Didn't happen"
+                              >×</button>
+                              {canSkip && (
+                                <button
+                                  onClick={() => onSkipForDate(h, selectedDate)}
+                                  className="w-5 h-5 rounded-full bg-black/25 text-white/70 hover:bg-slate-500/70 hover:text-white flex items-center justify-center"
+                                  aria-label="Skip"
+                                  title="Skip"
+                                >
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
                     </span>
-                    <span className={`text-xs font-medium flex-shrink-0 ${complete ? 'text-white/90' : 'text-[#94A3B8]'}`}>{failed ? "Didn't happen" : skipped ? 'Skipped' : `${count}/${dayTarget}`}</span>
-                  </button>
+                  </div>
                 );
               })}
               {habitsForDate(selectedDate).length === 0 && (

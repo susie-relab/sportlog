@@ -96,7 +96,7 @@ export const isPeriodBasedType = (freq: HabitFrequencyConfig['frequency_type']) 
  *  and so the only ones a Skip makes sense for (skipping a daily habit's one-and-only day
  *  would just be identical to marking it failed). */
 export const isSkippableFrequency = (freq: HabitFrequencyConfig['frequency_type']) =>
-  freq === 'weekly' || freq === 'monthly';
+  isPeriodBasedType(freq); // weekly | fortnightly | monthly | every_n_days
 
 /** The stable, non-overlapping period [start, end] containing dateISO for a period-based
  *  habit (weekly/fortnightly/monthly/every_n_days) — e.g. "3 times a week" is judged against

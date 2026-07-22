@@ -24,6 +24,7 @@ interface Props {
   archivedCategories: { key: string; label: string; emoji: string }[];
   onUnarchiveCategory: (key: string) => void;
   onCreateCategory: (name: string, emoji: string) => void;
+  onChangeCategoryEmoji?: (key: string, emoji: string) => void;
   categoryLabel: string;
   habits: Habit[];
   logsByHabit: Map<string, HabitLog[]>;
@@ -318,7 +319,7 @@ export function FrequencyApplyPicker({
  *  category; one top-right opens a panel to manage categories themselves (add/rename/remove/
  *  reorder). */
 export default function HabitTabBox({
-  categories, activeCategory, onSelectCategory, onReorderCategory, onRenameCategory, onRemoveCategory, onArchiveCategory, onDuplicateCategory, archivedCategories, onUnarchiveCategory, onCreateCategory,
+  categories, activeCategory, onSelectCategory, onReorderCategory, onRenameCategory, onRemoveCategory, onArchiveCategory, onDuplicateCategory, archivedCategories, onUnarchiveCategory, onCreateCategory, onChangeCategoryEmoji,
   categoryLabel, habits, logsByHabit, frequencyHistory, selectedHabitId, onSelectHabit, onCreateHabit, onReorderHabit, onUpdateHabit, onChangeFrequency, onArchiveHabit, onDeleteHabit, onIncrementToday, onDecrementToday, onMarkFailedToday, onSkipToday, onTickToday,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
@@ -356,6 +357,10 @@ export default function HabitTabBox({
 
   const [renamingKey, setRenamingKey] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [editingCatKey, setEditingCatKey] = useState<string | null>(null);
+  const [changingEmojiKey, setChangingEmojiKey] = useState<string | null>(null);
+  const [changingEmojiValue, setChangingEmojiValue] = useState('');
+  const [deleteCatConfirmKey, setDeleteCatConfirmKey] = useState<string | null>(null);
   const [newCatName, setNewCatName] = useState('');
   const [newCatEmoji, setNewCatEmoji] = useState('⭐');
   const [showLastDayNotice, setShowLastDayNotice] = useState(false);
@@ -835,11 +840,11 @@ export default function HabitTabBox({
 
       {showManageCategories && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowManageCategories(false); setRenamingKey(null); setShowArchivedCategories(false); }} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowManageCategories(false); setRenamingKey(null); setEditingCatKey(null); setChangingEmojiKey(null); setShowArchivedCategories(false); }} />
           <div className="custom-scroll relative w-full md:max-w-md max-h-[85vh] flex flex-col bg-[#1E293B] border border-[#334155] rounded-t-2xl md:rounded-2xl p-5 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-white">Manage Categories</h3>
-              <button onClick={() => { setShowManageCategories(false); setRenamingKey(null); setShowArchivedCategories(false); }} className="p-1 rounded-lg hover:bg-[#334155] text-[#94A3B8]"><X size={18} /></button>
+              <button onClick={() => { setShowManageCategories(false); setRenamingKey(null); setEditingCatKey(null); setChangingEmojiKey(null); setShowArchivedCategories(false); }} className="p-1 rounded-lg hover:bg-[#334155] text-[#94A3B8]"><X size={18} /></button>
             </div>
 
             <div className="flex flex-col gap-2 mb-5">
@@ -853,50 +858,61 @@ export default function HabitTabBox({
                   >
                     <SortHandleIcon />
                   </button>
-                  <span className="flex-shrink-0">{c.emoji}</span>
+                  {/* emoji — tap to change when editing */}
+                  <button
+                    onClick={() => {
+                      if (editingCatKey === c.key) { setChangingEmojiKey(c.key); setChangingEmojiValue(c.emoji); }
+                    }}
+                    className="flex-shrink-0 text-lg leading-none"
+                    aria-label="Category emoji"
+                  >{c.emoji}</button>
+
                   {renamingKey === c.key ? (
-                    <input className="input flex-1 min-w-[80px]" value={renameValue} onChange={e => setRenameValue(e.target.value)} />
+                    <input className="input flex-1 min-w-[80px]" autoFocus value={renameValue} onChange={e => setRenameValue(e.target.value)} />
                   ) : (
-                    <span className="flex-1 min-w-[60px] text-sm text-white truncate">
-                      {c.label}
-                    </span>
+                    <span className="flex-1 min-w-[60px] text-sm text-white truncate">{c.label}</span>
                   )}
+
                   <span className="flex items-center gap-2 flex-wrap justify-end flex-shrink-0">
                     {renamingKey === c.key ? (
                       <>
-                        <button onClick={() => { onRenameCategory(c.key, renameValue.trim() || c.label); setRenamingKey(null); }} className="text-xs font-medium text-blue-400 hover:text-blue-300 flex-shrink-0">Save</button>
-                        <button onClick={() => setRenamingKey(null)} className="text-xs text-[#64748B] hover:text-white flex-shrink-0">Cancel</button>
+                        <button onClick={() => { onRenameCategory(c.key, renameValue.trim() || c.label); setRenamingKey(null); setEditingCatKey(null); }} className="text-xs font-medium text-blue-400 hover:text-blue-300 flex-shrink-0">Save</button>
+                        <button onClick={() => { setRenamingKey(null); }} className="text-xs text-[#64748B] hover:text-white flex-shrink-0">Cancel</button>
+                      </>
+                    ) : editingCatKey === c.key ? (
+                      /* inline submenu */
+                      <>
+                        {c.isCustom && <button onClick={() => { setRenamingKey(c.key); setRenameValue(c.label); }} className="text-xs font-medium text-blue-400 hover:text-blue-300 flex-shrink-0">Rename</button>}
+                        {c.isCustom && <button onClick={() => { setChangingEmojiKey(c.key); setChangingEmojiValue(c.emoji); }} className="text-xs font-medium text-[#94A3B8] hover:text-white flex-shrink-0">Emoji</button>}
+                        <button onClick={() => { onDuplicateCategory(c.key); setEditingCatKey(null); }} className="text-xs font-medium text-[#94A3B8] hover:text-white flex-shrink-0">Duplicate</button>
+                        {c.isCustom && (
+                          <button onClick={() => { onArchiveCategory(c.key); setEditingCatKey(null); }} disabled={c.habitCount > 0} title={c.habitCount > 0 ? 'Move or delete its habits first' : ''} className="text-xs font-medium text-amber-400 hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0">Archive</button>
+                        )}
+                        <button onClick={() => { if (c.habitCount > 0) { setDeleteCatConfirmKey(c.key); } else if (c.isCustom) { onRemoveCategory(c.key); setEditingCatKey(null); } }} className="text-xs font-medium text-red-400 hover:text-red-300 flex-shrink-0">Delete</button>
+                        <button onClick={() => setEditingCatKey(null)} className="text-xs text-[#64748B] hover:text-white flex-shrink-0">Done</button>
                       </>
                     ) : (
-                      <>
-                        {/* Duplicate clones the category shell (name + emoji) as a new custom
-                            category — works from built-ins too, since it never touches the
-                            source, just creates a new row modelled on it. */}
-                        <button onClick={() => onDuplicateCategory(c.key)} className="text-xs font-medium text-[#94A3B8] hover:text-white flex-shrink-0">Duplicate</button>
-                        {c.isCustom && (
-                          <>
-                            <button onClick={() => { setRenamingKey(c.key); setRenameValue(c.label); }} className="text-xs font-medium text-blue-400 hover:text-blue-300 flex-shrink-0">Rename</button>
-                            <button
-                              onClick={() => onArchiveCategory(c.key)}
-                              disabled={c.habitCount > 0}
-                              title={c.habitCount > 0 ? 'Move or delete its habits first' : 'Archive category — can bring it back later'}
-                              className="text-xs font-medium text-amber-400 hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
-                            >
-                              Archive
-                            </button>
-                            <button
-                              onClick={() => onRemoveCategory(c.key)}
-                              disabled={c.habitCount > 0}
-                              title={c.habitCount > 0 ? 'Move or delete its habits first' : 'Remove category permanently'}
-                              className="text-xs font-medium text-red-400 hover:text-red-300 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
-                            >
-                              Remove
-                            </button>
-                          </>
-                        )}
-                      </>
+                      <button onClick={() => { setEditingCatKey(c.key); setChangingEmojiKey(null); }} className="p-1 rounded hover:bg-[#334155] text-[#64748B] hover:text-white flex-shrink-0" aria-label="Edit category">
+                        <PencilIcon />
+                      </button>
                     )}
                   </span>
+
+                  {/* Emoji picker — shown below the row when changing emoji (custom categories only) */}
+                  {changingEmojiKey === c.key && c.isCustom && (
+                    <div className="w-full mt-2 flex flex-col gap-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {CATEGORY_EMOJI_CHOICES.map(e => (
+                          <button key={e} onClick={() => { onChangeCategoryEmoji?.(c.key, e); setChangingEmojiKey(null); }} className="w-8 h-8 rounded-lg text-base flex items-center justify-center border border-[#334155] hover:border-[#475569]">{e}</button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input className="input flex-1" maxLength={4} placeholder="Or type emoji" value={changingEmojiValue} onChange={e => setChangingEmojiValue(e.target.value)} />
+                        <button onClick={() => { if (changingEmojiValue.trim()) { onChangeCategoryEmoji?.(c.key, changingEmojiValue.trim()); } setChangingEmojiKey(null); }} className="btn-primary px-3 text-xs">Save</button>
+                        <button onClick={() => setChangingEmojiKey(null)} className="text-xs text-[#64748B] hover:text-white px-2">Cancel</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -943,6 +959,17 @@ export default function HabitTabBox({
               </div>
               <button onClick={submitNewCategory} disabled={!newCatName.trim()} className="btn-primary w-full disabled:opacity-50">+ Add Category</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete category confirmation — shown when a category still has habits */}
+      {deleteCatConfirmKey && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4" onClick={() => setDeleteCatConfirmKey(null)}>
+          <div className="card max-w-xs text-center" onClick={e => e.stopPropagation()}>
+            <p className="text-sm text-white font-semibold mb-1">Unable to delete category</p>
+            <p className="text-xs text-[#94A3B8] leading-relaxed">Remove or move all habits in this category before deleting it.</p>
+            <button onClick={() => setDeleteCatConfirmKey(null)} className="btn-secondary w-full mt-3 text-sm">OK</button>
           </div>
         </div>
       )}

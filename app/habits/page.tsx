@@ -54,6 +54,9 @@ export default function HabitsPage() {
   const [bulkTarget, setBulkTarget] = useState('1');
   const [showSort, setShowSort] = useState(false);
   const [sortCriteria, setSortCriteria] = useState<{ key: SortKey; dir: 'asc' | 'desc' }[]>([]);
+  const [sortLoaded, setSortLoaded] = useState(false);
+  const [skippedDays, setSkippedDays] = useState<string[]>([]);
+  const [skippedDaysLoaded, setSkippedDaysLoaded] = useState(false);
 
   const [showAdd, setShowAdd] = useState(false);
   const [addStep, setAddStep] = useState<'presets' | 'custom'>('presets');
@@ -96,6 +99,33 @@ export default function HabitsPage() {
   };
 
   useEffect(() => { load(); }, [user]);
+
+  useEffect(() => {
+    if (user && !sortLoaded) {
+      const saved = user.user_metadata?.habit_sort_criteria;
+      if (Array.isArray(saved) && saved.length > 0) setSortCriteria(saved);
+      setSortLoaded(true);
+    }
+  }, [user, sortLoaded]);
+
+  useEffect(() => {
+    if (user && !skippedDaysLoaded) {
+      const saved = user.user_metadata?.habit_skipped_days;
+      if (Array.isArray(saved)) setSkippedDays(saved);
+      setSkippedDaysLoaded(true);
+    }
+  }, [user, skippedDaysLoaded]);
+
+  const todayISO = todayLocalISO();
+  const isDaySkipped = skippedDays.includes(todayISO);
+
+  const toggleSkipToday = () => {
+    const next = isDaySkipped
+      ? skippedDays.filter(d => d !== todayISO)
+      : [...skippedDays, todayISO];
+    setSkippedDays(next);
+    supabase.auth.updateUser({ data: { ...user?.user_metadata, habit_skipped_days: next } });
+  };
 
   // Every selectable category — the fixed built-ins plus any the user has created — reordered
   // by the user's saved drag order (user_metadata.habit_category_order), falling back to
@@ -557,6 +587,7 @@ export default function HabitsPage() {
       return 0;
     });
     persistHabitOrder(sorted);
+    supabase.auth.updateUser({ data: { ...user?.user_metadata, habit_sort_criteria: sortCriteria } });
     setShowSort(false);
   };
 
@@ -643,6 +674,56 @@ export default function HabitsPage() {
   const markFailedToday = (habit: Habit) => setSentinelToday(habit, -1);
   const skipToday = (habit: Habit) => setSentinelToday(habit, -2);
 
+  // Like setSentinelToday but works on any date (used by the month calendar popover).
+  const setSentinelForDate = async (habit: Habit, date: string, sentinel: -1 | -2) => {
+    if (!user) return;
+    const existing = logsByHabit.get(habit.id)?.find(l => l.date === date);
+    if (existing?.count === sentinel) {
+      setLogs(prev => prev.filter(l => l.id !== existing.id));
+      await supabase.from('habit_logs').delete().eq('id', existing.id);
+      return;
+    }
+    if (existing) {
+      setLogs(prev => prev.map(l => l.id === existing.id ? { ...l, count: sentinel, locked: true } : l));
+      await supabase.from('habit_logs').update({ count: sentinel, locked: true }).eq('id', existing.id);
+    } else {
+      const { data } = await supabase.from('habit_logs').insert({
+        habit_id: habit.id, user_id: user.id, date, count: sentinel, locked: true,
+      }).select().single();
+      if (data) setLogs(prev => [...prev, data as HabitLog]);
+    }
+  };
+
+  const duplicateHabit = async (habit: Habit) => {
+    if (!user) return;
+    const { data } = await supabase.from('habits').insert({
+      user_id: user.id,
+      name: `${habit.name} (copy)`,
+      category: habit.category,
+      color: habit.color,
+      frequency_type: habit.frequency_type,
+      frequency_days: habit.frequency_days,
+      frequency_interval_days: habit.frequency_interval_days,
+      target_per_period: habit.target_per_period,
+      tracking_style: habit.tracking_style || 'count',
+      start_date: todayLocalISO(),
+      time_of_day: habit.time_of_day || null,
+      sort_order: habits.length,
+      archived: false,
+    }).select().single();
+    if (data) {
+      const newHabit = data as Habit;
+      setHabits(prev => [...prev, newHabit]);
+      setActiveCategory(habit.category);
+      setSelectedHabitId(newHabit.id);
+    }
+  };
+
+  const changeCategoryEmoji = async (key: string, emoji: string) => {
+    setCustomCategories(prev => prev.map(c => c.id === key ? { ...c, emoji } : c));
+    await supabase.from('habit_categories').update({ emoji }).eq('id', key);
+  };
+
   /** Tick (✓ done): sets today's count to the day's target (daily/custom-day habits) or just
    *  1 (week/month/every-N-days habits — a single day's contribution toward the period total,
    *  not the whole period target) and locks the stepper. Tapping tick again while it's the
@@ -717,9 +798,25 @@ export default function HabitsPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <div className="card text-center">
-              <p className="text-2xl font-bold text-white">{progressStats.todayPct}%</p>
-              <p className="text-xs text-[#64748B] mt-0.5">Today</p>
+            <div className="card text-center relative">
+              {isDaySkipped ? (
+                <>
+                  <p className="text-base font-bold text-[#64748B]">Day skipped</p>
+                  <p className="text-xs text-[#64748B] mt-0.5">Today</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold text-white">{progressStats.todayPct}%</p>
+                  <p className="text-xs text-[#64748B] mt-0.5">Today</p>
+                </>
+              )}
+              <button
+                onClick={toggleSkipToday}
+                className={`absolute top-1.5 right-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded ${isDaySkipped ? 'text-amber-400 bg-amber-400/10 hover:bg-amber-400/20' : 'text-[#475569] hover:text-[#94A3B8]'}`}
+                title={isDaySkipped ? 'Remove day skip' : 'Skip today (no data recorded)'}
+              >
+                {isDaySkipped ? 'unskip' : 'skip day'}
+              </button>
             </div>
             <div className="card text-center">
               <p className="text-2xl font-bold text-white">{progressStats.weekPct}%</p>
@@ -729,7 +826,14 @@ export default function HabitsPage() {
             </div>
           </div>
 
-          <HabitMonthCalendar habits={habits} logs={logs} frequencyHistory={frequencyHistory} onCycle={cycleHabitLog} />
+          <HabitMonthCalendar
+            habits={habits}
+            logs={logs}
+            frequencyHistory={frequencyHistory}
+            onCycle={cycleHabitLog}
+            onMarkFailed={(habit, date) => setSentinelForDate(habit, date, -1)}
+            onSkipForDate={(habit, date) => setSentinelForDate(habit, date, -2)}
+          />
 
           <div className="mb-5">
             <HabitTabBox
@@ -744,6 +848,7 @@ export default function HabitsPage() {
               archivedCategories={archivedCategories.map(c => ({ key: c.id, label: c.name, emoji: c.emoji }))}
               onUnarchiveCategory={unarchiveCategory}
               onCreateCategory={createCategoryFromManagePanel}
+              onChangeCategoryEmoji={changeCategoryEmoji}
               categoryLabel={categoryDefByKey.get(activeCategory)?.label || ''}
               habits={habitsInCategory}
               logsByHabit={logsByHabit}
@@ -896,6 +1001,8 @@ export default function HabitsPage() {
                 onReorder={toId => reorderAllHabits(habit.id, toId)}
                 onArchive={() => archiveHabit(habit.id)}
                 onDelete={() => deleteHabit(habit.id)}
+                onDuplicate={() => duplicateHabit(habit)}
+                daySkipped={isDaySkipped}
               />
             ))}
           </div>

@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { SkipForward } from 'lucide-react';
 import { Habit, HabitLog, HabitFrequencyType, HabitColorKey, HabitTrackingStyle, HABIT_COLORS } from '@/types';
 import { todayLocalISO } from '@/lib/utils';
-import { periodProgress, isSkippableFrequency, periodBoundsFor } from '@/lib/habitStats';
+import { periodProgress, isSkippableFrequency, periodBoundsFor, addDaysISO } from '@/lib/habitStats';
 import { ApplyOption, FrequencyApplyPicker, FrequencyFields, PencilIcon, TimeOfDayField, Tip } from '@/components/HabitTabBox';
 
 interface CategoryOption { key: string; label: string; emoji: string }
@@ -25,6 +25,8 @@ interface Props {
   onTick: () => void;
   onArchive: () => void;
   onDelete: () => void;
+  onDuplicate?: () => void;
+  daySkipped?: boolean;
 }
 
 type RevealSection = 'name' | 'colour' | 'category' | null;
@@ -42,7 +44,7 @@ function hexToRgba(hex: string, alpha: number): string {
  *  window. Tapping anywhere on the row (other than the +/- stepper or pencil) opens/closes the
  *  quick editor; press-and-hold anywhere else drags the row to reorder it within the full
  *  habit list (across every category). */
-export default function HabitListRow({ habit, logs, categories, onIncrement, onDecrement, onMarkFailed, onSkip, onTick, onUpdateHabit, onChangeFrequency, onReorder, onArchive, onDelete }: Props) {
+export default function HabitListRow({ habit, logs, categories, onIncrement, onDecrement, onMarkFailed, onSkip, onTick, onUpdateHabit, onChangeFrequency, onReorder, onArchive, onDelete, onDuplicate, daySkipped }: Props) {
   const [editing, setEditing] = useState(false);
   const [dragging, setDragging] = useState(false);
   const dragMovedRef = useRef(false);
@@ -71,7 +73,14 @@ export default function HabitListRow({ habit, logs, categories, onIncrement, onD
   const trackingStyleActive = habit.tracking_style || 'count';
   const canSkip = isSkippableFrequency(habit.frequency_type);
   const isLastDayOfPeriod = canSkip && periodBoundsFor(habit, todayISO)[1] === todayISO;
+  // "Last chance tomorrow" warning: show when tomorrow is the final day of the period AND the
+  // frequency interval is ≥ 3 days (so every_n_days/2 is excluded, weekly/fortnightly/monthly
+  // and every_n_days/3+ get it). Not shown when today IS the last day (that one blocks skip entirely).
+  const tomorrowIsLastDay = canSkip && !isLastDayOfPeriod &&
+    addDaysISO(todayISO, 1) === periodBoundsFor(habit, todayISO)[1] &&
+    (habit.frequency_type !== 'every_n_days' || (habit.frequency_interval_days || 2) >= 3);
   const [showLastDayNotice, setShowLastDayNotice] = useState(false);
+  const [showTomorrowWarning, setShowTomorrowWarning] = useState(false);
 
   // A tap toggles the editor open/closed (like the Cancel button); opening also refreshes
   // the form fields to the habit's current values.
@@ -189,8 +198,8 @@ const toggleEditor = () => {
 
         <div className="relative z-10 h-full flex items-center justify-between px-3 gap-2">
           <span className="text-sm font-semibold text-white truncate min-w-0 flex-1">{habit.name}</span>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <span className="text-[10px] text-[#94A3B8] hidden sm:inline">{sum}/{periodTarget} · {periodLabel}</span>
+          <div className={`flex items-center gap-1.5 flex-shrink-0 ${daySkipped ? 'opacity-30 pointer-events-none' : ''}`}>
+            <span className="text-[10px] text-[#94A3B8] hidden sm:inline">{daySkipped ? 'day skipped' : `${sum}/${periodTarget} · ${periodLabel}`}</span>
             {trackingStyleActive !== 'tick' && (
               <>
                 <Tip label="Decrease">
@@ -246,6 +255,7 @@ const toggleEditor = () => {
                 onClick={e => {
                   e.stopPropagation();
                   if (isLastDayOfPeriod && !isSkippedToday) { setShowLastDayNotice(true); return; }
+                  if (tomorrowIsLastDay && !isSkippedToday) { setShowTomorrowWarning(true); return; }
                   onSkip();
                 }}
                 onPointerDown={e => e.stopPropagation()}
@@ -260,9 +270,22 @@ const toggleEditor = () => {
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={e => { e.stopPropagation(); setShowLastDayNotice(false); }}>
                 <div className="card max-w-xs text-center" onClick={e => e.stopPropagation()}>
                   <p className="text-sm text-white leading-relaxed">
-                    Can&apos;t skip as this is the last chance to complete habit this {habit.frequency_type === 'monthly' ? 'month' : 'week'} — mark as didn&apos;t complete if you are unable to achieve habit today.
+                    Today is the last opportunity to complete this habit — unable to skip. Mark as didn&apos;t complete if you can&apos;t do it today.
                   </p>
                   <button onClick={() => setShowLastDayNotice(false)} className="btn-secondary w-full mt-3 text-sm">OK</button>
+                </div>
+              </div>
+            )}
+            {showTomorrowWarning && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={e => { e.stopPropagation(); setShowTomorrowWarning(false); }}>
+                <div className="card max-w-xs text-center" onClick={e => e.stopPropagation()}>
+                  <p className="text-sm text-white leading-relaxed">
+                    Last chance to complete this habit is tomorrow. Skip today anyway?
+                  </p>
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => setShowTomorrowWarning(false)} className="btn-secondary flex-1 text-sm">Cancel</button>
+                    <button onClick={() => { setShowTomorrowWarning(false); onSkip(); }} className="btn-primary flex-1 text-sm">Skip</button>
+                  </div>
                 </div>
               </div>
             )}
@@ -351,6 +374,7 @@ const toggleEditor = () => {
             <div className="flex gap-2">
               <button onClick={save} className="btn-primary flex-1">Save</button>
               <button onClick={() => setEditing(false)} className="text-sm text-[#64748B] hover:text-white px-3">Cancel</button>
+              {onDuplicate && <button onClick={onDuplicate} className="text-sm text-[#94A3B8] hover:text-white px-2">Duplicate</button>}
               <button onClick={onArchive} className="text-sm text-[#94A3B8] hover:text-white px-2">Pause</button>
               <button onClick={onDelete} className="text-sm text-red-400 hover:text-red-300 px-2">Delete</button>
             </div>
