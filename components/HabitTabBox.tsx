@@ -344,6 +344,7 @@ export default function HabitTabBox({
   const [newTimeOfDay, setNewTimeOfDay] = useState('');
 
   const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
   const [editColor, setEditColor] = useState<HabitColorKey>('blue');
   const [editFrequency, setEditFrequency] = useState<HabitFrequencyType>('daily');
   const [editDays, setEditDays] = useState<string[]>([]);
@@ -405,6 +406,7 @@ export default function HabitTabBox({
   const startEditing = (h: Habit) => {
     setExpandedId(h.id);
     setEditName(h.name);
+    setEditDesc(h.description || '');
     const colorKey = (Object.keys(HABIT_COLORS) as HabitColorKey[]).find(k => HABIT_COLORS[k] === h.color) || 'blue';
     setEditColor(colorKey);
     setEditFrequency(h.frequency_type);
@@ -503,6 +505,7 @@ export default function HabitTabBox({
 
     onUpdateHabit(habitId, {
       name: editName.trim(),
+      description: editDesc.trim() || null,
       color: HABIT_COLORS[editColor],
       tracking_style: editTrackingStyle,
       time_of_day: editTimeOfDay || null,
@@ -767,6 +770,16 @@ export default function HabitTabBox({
                       <div>
                         <label className="label">Name</label>
                         <input className="input" value={editName} onChange={e => setEditName(e.target.value)} />
+                      </div>
+                      <div>
+                        <label className="label">Description (optional)</label>
+                        <textarea
+                          className="input resize-none text-sm"
+                          rows={2}
+                          value={editDesc}
+                          onChange={e => setEditDesc(e.target.value)}
+                          placeholder="Add a note about this habit…"
+                        />
                       </div>
                       <div>
                         <label className="label">Colour</label>
