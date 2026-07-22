@@ -45,11 +45,11 @@ function IconSubtypeButton({ label, subtypeKey, active, onClick, activeClass }: 
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium border transition-all text-left ${
+      className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-sm font-medium border transition-all text-left ${
         active ? activeClass : 'border-transparent text-[#94A3B8] hover:text-white'
       }`}
     >
-      {Icon && <Icon size={15} className="flex-shrink-0" />}
+      {Icon && <Icon size={20} className="flex-shrink-0" />}
       <span className="truncate">{label}</span>
     </button>
   );
@@ -572,7 +572,7 @@ export default function AddPage() {
         {exerciseType === 'sport' && (
           <div>
             <label className="label">Sport Type <span className="text-[#64748B]">(optional)</span></label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-0.5">
               {(Object.keys(SPORT_SUB_LABELS) as SportSubType[]).map(t => (
                 <IconSubtypeButton key={t} label={SPORT_SUB_LABELS[t]} subtypeKey={t} active={subType === t}
                   onClick={() => setSubType(subType === t ? '' : t)} activeClass="border-orange-500 bg-orange-500/20 text-white" />
@@ -613,7 +613,7 @@ export default function AddPage() {
         {exerciseType === 'hiit' && (
           <div>
             <label className="label">Workout Focus <span className="text-[#64748B]">(optional + multi-select)</span></label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-0.5">
               {(Object.keys(GYM_SUB_LABELS) as GymSubType[]).map(t => {
                 const active = gymTypes.includes(t);
                 return (
@@ -627,7 +627,7 @@ export default function AddPage() {
         {exerciseType === 'water' && (
           <div>
             <label className="label">Activity <span className="text-[#64748B]">(optional)</span></label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-0.5">
               {(Object.keys(WATER_SUB_LABELS) as WaterSubType[]).map(t => (
                 <IconSubtypeButton key={t} label={WATER_SUB_LABELS[t]} subtypeKey={t} active={subType === t}
                   onClick={() => setSubType(subType === t ? '' : t)} activeClass="border-sky-500 bg-sky-500/20 text-white" />
@@ -650,7 +650,7 @@ export default function AddPage() {
         {exerciseType === 'snow' && (
           <div>
             <label className="label">Activity <span className="text-[#64748B]">(optional)</span></label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-0.5">
               {(Object.keys(SNOW_SUB_LABELS) as SnowSubType[]).map(t => (
                 <IconSubtypeButton key={t} label={SNOW_SUB_LABELS[t]} subtypeKey={t} active={subType === t}
                   onClick={() => setSubType(subType === t ? '' : t)} activeClass="border-sky-500 bg-sky-500/20 text-white" />
@@ -703,7 +703,7 @@ export default function AddPage() {
         {exerciseType === 'solo_fitness' && (
           <div>
             <label className="label">Activity Type <span className="text-[#64748B]">(optional)</span></label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-0.5">
               {(Object.keys(FITNESS_SUB_LABELS) as FitnessSubType[]).map(t => (
                 <IconSubtypeButton key={t} label={FITNESS_SUB_LABELS[t]} subtypeKey={t} active={subType === t}
                   onClick={() => setSubType(subType === t ? '' : t)} activeClass="border-purple-500 bg-purple-500/20 text-white" />
@@ -727,7 +727,7 @@ export default function AddPage() {
         {exerciseType === 'walk' && (
           <div>
             <label className="label">Walk Type <span className="text-[#64748B]">(optional + multi-select)</span></label>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-2 gap-0.5">
               {(Object.keys(WALK_SUB_LABELS) as WalkSubType[]).map(t => {
                 const active = walkTypes.includes(t);
                 return (
