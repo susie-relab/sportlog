@@ -239,8 +239,8 @@ export default function HabitsPage() {
   }, [logs]);
 
   const progressStats = useMemo(
-    () => todayAndWeekProgress(habits, logsByHabit, frequencyHistory, todayLocalISO()),
-    [habits, logsByHabit, frequencyHistory]
+    () => todayAndWeekProgress(habits, logsByHabit, frequencyHistory, todayLocalISO(), skippedDays),
+    [habits, logsByHabit, frequencyHistory, skippedDays]
   );
 
   const resetAddForm = () => {

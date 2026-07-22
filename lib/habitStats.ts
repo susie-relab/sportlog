@@ -442,7 +442,9 @@ export function todayAndWeekProgress(
   logsByHabit: Map<string, HabitLog[]>,
   frequencyHistory: HabitFrequencyChange[],
   todayISO: string,
+  skippedDays: string[] = [],
 ): { todayPct: number; weekPct: number; pastDone: number; pastTotal: number } {
+  const skippedSet = new Set(skippedDays);
   const weekDays = getWeekDays(todayISO).filter(d => d <= todayISO);
 
   let todayDone = 0, todayTotal = 0;
@@ -453,6 +455,7 @@ export function todayAndWeekProgress(
     const logs = logsByHabit.get(h.id) || [];
     const logsByDate = new Map(logs.map(l => [l.date, l]));
     for (const d of weekDays) {
+      if (skippedSet.has(d)) continue;
       const cfg = resolveFrequencyAt(h, frequencyHistory, d);
       if (!isHabitScheduledOn(cfg, d)) continue;
       const log = logsByDate.get(d);
