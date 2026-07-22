@@ -42,10 +42,10 @@ function sessionEmoji(s: Session): string {
 /** Emoji size shrinks as the day gets busier so 1 activity reads big and clear while
  *  4-6 still all fit inside the cell instead of overflowing it. */
 function emojiSizeClass(count: number): string {
-  if (count <= 1) return 'text-xl sm:text-2xl';
-  if (count <= 2) return 'text-base sm:text-xl';
-  if (count <= 4) return 'text-xs sm:text-base';
-  return 'text-[9px] sm:text-sm';
+  if (count <= 1) return 'text-base sm:text-2xl';
+  if (count <= 2) return 'text-xs sm:text-xl';
+  if (count <= 4) return 'text-[9px] sm:text-base';
+  return 'text-[7px] sm:text-sm';
 }
 
 /** Combined training month calendar — past days show a small icon per activity actually

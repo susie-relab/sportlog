@@ -313,6 +313,8 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
           data={data}
           weekNumber={currentWeekNo}
           cfg={cfg}
+          planName={planTitle}
+          todayISO={today}
           onApply={newData => persist(newData)}
           onClose={() => setShowRecommend(false)}
         />

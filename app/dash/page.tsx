@@ -399,19 +399,31 @@ export default function DashPage() {
               const s = today.session;
               const done = s.completed;
               const runnable = isRunSession(s);
+              const cfg = planConfigFor(plan);
+              const missed = cfg ? missedStreak(plan, todayISO) : 0;
               return (
-                <div key={plan.id} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[#293548] bg-[#0F172A]">
-                  <span className="w-1.5 h-9 rounded-full flex-shrink-0" style={{ background: sessionColor(s) }} />
-                  <button onClick={() => setDetail({ planId: plan.id, week: today.week, day: today.day })} className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm font-semibold truncate ${done ? 'text-[#64748B] line-through' : 'text-white'}`}>{s.title}</span>
-                      {done && <span className="text-green-400 text-xs">✓</span>}
-                    </div>
-                    <span className="text-xs text-[#64748B]">{planLabel(plan)}{exerciseTypeTag(s) ? ` · ${exerciseTypeTag(s)}` : ''}{sessionTarget(s) ? ` · ${sessionTarget(s)}` : ''} · tap for details</span>
-                  </button>
-                  {runnable && !done && (
-                    <Link href={planSessionHref(s, plan.id, today.week, today.day, undefined, true)}
-                      className="btn-primary text-xs px-3 py-1.5 flex-shrink-0">Complete</Link>
+                <div key={plan.id}>
+                  <div className="flex items-center gap-3 py-2 px-3 rounded-lg border border-[#293548] bg-[#0F172A]">
+                    <span className="w-1.5 h-9 rounded-full flex-shrink-0" style={{ background: sessionColor(s) }} />
+                    <button onClick={() => setDetail({ planId: plan.id, week: today.week, day: today.day })} className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-semibold truncate ${done ? 'text-[#64748B] line-through' : 'text-white'}`}>{s.title}</span>
+                        {done && <span className="text-green-400 text-xs">✓</span>}
+                      </div>
+                      <span className="text-xs text-[#64748B]">{planLabel(plan)}{exerciseTypeTag(s) ? ` · ${exerciseTypeTag(s)}` : ''}{sessionTarget(s) ? ` · target ${sessionTarget(s)}` : ''} · tap for details</span>
+                    </button>
+                    {runnable && !done && (
+                      <Link href={planSessionHref(s, plan.id, today.week, today.day, undefined, true)}
+                        className="btn-primary text-xs px-3 py-1.5 flex-shrink-0">Complete</Link>
+                    )}
+                  </div>
+                  {missed >= 2 && (
+                    <button
+                      onClick={() => setRecommendFor({ planId: plan.id, week: today.week })}
+                      className="text-xs text-amber-400 hover:text-amber-300 font-semibold mt-1 ml-1"
+                    >
+                      ⚡ See recommendation
+                    </button>
                   )}
                 </div>
               );
@@ -500,6 +512,8 @@ export default function DashPage() {
                         data={plan.plan_data}
                         weekNumber={recommendFor.week}
                         cfg={cfg}
+                        planName={planLabel(plan)}
+                        todayISO={todayISO}
                         onApply={newData => persistPlanData(plan.id, newData)}
                         onClose={() => setRecommendFor(null)}
                       />

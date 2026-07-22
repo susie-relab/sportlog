@@ -284,6 +284,7 @@ export default function PlanWeekTable({ plan, currentWeek, onDayClick, onMove, o
 
   const dragProps = (week: number, day: Weekday) => onMove ? {
     onPointerDown: (e: React.PointerEvent) => {
+      e.preventDefault(); // prevent synthetic click 300ms later from opening sheet buttons
       const pointerId = e.pointerId;
       const timer = setTimeout(() => {
         const p = pressRef.current;

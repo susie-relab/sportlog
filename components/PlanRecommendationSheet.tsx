@@ -10,18 +10,26 @@ interface Props {
   data: PlanData;
   weekNumber: number;
   cfg: PlanConfig;
+  planName: string;
+  todayISO: string;
   onApply: (newData: PlanData) => void;
   onClose: () => void;
 }
 
 /** Shown after 2+ consecutive missed sessions — offers to lower the load on the next
  *  session, preview+apply an easier version of the rest of the week, or dismiss. */
-export default function PlanRecommendationSheet({ data, weekNumber, cfg, onApply, onClose }: Props) {
+export default function PlanRecommendationSheet({ data, weekNumber, cfg, planName, todayISO, onApply, onClose }: Props) {
   const [step, setStep] = useState<'options' | 'preview'>('options');
   const week = data.weeks.find(w => w.weekNumber === weekNumber);
   if (!week) return null;
 
-  const remainingDays: Weekday[] = WEEKDAYS.filter(d => isRunSession(week.days[d]) && !week.days[d].completed);
+  // Days left in the week including today (Mon=0 … Sun=6)
+  const dayOfWeekMon0 = (new Date(todayISO).getDay() + 6) % 7;
+  const calendarDaysLeft = 7 - dayOfWeekMon0;
+
+  const allRemaining: Weekday[] = WEEKDAYS.filter(d => isRunSession(week.days[d]) && !week.days[d].completed);
+  // Cap to 1 session per remaining calendar day
+  const remainingDays = allRemaining.slice(0, calendarDaysLeft);
   const nextDay = remainingDays[0];
   const nextSession = nextDay ? week.days[nextDay] : null;
   const nextEased = nextSession ? switchDifficulty(nextSession, 'easier', cfg) : null;
@@ -43,8 +51,9 @@ export default function PlanRecommendationSheet({ data, weekNumber, cfg, onApply
       <div className="custom-scroll relative w-full md:max-w-md max-h-[85vh] flex flex-col bg-[#1E293B] border border-[#334155] rounded-t-2xl md:rounded-2xl p-5 overflow-y-auto">
         {step === 'options' ? (
           <>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#64748B] mb-1">{planName}</p>
             <h3 className="text-lg font-bold text-white">Looks like you've missed a couple of sessions</h3>
-            <p className="text-sm text-[#94A3B8] mt-1.5 leading-relaxed">No worries — here's what we suggest.</p>
+            <p className="text-sm text-[#94A3B8] mt-1.5 leading-relaxed">No worries — here's what we suggest for the {calendarDaysLeft === 1 ? 'rest of today' : `${calendarDaysLeft} days left this week`}.</p>
 
             <div className="flex flex-col gap-2 mt-4">
               {nextSession && nextEased && (
@@ -68,6 +77,7 @@ export default function PlanRecommendationSheet({ data, weekNumber, cfg, onApply
           </>
         ) : (
           <>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#64748B] mb-1">{planName}</p>
             <h3 className="text-lg font-bold text-white">Suggested changes</h3>
             <p className="text-sm text-[#94A3B8] mt-1.5 leading-relaxed">Here's the rest of this week, eased off a bit — apply it, or leave your plan as is.</p>
 
