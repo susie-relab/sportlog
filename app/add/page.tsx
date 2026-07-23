@@ -831,7 +831,7 @@ export default function AddPage() {
           <button
             type="button"
             onClick={() => setShowMore(v => !v)}
-            className="flex items-center gap-2 text-sm font-semibold text-[#64748B] hover:text-[#94A3B8] transition-colors px-2 py-0.5 border border-transparent rounded-lg"
+            className="flex items-center gap-2 text-sm text-white hover:text-[#94A3B8] transition-colors px-2 py-0.5 border border-transparent rounded-lg"
           >
             <span className="text-xs">{showMore ? '▼' : '▶'}</span>
             {showMore ? 'Hide optional details' : 'More optional details'}
