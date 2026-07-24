@@ -910,8 +910,8 @@ const CanyoningIcon = makeIcon(({ size, className }) => (
     <line x1="15" y1="12.3" x2="17.5" y2="11.5" strokeWidth={0.9} />
     <line x1="15" y1="13.8" x2="13" y2="16" strokeWidth={0.9} />
     <line x1="15" y1="13.8" x2="16.8" y2="15.8" strokeWidth={0.9} />
-    <path d="M4 19 Q6 18 8 19 Q10 20 12 19 Q14 18 16 19 Q18 20 20 19" strokeWidth={1.1} />
-    <path d="M4 22 Q6 21 8 22 Q10 23 12 22 Q14 21 16 22 Q18 23 20 22" strokeWidth={1.1} />
+    <path d="M4 19 Q6 17.2 8 19 Q10 20.8 12 19 Q14 17.2 16 19 Q18 20.8 20 19" strokeWidth={1.1} />
+    <path d="M4 22 Q6 20.2 8 22 Q10 23.8 12 22 Q14 20.2 16 22 Q18 23.8 20 22" strokeWidth={1.1} />
   </Svg>
 ));
 
