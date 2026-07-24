@@ -280,7 +280,7 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
           {/* Tab strip — one doodle icon per configured sport/subtype, browser-tab style: the
               active tab is bracketed by highlighted vertical divider lines on either side.
               Scrolls if it overflows. */}
-          <div className="custom-scroll flex overflow-x-auto pb-1 mb-4 -mx-1 px-1">
+          <div className="custom-scroll flex overflow-x-auto md:overflow-x-visible pb-1 mb-4 -mx-1 px-1">
             {tiles.map((tile, i) => {
               const item = registry.get(tile.key);
               const active = tile.key === activeTile.key;
@@ -291,7 +291,7 @@ export default function YearTotalsCard({ activities, config, onSave }: Props) {
                   onClick={() => setActiveKey(tile.key)}
                   title={item?.label ?? tile.key}
                   aria-label={item?.label ?? tile.key}
-                  className={`flex-shrink-0 w-11 h-11 flex items-center justify-center border-r transition-colors ${
+                  className={`flex-shrink-0 w-11 md:flex-1 md:w-auto h-11 flex items-center justify-center border-r transition-colors ${
                     active ? 'text-white' : 'text-[#64748B] hover:text-white'
                   } ${active || nextActive ? 'border-r-blue-500' : 'border-r-[#334155]'} ${
                     i === 0 ? `border-l ${active ? 'border-l-blue-500' : 'border-l-[#334155]'}` : ''
