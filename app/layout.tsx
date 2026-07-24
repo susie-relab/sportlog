@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Outfit, Bricolage_Grotesque, JetBrains_Mono } from "
 import "./globals.css";
 import Nav from "@/components/Nav";
 import AuthProvider from "@/components/AuthProvider";
+import StravaDedupReview from "@/components/StravaDedupReview";
 import { DirtyFormProvider } from "@/components/DirtyFormContext";
 import ThemeApplier from "@/components/ThemeApplier";
 import NumberInputWheelGuard from "@/components/NumberInputWheelGuard";
@@ -83,6 +84,7 @@ export default function RootLayout({
               <main className="flex-1 md:ml-56 p-3 md:p-6 main-content w-full min-w-0">
                 {children}
               </main>
+            <StravaDedupReview />
             </div>
           </DirtyFormProvider>
         </AuthProvider>

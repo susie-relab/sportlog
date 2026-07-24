@@ -526,6 +526,7 @@ export interface Activity {
   thumbnail_urls?: string[] | null; // small (~240px) variant of image_urls, same order — falls back to image_urls for older rows
   feeling_after?: number | null;
   workout_vibes?: string[] | null;
+  strava_activity_id?: number | null;
   date: string;
   created_at: string;
 }
