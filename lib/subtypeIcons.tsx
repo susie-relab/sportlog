@@ -383,13 +383,12 @@ const SkiErgIcon = makeIcon(({ size, className }) => (
 // A solid boxing-glove silhouette on a diagonal, per reference, instead of a bare
 // three-finger outline.
 const BoxingIcon = makeIcon(({ size, className }) => (
-  // A single continuous mitt silhouette — flatter top, thumb flowing directly out of the
-  // same bottom-scoop line instead of sitting as its own separate shape — plus a scoop
-  // line across the face for the finger bend and a narrow strap at the wrist.
+  // Outline glove with finger-bend scoop, thumb divider, and wrist strap.
   <Svg size={size} className={className}>
-    <path d="M7 3Q11 2.3 15 3Q17 3 17 7L17 9Q20.5 8.8 21 11Q20.5 14.5 16 16.5Q11 19 6 16.5Q4 15 4 12Q3.3 9.5 4 7Q4 3 7 3Z" fill="currentColor" stroke="none" />
-    <path d="M4.5 8.2c2.5 2.3 9.5 2.3 12 0" stroke="#1E293B" strokeWidth={1.3} fill="none" strokeLinecap="round" />
-    <rect x="9" y="18" width="6" height="2" rx="0.5" fill="currentColor" stroke="none" />
+    <path d="M7 3Q11 2.3 15 3Q17 3 17 7L17 9Q20.5 8.8 21 11Q20.5 14.5 16 16.5Q11 19 6 16.5Q4 15 4 12Q3.3 9.5 4 7Q4 3 7 3Z" fill="none" strokeWidth={0.85} />
+    <path d="M4.5 8.2c2.5 2.3 9.5 2.3 12 0" strokeWidth={0.75} />
+    <path d="M17 8 Q15.5 9.5 15 11.5" strokeWidth={0.75} />
+    <rect x="9" y="18" width="6" height="2" rx="0.5" fill="none" strokeWidth={0.85} />
   </Svg>
 ));
 
@@ -773,12 +772,14 @@ const BodysurfingIcon = makeIcon(({ size, className }) => (
   </Svg>
 ));
 
-// A small open dinghy hull with two parallel oars angling down into the water.
+// Hull with two parallel oars at the same diagonal angle, square blades at tips.
 const RowingIcon = makeIcon(({ size, className }) => (
   <Svg size={size} className={className}>
     <path d="M3 14c0 2.5 4 3.5 9 3.5s9-1 9-3.5" />
-    <path d="M10 12 8.5 21" />
-    <path d="M14 12 12.5 21" />
+    <line x1="8" y1="15" x2="2" y2="21" strokeWidth={1} />
+    <rect x="-1.4" y="-1.1" width="2.8" height="2.2" fill="currentColor" stroke="none" transform="translate(2,21) rotate(130)" />
+    <line x1="16" y1="15" x2="10" y2="21" strokeWidth={1} />
+    <rect x="-1.4" y="-1.1" width="2.8" height="2.2" fill="currentColor" stroke="none" transform="translate(10,21) rotate(130)" />
   </Svg>
 ));
 
