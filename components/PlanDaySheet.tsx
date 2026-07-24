@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   PlanData, Session, Weekday, WEEKDAYS, WEEKDAY_LABELS,
   switchDifficulty, isRunSession, movePlanSession, addSessionToDay, updateSessionDetails, PlanConfig,
@@ -28,6 +28,7 @@ interface Props {
 
 export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAndComplete, cfg, showGoalLabel }: Props) {
   const { user } = useAuth();
+  const [linkedActivity, setLinkedActivity] = useState<Activity | null>(null);
   const [assigningPart, setAssigningPart] = useState<number | null>(null);
   const [recentActivities, setRecentActivities] = useState<Activity[] | null>(null);
   const [loadingRecent, setLoadingRecent] = useState(false);
@@ -46,6 +47,15 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
   const [editDetail, setEditDetail] = useState(sel?.detail ?? '');
   const [editMin, setEditMin] = useState(sel?.timeMin ? String(sel.timeMin) : '');
   const [editKm, setEditKm] = useState(sel?.distanceKm ? String(sel.distanceKm) : '');
+
+  const linkedId = sel?.completedActivityId ?? null;
+  useEffect(() => {
+    if (!linkedId) { setLinkedActivity(null); return; }
+    supabase.from('activities').select('*').eq('id', linkedId).single().then(({ data: act }) => {
+      setLinkedActivity(act ?? null);
+    });
+  }, [linkedId]);
+
   if (!sel) return null;
 
   const weekNumbers = data.weeks.map(w => w.weekNumber);
@@ -251,7 +261,7 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
                         </div>
                         {p.detail && <p className="text-sm text-[#94A3B8] mt-1.5 whitespace-pre-line leading-relaxed">{p.detail}</p>}
                         {p.completed && p.completedEffort != null && (
-                          <p className="text-xs text-[#64748B] mt-1.5">Effort {p.completedEffort}/10</p>
+                          <p className="text-xs text-green-400/70 mt-1">✓ Effort {p.completedEffort}/10{p.completedTimeMin ? ` · ${p.completedTimeMin} min` : ''}</p>
                         )}
 
                         <div className="flex flex-col gap-1.5 mt-3">
@@ -351,8 +361,23 @@ export default function PlanDaySheet({ data, selected, onSave, onClose, onLogAnd
                   <p className="text-xs text-[#64748B] mt-0.5">≈ {sel.estKm} km total (incl. warm-up/cooldown)</p>
                 )}
                 {sel.detail && <p className="text-sm text-[#94A3B8] mt-2 whitespace-pre-line leading-relaxed">{sel.detail}</p>}
-                {sel.completed && sel.completedEffort != null && (
-                  <p className="text-xs text-[#64748B] mt-1.5">Effort {sel.completedEffort}/10</p>
+                {sel.completed && (
+                  <div className="mt-2 pt-2 border-t border-[#293548]">
+                    <p className="text-xs font-semibold text-green-400 mb-1">✓ Completed</p>
+                    {linkedActivity ? (
+                      <div className="text-xs text-[#94A3B8] flex flex-col gap-0.5">
+                        {linkedActivity.effort != null && <span>Effort {linkedActivity.effort}/10</span>}
+                        {linkedActivity.duration_minutes > 0 && <span>{linkedActivity.duration_minutes} min{linkedActivity.duration_seconds ? ` ${linkedActivity.duration_seconds}s` : ''}</span>}
+                        {linkedActivity.distance_km != null && <span>{linkedActivity.distance_km} km</span>}
+                        {linkedActivity.avg_hr != null && <span>Avg HR {linkedActivity.avg_hr} bpm</span>}
+                        {linkedActivity.elevation_gain_m != null && <span>Elevation {linkedActivity.elevation_gain_m} m</span>}
+                        {linkedActivity.conditions && <span>{linkedActivity.conditions.split(',').join(' · ')}</span>}
+                        {linkedActivity.notes && <p className="text-[#64748B] mt-1 italic line-clamp-2">{linkedActivity.notes}</p>}
+                      </div>
+                    ) : sel.completedEffort != null ? (
+                      <p className="text-xs text-[#94A3B8]">Effort {sel.completedEffort}/10{sel.completedTimeMin ? ` · ${sel.completedTimeMin} min` : ''}{sel.completedDistanceKm ? ` · ${sel.completedDistanceKm} km` : ''}</p>
+                    ) : null}
+                  </div>
                 )}
               </>
             )}
