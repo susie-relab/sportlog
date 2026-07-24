@@ -131,6 +131,13 @@ function DayCell({ s, onClick, compact, drag }: {
   if (s.beforeStart) {
     return <div className={`w-full rounded-lg border border-dashed border-[#1E293B] ${compact ? 'h-8' : 'p-2.5 h-[52px]'}`} />;
   }
+  if (s.skipped) {
+    return (
+      <div className={`w-full rounded-lg border border-dashed border-[#1E293B] ${compact ? 'h-8 flex items-center px-2' : 'p-2.5'} opacity-40`}>
+        <span className="text-[10px] text-[#475569] line-through truncate">{s.title}</span>
+      </div>
+    );
+  }
   const isRest = s.type === 'rest';
   const isCross = s.type === 'crosstrain';
   const muted = isRest || isCross;

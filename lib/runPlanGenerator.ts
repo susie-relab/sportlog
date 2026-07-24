@@ -47,6 +47,8 @@ export interface Session {
    *  is used — so Reset always restores the true original, even after several Easier/Harder
    *  clicks in a row, instead of just undoing the most recent one. */
   original?: { distanceKm?: number | null; timeMin?: number | null; estKm?: number | null; repLabel?: string | null; detail: string };
+  /** Marked true when a session was skipped via Jump/Restart-from-week — shows as greyed-out in the week table. */
+  skipped?: boolean;
   /** A filler slot in the lead-in "Week 0" that falls before the plan's actual start date. */
   beforeStart?: boolean;
   /** When >1 session has been squished into this day via reordering, the individual original
@@ -194,6 +196,8 @@ export interface PlanRecord {
   start_date: string;
   name?: string | null;       // optional label (esp. sport/custom plans)
   active: boolean;            // run plans: only one active at a time (switch ends the other). sport/custom: always active.
+  pause_reason?: string | null;
+  paused_at?: string | null;
   plan_data: PlanData;
   created_at: string;
   updated_at?: string;
@@ -1027,7 +1031,7 @@ export function switchDifficulty(session: Session, dir: 'easier' | 'harder' | 'r
   const scale = dir === 'harder' ? 1.25 : 0.75;
   const next: Session = { ...session, original, variant: dir };
   if (next.distanceKm) next.distanceKm = round(next.distanceKm * scale, 0.5);
-  if (next.timeMin) next.timeMin = Math.round(next.timeMin * scale);
+  if (next.timeMin != null) next.timeMin = Math.max(5, Math.round(next.timeMin * scale));
   if (next.estKm) next.estKm = round(next.estKm * scale, 0.5);
   if (next.repLabel) {
     next.repLabel = next.repLabel.replace(/^(\d+)/, m => String(Math.max(1, Math.round(parseInt(m, 10) * scale))));
@@ -1383,4 +1387,79 @@ export function updateSessionDetails(data: PlanData, target: { week: number; day
   const week = weeks.find(w => w.weekNumber === target.week);
   if (week) week.totalKm = round(sumKm(week.days), 0.5);
   return { ...data, weeks };
+}
+
+/** Remove the lead-in Week 0 from a plan. Returns the plan data unchanged if no Week 0 exists. */
+export function removeLeadInWeek(data: PlanData): PlanData {
+  if (!data.weeks.some(w => w.weekNumber === 0)) return data;
+  return { ...data, weeks: data.weeks.filter(w => w.weekNumber !== 0) };
+}
+
+/**
+ * Jump the plan calendar to a given week, as if you're picking up mid-plan.
+ * - start_date is set so that the chosen week aligns to today.
+ * - Prior sessions that were completed stay completed.
+ * - Prior sessions that were NOT completed are marked skipped.
+ * Returns { planData, startDate }.
+ */
+export function jumpToWeek(data: PlanData, toWeekNumber: number, todayISO: string): { planData: PlanData; startDate: string } {
+  const realWeeks = data.weeks.filter(w => w.weekNumber > 0);
+  const targetWeek = realWeeks.find(w => w.weekNumber === toWeekNumber) ?? realWeeks[0];
+  const startDate = new Date(todayISO);
+  startDate.setDate(startDate.getDate() - (toWeekNumber - 1) * 7);
+  const mondayOffset = (startDate.getDay() + 6) % 7;
+  startDate.setDate(startDate.getDate() - mondayOffset);
+  const newStartDate = startDate.toISOString().slice(0, 10);
+
+  const planData: PlanData = {
+    ...data,
+    weeks: data.weeks.map(w => {
+      if (w.weekNumber === 0 || w.weekNumber >= toWeekNumber) return w;
+      return {
+        ...w,
+        days: Object.fromEntries(
+          WEEKDAYS.map(d => {
+            const s = w.days[d];
+            return [d, s.completed ? s : { ...s, skipped: true }];
+          })
+        ) as Record<Weekday, Session>,
+      };
+    }),
+  };
+  return { planData, startDate: newStartDate };
+}
+
+/**
+ * Restart the plan from a chosen week — all sessions before that week are marked skipped
+ * (even previously completed ones), and the calendar anchors today to that week.
+ * Returns { planData, startDate }.
+ */
+export function restartFromWeek(data: PlanData, fromWeekNumber: number, todayISO: string): { planData: PlanData; startDate: string } {
+  const startDate = new Date(todayISO);
+  startDate.setDate(startDate.getDate() - (fromWeekNumber - 1) * 7);
+  const mondayOffset = (startDate.getDay() + 6) % 7;
+  startDate.setDate(startDate.getDate() - mondayOffset);
+  const newStartDate = startDate.toISOString().slice(0, 10);
+
+  const planData: PlanData = {
+    ...data,
+    weeks: data.weeks.map(w => {
+      if (w.weekNumber === 0) return w;
+      if (w.weekNumber < fromWeekNumber) {
+        return {
+          ...w,
+          days: Object.fromEntries(
+            WEEKDAYS.map(d => [d, { ...w.days[d], completed: false, completedActivityId: null, skipped: true }])
+          ) as Record<Weekday, Session>,
+        };
+      }
+      return {
+        ...w,
+        days: Object.fromEntries(
+          WEEKDAYS.map(d => [d, { ...w.days[d], completed: false, completedActivityId: null, skipped: false }])
+        ) as Record<Weekday, Session>,
+      };
+    }),
+  };
+  return { planData, startDate: newStartDate };
 }

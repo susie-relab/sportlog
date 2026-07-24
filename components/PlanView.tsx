@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import {
   PlanRecord, Session, Weekday, WEEKDAYS, WEEKDAY_LABELS, runPlanDisplayName,
   isRunSession, PlanConfig, planSessionHref, todaysSession, planEndDateISO, movePlanSession, addSessionToDay, missedStreak,
+  removeLeadInWeek, jumpToWeek, restartFromWeek,
 } from '@/lib/runPlanGenerator';
 import PlanWeekTable, { sessionTarget } from './PlanWeekTable';
 import PlanPrintTable from './PlanPrintTable';
@@ -87,6 +88,18 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
   const [viewedWeek, setViewedWeek] = useState(isActive ? currentWeekNo : week1No);
   const [showRecommend, setShowRecommend] = useState(false);
   const missed = isRun && isActive ? missedStreak(plan, today) : 0;
+  const isPaused = !!plan.paused_at;
+
+  // Week management UI state
+  const [showWeekMgmt, setShowWeekMgmt] = useState(false);
+  const [weekMgmtMode, setWeekMgmtMode] = useState<'jump' | 'restart'>('jump');
+  const [weekMgmtTarget, setWeekMgmtTarget] = useState(1);
+  const [confirmWeekMgmt, setConfirmWeekMgmt] = useState(false);
+
+  // Pause UI state
+  const [showPauseSheet, setShowPauseSheet] = useState(false);
+  const [pauseReason, setPauseReason] = useState('');
+  const [customPauseReason, setCustomPauseReason] = useState('');
 
   // Print/share summary info
   const runsPerWeekText = plan.days_per_week_min && plan.days_per_week_min !== plan.days_per_week
@@ -116,16 +129,52 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
     await supabase.from('training_plans').update({ plan_data: newData, updated_at: new Date().toISOString() }).eq('id', plan.id);
   };
 
-  // Restart the plan from today: reset start date + clear all completed flags.
-  const restartFromToday = async () => {
-    const cleared = { ...data, weeks: data.weeks.map(w => ({
-      ...w, days: Object.fromEntries(WEEKDAYS.map(d => [d, { ...w.days[d], completed: false, completedActivityId: null }])) as typeof w.days,
-    })) };
-    const updated = { ...plan, plan_data: cleared, start_date: today };
+  const handleJumpOrRestart = async () => {
+    const { planData, startDate } = weekMgmtMode === 'jump'
+      ? jumpToWeek(data, weekMgmtTarget, today)
+      : restartFromWeek(data, weekMgmtTarget, today);
+    const updated = { ...plan, plan_data: planData, start_date: startDate };
     onChange(updated);
-    await supabase.from('training_plans').update({ plan_data: cleared, start_date: today, updated_at: new Date().toISOString() }).eq('id', plan.id);
-    setConfirmRestart(false);
+    await supabase.from('training_plans').update({ plan_data: planData, start_date: startDate, updated_at: new Date().toISOString() }).eq('id', plan.id);
+    setShowWeekMgmt(false);
+    setConfirmWeekMgmt(false);
+    setViewedWeek(weekMgmtTarget);
   };
+
+  const handleRemoveLeadIn = async () => {
+    const newData = removeLeadInWeek(data);
+    const mondayStart = (() => {
+      const d = new Date(plan.start_date);
+      const day = (d.getDay() + 6) % 7;
+      d.setDate(d.getDate() + (7 - day) % 7);
+      return d.toISOString().slice(0, 10);
+    })();
+    const updated = { ...plan, plan_data: newData, start_date: mondayStart };
+    onChange(updated);
+    await supabase.from('training_plans').update({ plan_data: newData, start_date: mondayStart, updated_at: new Date().toISOString() }).eq('id', plan.id);
+  };
+
+  const handlePause = async () => {
+    const reason = pauseReason === 'Other' ? customPauseReason : pauseReason;
+    const updated = { ...plan, paused_at: new Date().toISOString(), pause_reason: reason };
+    onChange(updated);
+    await supabase.from('training_plans').update({ paused_at: new Date().toISOString(), pause_reason: reason, updated_at: new Date().toISOString() }).eq('id', plan.id);
+    setShowPauseSheet(false);
+  };
+
+  const handleResume = async () => {
+    if (!plan.paused_at) return;
+    const pausedMs = Date.now() - new Date(plan.paused_at).getTime();
+    const pausedDays = Math.round(pausedMs / 86400000);
+    const newStart = new Date(plan.start_date);
+    newStart.setDate(newStart.getDate() + pausedDays);
+    const newStartDate = newStart.toISOString().slice(0, 10);
+    const updated = { ...plan, paused_at: null, pause_reason: null, start_date: newStartDate };
+    onChange(updated);
+    await supabase.from('training_plans').update({ paused_at: null, pause_reason: null, start_date: newStartDate, updated_at: new Date().toISOString() }).eq('id', plan.id);
+  };
+
+  const PAUSE_REASONS = ['Injury', 'Illness', 'Travel / Holiday', 'Life got busy', 'Taking a break', 'Other'];
 
   const logSession = (s: Session, partIndex?: number) => {
     if (!selected) return;
@@ -203,6 +252,18 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
         <div className="card border-yellow-600/40 flex items-center justify-between gap-3">
           <p className="text-sm text-yellow-300">This plan isn't your active run plan right now.</p>
           {onSwitchToThis && <button onClick={onSwitchToThis} className="btn-secondary text-xs px-3 py-1.5 flex-shrink-0">↻ Switch to this plan</button>}
+        </div>
+      )}
+
+      {isPaused && (
+        <div className="card border-amber-600/40 bg-amber-500/5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-amber-300">⏸ Plan paused{plan.pause_reason ? ` — ${plan.pause_reason}` : ''}</p>
+              <p className="text-xs text-[#94A3B8] mt-0.5">Calendar will shift forward to account for the pause when you resume.</p>
+            </div>
+            <button onClick={handleResume} className="btn-secondary text-xs px-3 py-1.5 flex-shrink-0 border-amber-600/50 text-amber-300 hover:bg-amber-500/10">▶ Resume</button>
+          </div>
         </div>
       )}
 
@@ -322,14 +383,97 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
 
       {isRun && <RunTypeGlossary />}
 
-      {/* Restart */}
-      <div className="plan-no-print">
-        {!confirmRestart ? (
-          <button onClick={() => setConfirmRestart(true)} className="w-full py-2 text-sm text-[#64748B] hover:text-blue-400 transition-colors">↻ Restart from today</button>
+      {/* Week management + pause */}
+      <div className="plan-no-print flex flex-col gap-1">
+        {/* Lead-in removal */}
+        {data.weeks.some(w => w.weekNumber === 0) && (
+          <button onClick={handleRemoveLeadIn} className="w-full py-2 text-sm text-[#64748B] hover:text-amber-400 transition-colors">
+            ✕ Remove lead-in week (Week 0)
+          </button>
+        )}
+
+        {/* Jump / Restart from week */}
+        {!showWeekMgmt ? (
+          <button onClick={() => { setShowWeekMgmt(true); setWeekMgmtMode('jump'); setWeekMgmtTarget(currentWeekNo); setConfirmWeekMgmt(false); }}
+            className="w-full py-2 text-sm text-[#64748B] hover:text-blue-400 transition-colors">
+            ↪ Jump to week / Restart from week
+          </button>
         ) : (
-          <div className="flex gap-2">
-            <button onClick={restartFromToday} className="flex-1 py-2 rounded-lg bg-blue-900/40 border border-blue-700 text-blue-300 text-sm font-medium">Restart from today (clears progress)</button>
-            <button onClick={() => setConfirmRestart(false)} className="flex-1 py-2 rounded-lg border border-[#334155] text-[#94A3B8] text-sm">Cancel</button>
+          <div className="card border-blue-500/20 bg-blue-500/5 flex flex-col gap-3">
+            <div className="flex gap-2">
+              <button onClick={() => setWeekMgmtMode('jump')} className={`flex-1 py-1.5 rounded-lg border text-xs font-medium transition-all ${weekMgmtMode === 'jump' ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>Jump to week</button>
+              <button onClick={() => setWeekMgmtMode('restart')} className={`flex-1 py-1.5 rounded-lg border text-xs font-medium transition-all ${weekMgmtMode === 'restart' ? 'bg-blue-600 border-blue-600 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>Restart from week</button>
+            </div>
+            <div>
+              <p className="text-xs text-[#94A3B8] mb-2">
+                {weekMgmtMode === 'jump'
+                  ? 'Completed sessions stay. Uncompleted prior sessions are marked skipped.'
+                  : 'All sessions before the chosen week are marked skipped (including completed ones).'}
+              </p>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-[#64748B]">Week</span>
+                <select
+                  value={weekMgmtTarget}
+                  onChange={e => { setWeekMgmtTarget(Number(e.target.value)); setConfirmWeekMgmt(false); }}
+                  className="flex-1 bg-[#0F172A] border border-[#334155] rounded-lg px-3 py-1.5 text-sm text-white"
+                >
+                  {data.weeks.filter(w => w.weekNumber > 0).map(w => (
+                    <option key={w.weekNumber} value={w.weekNumber}>Week {w.weekNumber}{w.phase ? ` — ${w.phase}` : ''}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {!confirmWeekMgmt ? (
+              <div className="flex gap-2">
+                <button onClick={() => setConfirmWeekMgmt(true)} className="flex-1 py-1.5 rounded-lg bg-blue-900/40 border border-blue-700 text-blue-300 text-xs font-medium">
+                  {weekMgmtMode === 'jump' ? `Jump to Week ${weekMgmtTarget}` : `Restart from Week ${weekMgmtTarget}`}
+                </button>
+                <button onClick={() => setShowWeekMgmt(false)} className="flex-1 py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-xs">Cancel</button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={handleJumpOrRestart} className="flex-1 py-1.5 rounded-lg bg-blue-600 border border-blue-500 text-white text-xs font-medium">Yes, confirm</button>
+                <button onClick={() => setConfirmWeekMgmt(false)} className="flex-1 py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-xs">Back</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Pause plan */}
+        {!isPaused && !showPauseSheet && (
+          <button onClick={() => setShowPauseSheet(true)} className="w-full py-2 text-sm text-[#64748B] hover:text-amber-400 transition-colors">
+            ⏸ Pause plan
+          </button>
+        )}
+        {!isPaused && showPauseSheet && (
+          <div className="card border-amber-500/20 bg-amber-500/5 flex flex-col gap-3">
+            <p className="text-sm font-semibold text-amber-300">Why are you pausing?</p>
+            <div className="flex flex-wrap gap-2">
+              {PAUSE_REASONS.map(r => (
+                <button key={r} onClick={() => setPauseReason(r)}
+                  className={`px-3 py-1.5 rounded-lg border text-xs transition-all ${pauseReason === r ? 'bg-amber-500/20 border-amber-500 text-amber-300' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                  {r}
+                </button>
+              ))}
+            </div>
+            {pauseReason === 'Other' && (
+              <input
+                value={customPauseReason}
+                onChange={e => setCustomPauseReason(e.target.value)}
+                placeholder="What's the reason?"
+                className="bg-[#0F172A] border border-[#334155] rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569]"
+              />
+            )}
+            <div className="flex gap-2">
+              <button onClick={handlePause} disabled={!pauseReason || (pauseReason === 'Other' && !customPauseReason.trim())}
+                className="flex-1 py-1.5 rounded-lg bg-amber-900/40 border border-amber-700 text-amber-300 text-xs font-medium disabled:opacity-40">
+                Pause plan
+              </button>
+              <button onClick={() => { setShowPauseSheet(false); setPauseReason(''); setCustomPauseReason(''); }}
+                className="flex-1 py-1.5 rounded-lg border border-[#334155] text-[#94A3B8] text-xs">
+                Cancel
+              </button>
+            </div>
           </div>
         )}
       </div>
