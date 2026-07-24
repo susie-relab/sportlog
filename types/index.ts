@@ -478,7 +478,7 @@ export const DEFAULT_YEAR_TOTAL_TILES: YearTotalTile[] = [
   { key: 'sport:football', metric: 'count' },
 ];
 
-export const MAX_YEAR_TOTAL_TILES = 10;
+export const MAX_YEAR_TOTAL_TILES = 18;
 
 /** Whether an activity counts toward a YearTotalTile's key — bare type matches any
  *  activity of that type, "type:subtype" also requires the subtype to be present. */
