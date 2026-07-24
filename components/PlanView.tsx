@@ -10,6 +10,7 @@ import {
 import PlanWeekTable, { sessionTarget } from './PlanWeekTable';
 import PlanPrintTable from './PlanPrintTable';
 import PlanDaySheet from './PlanDaySheet';
+import PlanInsightsCard from './PlanInsightsCard';
 import PlanRecommendationSheet from './PlanRecommendationSheet';
 import RunTypeGlossary from './RunTypeGlossary';
 import ShareCard, { ShareStat } from './ShareCard';
@@ -87,7 +88,7 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
   const week1No = data.weeks.find(w => w.weekNumber === 1)?.weekNumber ?? minWeekNo;
   const [viewedWeek, setViewedWeek] = useState(isActive ? currentWeekNo : week1No);
   const [showRecommend, setShowRecommend] = useState(false);
-  const missed = isRun && isActive ? missedStreak(plan, today) : 0;
+  const missed = isActive ? missedStreak(plan, today) : 0;
   const isPaused = !!plan.paused_at;
 
   // Week management UI state
@@ -327,6 +328,19 @@ export default function PlanView({ plan, onChange, onEdit, onDelete, onBack, onS
           </ResponsiveContainer>
         </div>
       )}
+
+      <PlanInsightsCard
+        runsCompleted={runsCompleted}
+        totalRuns={totalRuns}
+        cwDone={cwDone}
+        cwTotal={cwRuns.length}
+        currentWeekNo={currentWeekNo}
+        totalWeeks={plan.weeks}
+        missed={missed}
+        isPaused={isPaused}
+        isRun={isRun}
+        onShowRecommendation={() => setShowRecommend(true)}
+      />
 
       {/* Navigation */}
       <div className="flex items-center justify-between plan-no-print flex-wrap gap-2">
