@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Pencil, X, Flame } from 'lucide-react';
 import { Habit, HabitLog } from '@/types';
-import { completionRatio, currentStreak, isFailedLog, isSkippedLog } from '@/lib/habitStats';
+import { completionRatio, currentStreak, bestStreak, isFailedLog, isSkippedLog, completionPctInRange, addDaysISO } from '@/lib/habitStats';
 
 interface Props {
   habits: Habit[];         // all active habits
@@ -68,7 +68,7 @@ export default function HabitsInFocusBox({ habits, logs, focusIds, onSetFocusIds
             + Choose up to 5 habits to focus on
           </button>
         ) : (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1">
             {focusHabits.map((h, i) => {
               const log = logsByHabit.get(h.id);
               const failed = isFailedLog(log);
@@ -76,35 +76,53 @@ export default function HabitsInFocusBox({ habits, logs, focusIds, onSetFocusIds
               const count = (failed || skipped) ? 0 : (log?.count ?? 0);
               const ratio = completionRatio(h, log, h.target_per_period);
               const done = ratio >= 1;
-              const streak = currentStreak(h, logs.filter(l => l.habit_id === h.id), todayISO, []);
+              const habitLogs = logs.filter(l => l.habit_id === h.id);
+              const streak = currentStreak(h, habitLogs, todayISO, []);
+              const best = bestStreak(h, habitLogs, []);
+              const weekPct = Math.round(completionPctInRange(h, habitLogs, addDaysISO(todayISO, -6), todayISO) * 100);
+              const monthPct = Math.round(completionPctInRange(h, habitLogs, addDaysISO(todayISO, -29), todayISO) * 100);
               const locked = failed || skipped;
 
               return (
-                <button
-                  key={h.id}
-                  onClick={() => { if (!locked && !done) onCycleToday(h); }}
-                  disabled={locked || done}
-                  className={`flex items-center gap-3 py-2.5 text-left transition-colors ${i < focusHabits.length - 1 ? 'border-b border-[#1E293B]' : ''} ${(!locked && !done) ? 'hover:bg-[#0F172A]/40 -mx-2 px-2 rounded-lg' : ''}`}
-                >
-                  <span
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ background: h.color, boxShadow: done ? `0 0 0 2px ${h.color}55` : 'none' }}
-                  />
-                  <span className={`text-sm flex-1 truncate ${done ? 'text-[#64748B] line-through' : skipped ? 'text-[#64748B] italic' : failed ? 'text-[#64748B] line-through' : 'text-white'}`}>
-                    {h.name}
-                  </span>
-                  <span className="flex items-center gap-2 flex-shrink-0">
-                    {streak > 1 && (
-                      <span className="flex items-center gap-0.5 text-[10px] font-semibold text-amber-400">
-                        <Flame size={11} />
-                        {streak}
-                      </span>
-                    )}
-                    <span className={`text-xs font-semibold min-w-[28px] text-right ${done ? 'text-green-400' : skipped ? 'text-[#64748B]' : failed ? 'text-red-400' : 'text-[#94A3B8]'}`}>
+                <div key={h.id} className={`rounded-lg border border-[#1E293B] p-3 ${i < focusHabits.length - 1 ? 'mb-1' : ''}`}>
+                  <button
+                    onClick={() => { if (!locked && !done) onCycleToday(h); }}
+                    disabled={locked || done}
+                    className={`flex items-center gap-3 w-full text-left mb-2 ${(!locked && !done) ? 'hover:opacity-80 transition-opacity' : ''}`}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ background: h.color, boxShadow: done ? `0 0 0 2px ${h.color}55` : 'none' }}
+                    />
+                    <span className={`text-sm font-semibold flex-1 truncate ${done ? 'text-[#64748B] line-through' : skipped ? 'text-[#64748B] italic' : failed ? 'text-[#64748B] line-through' : 'text-white'}`}>
+                      {h.name}
+                    </span>
+                    <span className={`text-xs font-semibold flex-shrink-0 ${done ? 'text-green-400' : skipped ? 'text-[#64748B]' : failed ? 'text-red-400' : 'text-[#94A3B8]'}`}>
                       {done ? '✓' : skipped ? 'skip' : failed ? '✕' : `${count}/${h.target_per_period}`}
                     </span>
-                  </span>
-                </button>
+                  </button>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-0.5 text-amber-400">
+                        <Flame size={11} />
+                        <span className="text-xs font-bold">{streak}</span>
+                      </div>
+                      <div className="text-[10px] text-[#475569] mt-0.5">streak</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs font-bold text-[#94A3B8]">{best}</div>
+                      <div className="text-[10px] text-[#475569] mt-0.5">best</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs font-bold" style={{ color: weekPct >= 80 ? '#22C55E' : weekPct >= 50 ? '#EAB308' : '#EF4444' }}>{weekPct}%</div>
+                      <div className="text-[10px] text-[#475569] mt-0.5">this wk</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs font-bold" style={{ color: monthPct >= 80 ? '#22C55E' : monthPct >= 50 ? '#EAB308' : '#EF4444' }}>{monthPct}%</div>
+                      <div className="text-[10px] text-[#475569] mt-0.5">30 days</div>
+                    </div>
+                  </div>
+                </div>
               );
             })}
           </div>

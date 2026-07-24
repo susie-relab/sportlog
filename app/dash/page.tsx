@@ -164,7 +164,7 @@ export default function DashPage() {
       supabase.from('goals').select('*').eq('user_id', user.id),
       supabase.from('training_plans').select('*').eq('user_id', user.id),
       supabase.from('habits').select('*').eq('user_id', user.id).eq('archived', false),
-      supabase.from('habit_logs').select('*').eq('user_id', user.id).gte('date', addDaysISO(todayLocalISO(), -13)),
+      supabase.from('habit_logs').select('*').eq('user_id', user.id).gte('date', addDaysISO(todayLocalISO(), -364)),
     ]).then(([{ data: acts }, { data: g }, { data: p }, { data: h }, { data: hl }]) => {
       setActivities((acts as Activity[]) || []);
       setGoals((g as Goal[]) || []);
