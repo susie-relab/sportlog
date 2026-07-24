@@ -9,7 +9,7 @@ import {
 } from '@/types';
 import { HABIT_PRESETS } from '@/lib/habitPresets';
 import { todayLocalISO } from '@/lib/utils';
-import { currentStreak, totalCompletions, periodProgress, addDaysISO, isPeriodBasedType, todayAndWeekProgress } from '@/lib/habitStats';
+import { currentStreak, totalCompletions, periodProgress, addDaysISO, isPeriodBasedType, todayAndWeekProgress, completionPctInRange } from '@/lib/habitStats';
 import HabitListRow from '@/components/HabitListRow';
 import HabitMonthCalendar from '@/components/HabitMonthCalendar';
 import AccountSwitcher from '@/components/AccountSwitcher';
@@ -64,6 +64,8 @@ export default function HabitsPage() {
   const [focusIds, setFocusIds] = useState<string[]>([]);
   const [focusIdsLoaded, setFocusIdsLoaded] = useState(false);
   const [showSkipChoice, setShowSkipChoice] = useState(false);
+  const [autoOpenEditId, setAutoOpenEditId] = useState<string | null>(null);
+  const [calendarPanel, setCalendarPanel] = useState<'focus' | 'top10' | 'attention' | null>(null);
 
   const [showAdd, setShowAdd] = useState(false);
   const [addStep, setAddStep] = useState<'presets' | 'custom'>('presets');
@@ -778,6 +780,7 @@ export default function HabitsPage() {
       setHabits(prev => [...prev, newHabit]);
       setActiveCategory(habit.category);
       setSelectedHabitId(newHabit.id);
+      setAutoOpenEditId(newHabit.id);
     }
   };
 
@@ -940,6 +943,108 @@ export default function HabitsPage() {
             onSkipAllForDate={skipAllForDate}
           />
 
+          {/* ── Calendar panel buttons ── */}
+          {habits.length > 0 && (() => {
+            const todayISO = todayLocalISO();
+            const focusHabits = habits.filter(h => focusIds.includes(h.id));
+            const top10 = habits.map(h => {
+              const hLogs = logs.filter(l => l.habit_id === h.id);
+              const w7 = Math.round(completionPctInRange(h, hLogs, addDaysISO(todayISO, -6), todayISO) * 100);
+              const d30 = Math.round(completionPctInRange(h, hLogs, addDaysISO(todayISO, -29), todayISO) * 100);
+              const avg = (w7 + d30) / 2;
+              return { h, w7, d30, avg };
+            }).sort((a, b) => b.avg - a.avg || b.w7 - a.w7).slice(0, 10);
+            const attention = habits.map(h => {
+              const hLogs = logs.filter(l => l.habit_id === h.id);
+              const w7 = Math.round(completionPctInRange(h, hLogs, addDaysISO(todayISO, -6), todayISO) * 100);
+              const d30 = Math.round(completionPctInRange(h, hLogs, addDaysISO(todayISO, -29), todayISO) * 100);
+              return { h, w7, d30, drop: d30 - w7 };
+            }).filter(r => r.d30 >= 60 && r.w7 < 50).sort((a, b) => b.drop - a.drop);
+            const PanelBtn = ({ id, label }: { id: typeof calendarPanel; label: string }) => (
+              <button
+                onClick={() => setCalendarPanel(calendarPanel === id ? null : id)}
+                className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors ${calendarPanel === id ? 'bg-[#293548] border-blue-500 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
+              >{label}</button>
+            );
+            return (
+              <div className="mb-4">
+                <div className="flex gap-2 mb-3">
+                  <PanelBtn id="focus" label={`📍 Habits in focus${focusHabits.length ? ` (${focusHabits.length})` : ''}`} />
+                  <PanelBtn id="top10" label="🏆 Top 10" />
+                  <PanelBtn id="attention" label="📉 Needs attention" />
+                </div>
+
+                {calendarPanel === 'focus' && (
+                  <div className="card flex flex-col gap-3">
+                    <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide">Habits in focus</p>
+                    {focusHabits.length === 0 ? (
+                      <p className="text-sm text-[#64748B]">No focus habits set yet. Mark a habit as focus from its edit panel.</p>
+                    ) : focusHabits.map(h => {
+                      const hLogs = logs.filter(l => l.habit_id === h.id);
+                      const streak = currentStreak(h, hLogs, todayISO, []);
+                      const w7 = Math.round(completionPctInRange(h, hLogs, addDaysISO(todayISO, -6), todayISO) * 100);
+                      const d30 = Math.round(completionPctInRange(h, hLogs, addDaysISO(todayISO, -29), todayISO) * 100);
+                      const total = totalCompletions(hLogs);
+                      return (
+                        <div key={h.id} className="rounded-lg border border-[#334155] p-3 flex flex-col gap-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: h.color }} />
+                              <span className="text-sm font-semibold text-white truncate">{h.name}</span>
+                            </div>
+                            <button
+                              onClick={() => { setActiveCategory(h.category); setSelectedHabitId(h.id); setAutoOpenEditId(h.id); }}
+                              className="text-xs font-medium text-blue-400 hover:text-blue-300 flex-shrink-0"
+                            >Edit</button>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2 text-center">
+                            <div><p className="text-sm font-bold text-white">{streak > 0 ? `🔥 ${streak}` : '—'}</p><p className="text-[10px] text-[#64748B]">Streak</p></div>
+                            <div><p className="text-sm font-bold text-white">{w7}%</p><p className="text-[10px] text-[#64748B]">7 days</p></div>
+                            <div><p className="text-sm font-bold text-white">{d30}%</p><p className="text-[10px] text-[#64748B]">30 days</p></div>
+                            <div><p className="text-sm font-bold text-white">{total}</p><p className="text-[10px] text-[#64748B]">All time</p></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {calendarPanel === 'top10' && (
+                  <div className="card flex flex-col gap-2">
+                    <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-1">Top 10 performing habits</p>
+                    {top10.map(({ h, w7, d30, avg }, i) => (
+                      <div key={h.id} className="flex items-center gap-3 py-1.5 border-b border-[#334155] last:border-0">
+                        <span className="text-xs font-bold text-[#64748B] w-4 flex-shrink-0">{i + 1}</span>
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: h.color }} />
+                        <span className="text-sm text-white flex-1 truncate min-w-0">{h.name}</span>
+                        <span className="text-xs text-[#94A3B8] flex-shrink-0 tabular-nums">7d <span className="text-white font-semibold">{w7}%</span></span>
+                        <span className="text-xs text-[#94A3B8] flex-shrink-0 tabular-nums">30d <span className="text-white font-semibold">{d30}%</span></span>
+                        <span className="text-xs font-bold flex-shrink-0 tabular-nums" style={{ color: h.color }}>avg {avg}%</span>
+                      </div>
+                    ))}
+                    {top10.length === 0 && <p className="text-sm text-[#64748B]">Log some habits first to see rankings.</p>}
+                  </div>
+                )}
+
+                {calendarPanel === 'attention' && (
+                  <div className="card flex flex-col gap-2">
+                    <p className="text-xs font-semibold text-[#64748B] uppercase tracking-wide mb-1">Needs attention — strong last month, slipping this week</p>
+                    {attention.length === 0 ? (
+                      <p className="text-sm text-[#64748B]">Nothing flagged — all habits are either consistent or just getting started.</p>
+                    ) : attention.map(({ h, w7, d30 }) => (
+                      <div key={h.id} className="flex items-center gap-3 py-1.5 border-b border-[#334155] last:border-0">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: h.color }} />
+                        <span className="text-sm text-white flex-1 truncate min-w-0">{h.name}</span>
+                        <span className="text-xs text-[#94A3B8] flex-shrink-0 tabular-nums">7d <span className="text-amber-400 font-semibold">{w7}%</span></span>
+                        <span className="text-xs text-[#94A3B8] flex-shrink-0 tabular-nums">30d <span className="text-white font-semibold">{d30}%</span></span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {habits.length >= 2 && (
             <HabitInsightsCard habits={habits} logs={logs} todayISO={todayLocalISO()} />
           )}
@@ -975,6 +1080,8 @@ export default function HabitsPage() {
               onMarkFailedToday={markFailedToday}
               onSkipToday={skipToday}
               onTickToday={tickHabitToday}
+              autoOpenEditId={autoOpenEditId}
+              onAutoOpenEditCleared={() => setAutoOpenEditId(null)}
             />
           </div>
 

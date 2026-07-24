@@ -1,6 +1,6 @@
 'use client';
 import { useRef, useState } from 'react';
-import { SkipForward } from 'lucide-react';
+import { SkipForward, GripVertical } from 'lucide-react';
 import { Habit, HabitLog, HabitFrequencyType, HabitColorKey, HabitTrackingStyle, HABIT_COLORS } from '@/types';
 import { todayLocalISO } from '@/lib/utils';
 import { periodProgress, isSkippableFrequency, periodBoundsFor, addDaysISO } from '@/lib/habitStats';
@@ -149,17 +149,19 @@ export default function HabitListRow({ habit, logs, categories, onIncrement, onD
     setMode(null);
   };
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('button')) return;
-    // Only the left 44 px strip initiates drag — tapping elsewhere just opens the editor via onClick.
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (e.clientX - rect.left > 44) return;
+  const startDrag = (e: React.PointerEvent) => {
     e.preventDefault();
     draggingRef.current = true;
     dragMovedRef.current = false;
     setDragging(true);
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+  };
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (e.clientX - rect.left > 44) return;
+    startDrag(e);
   };
   const handlePointerMove = (e: PointerEvent) => {
     if (!draggingRef.current) return;
@@ -304,6 +306,15 @@ export default function HabitListRow({ habit, logs, categories, onIncrement, onD
                 </div>
               </div>
             )}
+            <button
+              onPointerDown={e => { e.stopPropagation(); startDrag(e); }}
+              onClick={e => e.stopPropagation()}
+              aria-label="Drag to reorder"
+              className="w-5 h-5 rounded-full flex items-center justify-center text-white/50 hover:text-white bg-black/25 hover:bg-black/40 cursor-grab active:cursor-grabbing"
+              style={{ touchAction: 'none' }}
+            >
+              <GripVertical size={11} />
+            </button>
             <button
               onClick={e => { e.stopPropagation(); openEditor(); }}
               onPointerDown={e => e.stopPropagation()}

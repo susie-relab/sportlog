@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, useEffect, type ReactNode } from 'react';
 import { X, SkipForward } from 'lucide-react';
 import {
   Habit, HabitLog, HabitFrequencyType, HabitFrequencyChange, HabitColorKey, HabitTrackingStyle,
@@ -49,6 +49,8 @@ interface Props {
   onMarkFailedToday: (habit: Habit) => void;
   onSkipToday: (habit: Habit) => void;
   onTickToday: (habit: Habit) => void;
+  autoOpenEditId?: string | null;
+  onAutoOpenEditCleared?: () => void;
 }
 
 const WEEKDAY_OPTIONS = [
@@ -324,6 +326,7 @@ export function FrequencyApplyPicker({
 export default function HabitTabBox({
   categories, activeCategory, onSelectCategory, onReorderCategory, onRenameCategory, onRemoveCategory, onArchiveCategory, onDuplicateCategory, archivedCategories, onUnarchiveCategory, onCreateCategory, onChangeCategoryEmoji,
   categoryLabel, habits, logsByHabit, frequencyHistory, selectedHabitId, onSelectHabit, onCreateHabit, onReorderHabit, onUpdateHabit, onChangeFrequency, onArchiveHabit, onDeleteHabit, onIncrementToday, onDecrementToday, onMarkFailedToday, onSkipToday, onTickToday,
+  autoOpenEditId, onAutoOpenEditCleared,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const [showManageCategories, setShowManageCategories] = useState(false);
@@ -416,6 +419,14 @@ export default function HabitTabBox({
     setEditTrackingStyle(h.tracking_style || 'count');
     setEditTimeOfDay(h.time_of_day || '');
   };
+
+  useEffect(() => {
+    if (!autoOpenEditId) return;
+    const h = habits.find(hb => hb.id === autoOpenEditId);
+    if (h) { setShowEdit(true); startEditing(h); }
+    onAutoOpenEditCleared?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenEditId]);
 
   // Press-and-hold drag on the sort handle to reorder habits within the "Reorder & Edit" list —
   // unlike the tab strip, the handle is a dedicated small icon so a plain tap on the row (the
@@ -554,11 +565,11 @@ export default function HabitTabBox({
             <button
               key={c.key}
               onClick={() => onSelectCategory(c.key)}
-              className={`px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors select-none truncate ${
+              className={`px-2 py-2 rounded-lg text-sm font-medium border transition-colors select-none truncate ${
                 active ? 'bg-[#293548] border-blue-500 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'
               }`}
             >
-              {c.emoji} {c.label}
+              <span className="text-base mr-1">{c.emoji}</span>{c.label}
             </button>
           );
         })}
@@ -879,7 +890,7 @@ export default function HabitTabBox({
                     onClick={() => {
                       if (editingCatKey === c.key) { setChangingEmojiKey(c.key); setChangingEmojiValue(c.emoji); }
                     }}
-                    className="flex-shrink-0 text-lg leading-none"
+                    className="flex-shrink-0 text-xl leading-none"
                     aria-label="Category emoji"
                   >{c.emoji}</button>
 
@@ -898,8 +909,8 @@ export default function HabitTabBox({
                     ) : editingCatKey === c.key ? (
                       /* inline submenu */
                       <>
-                        {c.isCustom && <button onClick={() => { setRenamingKey(c.key); setRenameValue(c.label); }} className="text-xs font-medium text-blue-400 hover:text-blue-300 flex-shrink-0">Rename</button>}
-                        {c.isCustom && <button onClick={() => { setChangingEmojiKey(c.key); setChangingEmojiValue(c.emoji); }} className="text-xs font-medium text-[#94A3B8] hover:text-white flex-shrink-0">Emoji</button>}
+                        <button onClick={() => { setRenamingKey(c.key); setRenameValue(c.label); }} className="text-xs font-medium text-blue-400 hover:text-blue-300 flex-shrink-0">Rename</button>
+                        <button onClick={() => { setChangingEmojiKey(c.key); setChangingEmojiValue(c.emoji); }} className="text-xs font-medium text-[#94A3B8] hover:text-white flex-shrink-0">Emoji</button>
                         <button onClick={() => { onDuplicateCategory(c.key); setEditingCatKey(null); }} className="text-xs font-medium text-[#94A3B8] hover:text-white flex-shrink-0">Duplicate</button>
                         {c.isCustom && (
                           <button onClick={() => { onArchiveCategory(c.key); setEditingCatKey(null); }} disabled={c.habitCount > 0} title={c.habitCount > 0 ? 'Move or delete its habits first' : ''} className="text-xs font-medium text-amber-400 hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0">Archive</button>
@@ -914,8 +925,8 @@ export default function HabitTabBox({
                     )}
                   </span>
 
-                  {/* Emoji picker — shown below the row when changing emoji (custom categories only) */}
-                  {changingEmojiKey === c.key && c.isCustom && (
+                  {/* Emoji picker — shown below the row when changing emoji */}
+                  {changingEmojiKey === c.key && (
                     <div className="w-full mt-2 flex flex-col gap-2">
                       <div className="flex flex-wrap gap-1.5">
                         {CATEGORY_EMOJI_CHOICES.map(e => (

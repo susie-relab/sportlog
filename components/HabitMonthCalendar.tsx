@@ -163,22 +163,30 @@ export default function HabitMonthCalendar({ habits, logs, frequencyHistory, foc
               <span className="text-sm font-semibold text-white">{selectedDate}</span>
               <button onClick={() => setSelectedDate(null)} className="p-1 rounded-lg hover:bg-[#334155] text-[#94A3B8]"><X size={18} /></button>
             </div>
-            {onSkipAllForDate && selectedDate === todayISO && (
+            {onSkipAllForDate && selectedDate <= todayISO && (
               <div className="flex gap-2 mb-3">
-                <button
-                  onClick={() => onSkipAllForDate(selectedDate)}
-                  className="flex-1 py-1.5 rounded-lg border border-[#334155] text-xs text-[#94A3B8] hover:border-[#475569] hover:text-white transition-all"
-                >
-                  ⏭ Skip all
-                </button>
-                {focusIds.length > 0 && (
-                  <button
-                    onClick={() => onSkipAllForDate(selectedDate, focusIds)}
-                    className="flex-1 py-1.5 rounded-lg border border-[#334155] text-xs text-[#94A3B8] hover:border-[#475569] hover:text-white transition-all"
-                  >
-                    ⏭ Skip all except focus
-                  </button>
-                )}
+                {(() => {
+                  const scheduledHabits = habitsForDate(selectedDate);
+                  const allSkipped = scheduledHabits.length > 0 && scheduledHabits.every(h => isSkippedLog(logsByHabitDate.get(`${h.id}|${selectedDate}`)));
+                  return (
+                    <>
+                      <button
+                        onClick={() => onSkipAllForDate(selectedDate)}
+                        className="flex-1 py-1.5 rounded-lg border border-[#334155] text-xs text-[#94A3B8] hover:border-[#475569] hover:text-white transition-all"
+                      >
+                        {allSkipped ? '↩ Unskip all' : '⏭ Skip all'}
+                      </button>
+                      {focusIds.length > 0 && selectedDate === todayISO && (
+                        <button
+                          onClick={() => onSkipAllForDate(selectedDate, focusIds)}
+                          className="flex-1 py-1.5 rounded-lg border border-[#334155] text-xs text-[#94A3B8] hover:border-[#475569] hover:text-white transition-all"
+                        >
+                          ⏭ Skip all except focus
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
             {(() => {
