@@ -158,7 +158,7 @@ export default function ScrollFieldPicker({ label, unit, value, onChange, max, m
                 }}
                 onWheel={e => { e.preventDefault(); wholeColumnRef.current?.scrollByDelta(e.deltaY); }}
                 style={{ width: wholeWidth }}
-                className="wheel-input pointer-events-auto bg-transparent text-white text-lg font-bold text-center outline-none"
+                className="wheel-input pointer-events-auto bg-[#1E293B] text-white text-lg font-bold text-center outline-none"
               />
               {decimals === 2 && (
                 <>
@@ -174,7 +174,7 @@ export default function ScrollFieldPicker({ label, unit, value, onChange, max, m
                     onKeyDown={e => { if (e.key === 'Enter') commitAndClose(); }}
                     onWheel={e => { e.preventDefault(); fracColumnRef.current?.scrollByDelta(e.deltaY); }}
                     style={{ width: fracWidth }}
-                    className="wheel-input pointer-events-auto bg-transparent text-white text-lg font-bold text-center outline-none"
+                    className="wheel-input pointer-events-auto bg-[#1E293B] text-white text-lg font-bold text-center outline-none"
                   />
                 </>
               )}
