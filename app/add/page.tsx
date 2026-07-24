@@ -842,41 +842,26 @@ export default function AddPage() {
               className="absolute inset-0 w-full h-full pointer-events-none"
               style={{overflow: 'visible'}}
             >
-              {/*
-                Button ≈ 165px wide × 24px tall → ratio ~6.9:1.
-                Target ~6px between ticks: top/bottom need ~27 ticks (every 3.7%),
-                left/right need ~4 ticks (every 25%) — this gives equal absolute spacing.
-              */}
-              {/* top */}
-              {[2,6,9,13,17,21,24,28,32,35,39,43,46,50,54,58,61,65,69,72,76,80,83,87,91,95,98].map(p => (
-                <line key={`t${p}`} x1={`${p}%`} y1="0" x2={`${p}%`} y2="-6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
-              ))}
-              {/* bottom */}
-              <g style={{transform:'translateY(100%)', transformBox:'view-box' as never, transformOrigin:'0 0'}}>
-                {[2,6,9,13,17,21,24,28,32,35,39,43,46,50,54,58,61,65,69,72,76,80,83,87,91,95,98].map(p => (
-                  <line key={`b${p}`} x1={`${p}%`} y1="0" x2={`${p}%`} y2="6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
-                ))}
-              </g>
               {/* left */}
               {[13,38,63,88].map(p => (
-                <line key={`l${p}`} x1="0" y1={`${p}%`} x2="-6" y2={`${p}%`} stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+                <line key={`l${p}`} x1="0" y1={`${p}%`} x2="-6" y2={`${p}%`} stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
               ))}
               {/* right */}
               <g style={{transform:'translateX(100%)', transformBox:'view-box' as never, transformOrigin:'0 0'}}>
                 {[13,38,63,88].map(p => (
-                  <line key={`r${p}`} x1="0" y1={`${p}%`} x2="6" y2={`${p}%`} stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+                  <line key={`r${p}`} x1="0" y1={`${p}%`} x2="6" y2={`${p}%`} stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
                 ))}
               </g>
               {/* corners */}
-              <line x1="0" y1="0" x2="-5" y2="-5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+              <line x1="0" y1="0" x2="-5" y2="-5" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
               <g style={{transform:'translateX(100%)', transformBox:'view-box' as never, transformOrigin:'0 0'}}>
-                <line x1="0" y1="0" x2="5" y2="-5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+                <line x1="0" y1="0" x2="5" y2="-5" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
               </g>
               <g style={{transform:'translateY(100%)', transformBox:'view-box' as never, transformOrigin:'0 0'}}>
-                <line x1="0" y1="0" x2="-5" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+                <line x1="0" y1="0" x2="-5" y2="5" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
               </g>
               <g style={{transform:'translate(100%, 100%)', transformBox:'view-box' as never, transformOrigin:'0 0'}}>
-                <line x1="0" y1="0" x2="5" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+                <line x1="0" y1="0" x2="5" y2="5" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
               </g>
             </svg>
           )}
