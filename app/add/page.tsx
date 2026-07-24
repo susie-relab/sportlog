@@ -622,7 +622,7 @@ export default function AddPage() {
   const progressCount = [!!name.trim(), !!exerciseType, durationSeconds > 0, !!effort, !!distance, !!notes.trim()].filter(Boolean).length;
 
   return (
-    <div className="max-w-lg md:max-w-2xl mx-auto relative">
+    <div className="max-w-lg md:max-w-4xl mx-auto relative">
       <div className="absolute top-0 right-0 z-10">
         <AccountSwitcher compact />
       </div>
@@ -696,7 +696,14 @@ export default function AddPage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-4 pb-28">
+      <div className="flex flex-col gap-6 pb-28">
+
+        {/* ── TOP ROW: 2-col on desktop ── */}
+        <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-x-8 md:items-start">
+
+          {/* LEFT: Name · Date · Exercise Type · Subtypes */}
+          <div className="flex flex-col gap-4">
+
         {/* Name */}
         <div>
           <label className="label">Activity Name *</label>
@@ -998,6 +1005,11 @@ export default function AddPage() {
           </div>
         )}
 
+          </div>{/* end LEFT col */}
+
+          {/* RIGHT: Duration · Effort · Distance · More optional details */}
+          <div className="flex flex-col gap-4">
+
         {/* Duration */}
         <div>
           <label className="label">Duration *</label>
@@ -1135,6 +1147,18 @@ export default function AddPage() {
           </div>
         )}
 
+          </div>{/* end RIGHT col */}
+        </div>{/* end TOP ROW */}
+
+        {/* ── DIVIDER 1 ── */}
+        <div className="hidden md:block border-t border-[#334155]" />
+
+        {/* ── MIDDLE ROW: 2-col on desktop ── */}
+        <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-x-8 md:items-start">
+
+          {/* LEFT: Surroundings */}
+          <div className="flex flex-col gap-4">
+
         {/* Surroundings toggle */}
         <DashedToggleButton
           label="Surroundings"
@@ -1159,6 +1183,11 @@ export default function AddPage() {
             />
           </div>
         )}
+
+          </div>{/* end LEFT col (Surroundings) */}
+
+          {/* RIGHT: Notes + Feelings */}
+          <div className="flex flex-col gap-4">
 
         {/* Notes */}
         <div>
@@ -1229,6 +1258,15 @@ export default function AddPage() {
           </div>
         </div>
 
+          </div>{/* end RIGHT col (Notes + Feelings) */}
+        </div>{/* end MIDDLE ROW */}
+
+        {/* ── DIVIDER 2 ── */}
+        <div className="hidden md:block border-t border-[#334155]" />
+
+        {/* ── BOTTOM: Photos + PB centred ── */}
+        <div className="flex flex-col gap-4 md:max-w-lg md:mx-auto md:w-full">
+
         {/* Photos */}
         {user && (
           <ImageUploader
@@ -1270,18 +1308,19 @@ export default function AddPage() {
           </div>
         )}
 
+        </div>{/* end BOTTOM */}
       </div>
 
       {/* Sticky save + progress bar — all screen sizes */}
       <div className="fixed bottom-14 md:bottom-0 left-0 md:left-56 right-0 z-40 bg-[#0F172A]/95 backdrop-blur-sm border-t border-[#334155]">
-        {(name || exerciseType) && (
-          <div className="md:max-w-2xl md:mx-auto">
+        {progressCount > 0 && (
+          <div className="md:max-w-4xl md:mx-auto">
             <div className="h-1 w-full bg-[#1E293B]">
               <div className="h-full transition-all duration-300" style={{ width: `${(progressCount / 6) * 100}%`, background: accentColor }} />
             </div>
           </div>
         )}
-        <div className="p-3 md:max-w-2xl md:mx-auto">
+        <div className="p-3 md:max-w-4xl md:mx-auto">
         <button
           onClick={handleSave}
           disabled={saving}
