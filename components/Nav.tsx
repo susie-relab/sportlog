@@ -14,8 +14,8 @@ const mainTabs = [
   { href: '/run-log', label: 'Runs', icon: Footprints },
   { href: '/total-stats', label: 'Stats', icon: TrendingUp },
   { href: '/dash', label: 'Dash', icon: LayoutDashboard },
-  { href: '/training-plan', label: 'Plan', icon: Target },
   { href: '/habits', label: 'Habits', icon: CheckCircle2 },
+  { href: '/training-plan', label: 'Plan', icon: Target },
   { href: '/pbs', label: "PB's", icon: Award },
   { href: '/notes', label: 'Notes', icon: BookOpen },
 ];
