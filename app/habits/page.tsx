@@ -14,6 +14,7 @@ import HabitListRow from '@/components/HabitListRow';
 import HabitMonthCalendar from '@/components/HabitMonthCalendar';
 import AccountSwitcher from '@/components/AccountSwitcher';
 import HabitTabBox, { ApplyOption, FrequencyFields, StartDateFields, StartOption, resolveStartDate, CATEGORY_EMOJI_CHOICES } from '@/components/HabitTabBox';
+import HabitInsightsCard from '@/components/HabitInsightsCard';
 
 type SortKey = 'name' | 'category' | 'colour' | 'frequency' | 'amount' | 'streak' | 'most_done' | 'completion' | 'time_of_day';
 
@@ -938,6 +939,10 @@ export default function HabitsPage() {
             onSkipForDate={(habit, date) => setSentinelForDate(habit, date, -2)}
             onSkipAllForDate={skipAllForDate}
           />
+
+          {habits.length >= 2 && (
+            <HabitInsightsCard habits={habits} logs={logs} todayISO={todayLocalISO()} />
+          )}
 
           <div className="mb-5">
             <HabitTabBox
