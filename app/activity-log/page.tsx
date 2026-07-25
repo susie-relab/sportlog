@@ -16,6 +16,8 @@ import ShareRangeMenu from '@/components/ShareRangeMenu';
 import { EXERCISE_TYPE_ICONS, THIRTY_DAY_SHARE_ICON } from '@/lib/shareIcons';
 import ExportModal from '@/components/ExportModal';
 import AccountSwitcher from '@/components/AccountSwitcher';
+import { CONDITION_ICON_OVERRIDES } from '@/lib/conditionIcons';
+import { COMPANION_ICON_OVERRIDES } from '@/lib/companionIcons';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 type ChartWindow = '30d' | '90d' | '6m' | '1y' | 'all';
@@ -396,9 +398,15 @@ export default function ActivityLogPage() {
                   <img src={a.thumbnail_urls?.[0] ?? a.image_urls[0]} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-[#334155]" />
                 )}
                 {(a.companions || a.conditions) && (
-                  <span className="text-sm flex-shrink-0" title="With / Conditions">
-                    {(a.companions?.split(',') as Companion[] | undefined)?.map(k => COMPANION_EMOJI[k]).join('')}
-                    {(a.conditions?.split(',') as WeatherCondition[] | undefined)?.map(k => CONDITION_EMOJI[k]).join('')}
+                  <span className="flex items-center gap-0.5 flex-shrink-0" title="With / Conditions">
+                    {(a.companions?.split(',') as Companion[] | undefined)?.map(k => {
+                      const Icon = COMPANION_ICON_OVERRIDES[k];
+                      return Icon ? <Icon key={k} size={16} /> : <span key={k} className="text-sm">{COMPANION_EMOJI[k]}</span>;
+                    })}
+                    {(a.conditions?.split(',') as WeatherCondition[] | undefined)?.map(k => {
+                      const Icon = CONDITION_ICON_OVERRIDES[k];
+                      return Icon ? <Icon key={k} size={16} /> : <span key={k} className="text-sm">{CONDITION_EMOJI[k]}</span>;
+                    })}
                   </span>
                 )}
                 <div className="text-right flex-shrink-0">

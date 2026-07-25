@@ -59,7 +59,7 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
   const [fitnessStyle, setFitnessStyle] = useState<FitnessStyle | ''>(activity.fitness_style || '');
   const [companions, setCompanions] = useState<Companion[]>(activity.companions ? activity.companions.split(',') as Companion[] : []);
   const [conditions, setConditions] = useState<WeatherCondition[]>(activity.conditions ? activity.conditions.split(',') as WeatherCondition[] : []);
-  const [showMore, setShowMore] = useState(false);
+  const [showMore, setShowMore] = useState(true);
   const [hours, setHours] = useState(String(Math.floor(activity.duration_minutes / 60) || ''));
   const [mins, setMins] = useState(String(activity.duration_minutes % 60 || ''));
   const [secs, setSecs] = useState(String(activity.duration_seconds || ''));
@@ -189,7 +189,7 @@ export default function EditActivityModal({ activity, onClose, onSaved, onDelete
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full md:max-w-lg bg-[#1E293B] border border-[#334155] rounded-t-2xl md:rounded-2xl overflow-y-auto max-h-[92vh]">
+      <div className="relative w-full md:max-w-2xl bg-[#1E293B] border border-[#334155] rounded-t-2xl md:rounded-2xl overflow-y-auto max-h-[92vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#334155] sticky top-0 bg-[#1E293B] z-10">
           <h2 className="text-lg font-bold text-white">Edit Activity</h2>
