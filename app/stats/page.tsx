@@ -76,7 +76,16 @@ export default function StatsPage() {
     byType[a.exercise_type] = (byType[a.exercise_type] || 0) + 1;
   }
 
-  const maxMins = Math.max(...current.map(a => a.duration_minutes), 1);
+  const maxDayMins = Math.max(
+    ...Array.from({ length: 14 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (13 - i));
+      return current
+        .filter(a => a.date === d.toISOString().split('T')[0])
+        .reduce((s, a) => s + a.duration_minutes, 0);
+    }),
+    1
+  );
 
   if (loading) return <div className="text-[#64748B] text-sm">Loading...</div>;
 
@@ -156,19 +165,31 @@ export default function StatsPage() {
             const dateStr = d.toISOString().split('T')[0];
             const dayActivities = current.filter(a => a.date === dateStr);
             const dayMins = dayActivities.reduce((s, a) => s + a.duration_minutes, 0);
-            const height = dayMins > 0 ? Math.max(4, (dayMins / maxMins) * 56) : 2;
-            const dominant = [...dayActivities].sort((a, b) => b.duration_minutes - a.duration_minutes)[0];
-            const barColor = dominant ? EXERCISE_TYPE_COLORS[dominant.exercise_type] : undefined;
+            const totalBarHeight = dayMins > 0 ? Math.max(4, (dayMins / maxDayMins) * 56) : 2;
+
+            const segMap: Partial<Record<ExerciseType, number>> = {};
+            for (const a of dayActivities) {
+              segMap[a.exercise_type] = (segMap[a.exercise_type] || 0) + a.duration_minutes;
+            }
+            const segments = (Object.entries(segMap) as [ExerciseType, number][])
+              .sort(([, a], [, b]) => b - a)
+              .map(([type, mins]) => ({
+                type,
+                height: (mins / dayMins) * totalBarHeight,
+                color: EXERCISE_TYPE_COLORS[type],
+              }));
+
             return (
               <div key={dateStr} className="flex-1 flex flex-col items-center gap-1">
-                <div
-                  className="w-full rounded-sm transition-all"
-                  style={{
-                    height,
-                    background: dayActivities.length > 0 ? barColor : '#1E293B',
-                    border: dayActivities.length === 0 ? '1px solid #334155' : 'none',
-                  }}
-                />
+                {dayMins > 0 ? (
+                  <div className="w-full flex flex-col-reverse overflow-hidden rounded-sm" style={{ height: totalBarHeight }}>
+                    {segments.map(seg => (
+                      <div key={seg.type} style={{ height: seg.height, background: seg.color, flexShrink: 0 }} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="w-full rounded-sm" style={{ height: 2, background: '#1E293B', border: '1px solid #334155' }} />
+                )}
                 {i % 2 === 0 && (
                   <span className="text-[8px] text-[#475569]">{d.getDate()}</span>
                 )}
