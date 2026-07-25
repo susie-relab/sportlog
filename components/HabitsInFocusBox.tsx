@@ -79,8 +79,8 @@ export default function HabitsInFocusBox({ habits, logs, focusIds, onSetFocusIds
               const habitLogs = logs.filter(l => l.habit_id === h.id);
               const streak = currentStreak(h, habitLogs, todayISO, []);
               const best = bestStreak(h, habitLogs, []);
-              const weekPct = Math.round(completionPctInRange(h, habitLogs, addDaysISO(todayISO, -6), todayISO) * 100);
-              const monthPct = Math.round(completionPctInRange(h, habitLogs, addDaysISO(todayISO, -29), todayISO) * 100);
+              const weekPct = completionPctInRange(h, habitLogs, addDaysISO(todayISO, -6), todayISO);
+              const monthPct = completionPctInRange(h, habitLogs, addDaysISO(todayISO, -29), todayISO);
               const locked = failed || skipped;
 
               return (

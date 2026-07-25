@@ -949,15 +949,15 @@ export default function HabitsPage() {
             const focusHabits = habits.filter(h => focusIds.includes(h.id));
             const top10 = habits.map(h => {
               const hLogs = logs.filter(l => l.habit_id === h.id);
-              const w7 = Math.round(completionPctInRange(h, hLogs, addDaysISO(todayISO, -6), todayISO) * 100);
-              const d30 = Math.round(completionPctInRange(h, hLogs, addDaysISO(todayISO, -29), todayISO) * 100);
+              const w7 = completionPctInRange(h, hLogs, addDaysISO(todayISO, -6), todayISO);
+              const d30 = completionPctInRange(h, hLogs, addDaysISO(todayISO, -29), todayISO);
               const avg = (w7 + d30) / 2;
               return { h, w7, d30, avg };
             }).sort((a, b) => b.avg - a.avg || b.w7 - a.w7).slice(0, 10);
             const attention = habits.map(h => {
               const hLogs = logs.filter(l => l.habit_id === h.id);
-              const w7 = Math.round(completionPctInRange(h, hLogs, addDaysISO(todayISO, -6), todayISO) * 100);
-              const d30 = Math.round(completionPctInRange(h, hLogs, addDaysISO(todayISO, -29), todayISO) * 100);
+              const w7 = completionPctInRange(h, hLogs, addDaysISO(todayISO, -6), todayISO);
+              const d30 = completionPctInRange(h, hLogs, addDaysISO(todayISO, -29), todayISO);
               return { h, w7, d30, drop: d30 - w7 };
             }).filter(r => r.d30 >= 60 && r.w7 < 50).sort((a, b) => b.drop - a.drop);
             const PanelBtn = ({ id, label }: { id: typeof calendarPanel; label: string }) => (
@@ -982,8 +982,8 @@ export default function HabitsPage() {
                     ) : focusHabits.map(h => {
                       const hLogs = logs.filter(l => l.habit_id === h.id);
                       const streak = currentStreak(h, hLogs, todayISO, []);
-                      const w7 = Math.round(completionPctInRange(h, hLogs, addDaysISO(todayISO, -6), todayISO) * 100);
-                      const d30 = Math.round(completionPctInRange(h, hLogs, addDaysISO(todayISO, -29), todayISO) * 100);
+                      const w7 = completionPctInRange(h, hLogs, addDaysISO(todayISO, -6), todayISO);
+                      const d30 = completionPctInRange(h, hLogs, addDaysISO(todayISO, -29), todayISO);
                       const total = totalCompletions(hLogs);
                       return (
                         <div key={h.id} className="rounded-lg border border-[#334155] p-3 flex flex-col gap-2">
