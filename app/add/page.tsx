@@ -686,17 +686,15 @@ export default function AddPage() {
       <div className="absolute top-0 right-0 z-10">
         <AccountSwitcher compact />
       </div>
-      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap pr-24 sm:pr-32">
+      <div className="flex items-center mb-3 pr-24 sm:pr-32">
         <h1 className="text-xl font-bold text-white">Add Exercise</h1>
-        <button type="button" onClick={openRepeatPicker} className="text-sm text-blue-400 hover:text-blue-300">
-          ↻ Repeat a recent activity
-        </button>
       </div>
       {(() => {
         const displayItems = (quickAddFixed ?? quickAddItems).filter(i => !!i.subType);
         if (displayItems.length === 0 && !editingQuickAdd) return null;
         return (
           <div className="mb-4">
+            <p className="text-[10px] font-semibold text-[#475569] uppercase tracking-wide mb-1.5">Quick add</p>
             <div className="flex gap-2 flex-wrap items-center">
               {displayItems.map((item, i) => (
                 <button
@@ -719,13 +717,20 @@ export default function AddPage() {
                   )}
                 </button>
               ))}
-              <button
-                type="button"
-                onClick={() => setEditingQuickAdd(v => !v)}
-                className="text-xs text-[#475569] hover:text-[#94A3B8] transition-colors ml-auto"
-              >
-                {editingQuickAdd ? 'Done' : '⚙ Edit'}
-              </button>
+              <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setEditingQuickAdd(v => !v)}
+                  className="text-xs text-[#475569] hover:text-[#94A3B8] transition-colors"
+                >
+                  {editingQuickAdd ? 'Done' : '⚙ Edit'}
+                </button>
+                {!editingQuickAdd && (
+                  <button type="button" onClick={openRepeatPicker} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 border border-blue-500/30 rounded-full px-2.5 py-1">
+                    ↻ Repeat recent
+                  </button>
+                )}
+              </div>
             </div>
             {editingQuickAdd && (
               <div className="mt-2 p-3 rounded-lg border border-[#334155] bg-[#1E293B] flex flex-col gap-2 text-xs">
