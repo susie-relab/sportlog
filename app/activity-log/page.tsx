@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import {
@@ -19,6 +19,7 @@ import AccountSwitcher from '@/components/AccountSwitcher';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 type ChartWindow = '30d' | '90d' | '6m' | '1y' | 'all';
+type SortBy = 'date_desc' | 'date_asc' | 'duration_desc' | 'duration_asc' | 'distance_desc' | 'distance_asc';
 
 const PAGE_SIZE = 20;
 
@@ -40,6 +41,7 @@ export default function ActivityLogPage() {
   const [staged, setStaged] = useState<Activity[] | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [sortBy, setSortBy] = useState<SortBy>('date_desc');
 
   useEffect(() => {
     if (!user) return;
@@ -91,7 +93,18 @@ export default function ActivityLogPage() {
     return matchSearch && matchType && matchDate;
   });
   const dateCounts = activities.reduce<Record<string, number>>((m, a) => { m[a.date] = (m[a.date] || 0) + 1; return m; }, {});
-  const visible = filtered.slice(0, visibleCount);
+
+  const sorted = [...filtered].sort((a, b) => {
+    switch (sortBy) {
+      case 'date_asc': return a.date.localeCompare(b.date) || a.created_at.localeCompare(b.created_at);
+      case 'duration_desc': return (b.duration_minutes * 60 + (b.duration_seconds ?? 0)) - (a.duration_minutes * 60 + (a.duration_seconds ?? 0));
+      case 'duration_asc': return (a.duration_minutes * 60 + (a.duration_seconds ?? 0)) - (b.duration_minutes * 60 + (b.duration_seconds ?? 0));
+      case 'distance_desc': return (b.distance_km ?? 0) - (a.distance_km ?? 0);
+      case 'distance_asc': return (a.distance_km ?? 0) - (b.distance_km ?? 0);
+      default: return b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at);
+    }
+  });
+  const visible = sorted.slice(0, visibleCount);
 
   const startReordering = (date: string) => { setStaged([...activities]); setReordering(date); };
   const cancelReordering = () => { setStaged(null); setReordering(null); };
@@ -292,18 +305,49 @@ export default function ActivityLogPage() {
             Clear
           </button>
         )}
+        <select
+          className="input input-auto disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+          value={sortBy}
+          onChange={e => { setSortBy(e.target.value as SortBy); setVisibleCount(PAGE_SIZE); }}
+          disabled={!!reordering}
+        >
+          <option value="date_desc">Newest first</option>
+          <option value="date_asc">Oldest first</option>
+          <option value="duration_desc">Longest duration</option>
+          <option value="duration_asc">Shortest duration</option>
+          <option value="distance_desc">Furthest distance</option>
+          <option value="distance_asc">Shortest distance</option>
+        </select>
       </div>
 
       {/* Activity list */}
       <div className="flex flex-col gap-2">
         {filtered.length === 0 ? (
           <div className="card text-[#64748B] text-sm">No activities found.</div>
-        ) : visible.map((a, i) => {
+        ) : (() => {
+          const showDividers = sortBy === 'date_desc' || sortBy === 'date_asc';
+          const items: React.ReactNode[] = [];
+          visible.forEach((a, i) => {
+            const prev = i > 0 ? visible[i - 1] : null;
+            if (showDividers && prev) {
+              const aMonth = a.date.slice(0, 7);
+              const prevMonth = prev.date.slice(0, 7);
+              if (aMonth !== prevMonth) {
+                items.push(
+                  <div key={`${a.id}-div`} className="flex flex-col gap-px my-1">
+                    <div className="border-t border-[#334155]" />
+                    <div className="border-t border-[#334155]" />
+                  </div>
+                );
+              } else if (getWeekStart(a.date) !== getWeekStart(prev.date)) {
+                items.push(<div key={`${a.id}-div`} className="border-t border-[#334155] my-1" />);
+              }
+            }
           const color = EXERCISE_TYPE_COLORS[a.exercise_type];
           const isOpen = expanded === a.id;
-          const canMoveUp = reordering === a.date && i > 0 && filtered[i - 1].date === a.date;
-          const canMoveDown = reordering === a.date && i < filtered.length - 1 && filtered[i + 1].date === a.date;
-          return (
+          const canMoveUp = reordering === a.date && i > 0 && visible[i - 1].date === a.date;
+          const canMoveDown = reordering === a.date && i < visible.length - 1 && visible[i + 1].date === a.date;
+          items.push(
             <div key={a.id} className="card cursor-pointer" onClick={() => setExpanded(isOpen ? null : a.id)}>
               <div className="flex items-center gap-3">
                 <div className="w-1 self-stretch rounded-full flex-shrink-0" style={{ background: color }} />
@@ -326,7 +370,7 @@ export default function ActivityLogPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-white truncate">{a.name}</span>
-                    {a.is_pb && <span className="text-sm">⭐</span>}
+                    {a.is_pb && <span className="text-[10px] font-bold text-yellow-400 border border-yellow-400/50 rounded px-1 py-0.5 leading-none flex-shrink-0">⭐ PB</span>}
                   </div>
                   <div className="flex gap-2 mt-0.5 flex-wrap">
                     {a.exercise_type === 'sport'
@@ -452,15 +496,17 @@ export default function ActivityLogPage() {
               )}
             </div>
           );
-        })}
+          });
+          return items;
+        })()}
       </div>
 
-      {filtered.length > visibleCount && (
+      {sorted.length > visibleCount && (
         <button
           onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
           className="btn-secondary w-full mt-3"
         >
-          Load 20 more ({filtered.length - visibleCount} remaining)
+          Load 20 more ({sorted.length - visibleCount} remaining)
         </button>
       )}
 
