@@ -21,6 +21,7 @@ import YearTotalsCard from '@/components/YearTotalsCard';
 import TrainingMonthCalendar from '@/components/TrainingMonthCalendar';
 import HabitsInFocusBox from '@/components/HabitsInFocusBox';
 import HabitInsightsCard from '@/components/HabitInsightsCard';
+import TrainingInsightsCard from '@/components/TrainingInsightsCard';
 
 /** The subtype label for any activity — sub_type for most types, run_type for runs. */
 function activitySubLabel(a: Activity): string | null {
@@ -490,6 +491,8 @@ export default function DashPage() {
 
         </div>
       )}
+
+      <TrainingInsightsCard activities={activities} />
 
       </div>
 
