@@ -491,12 +491,9 @@ export default function DashPage() {
         </div>
       )}
 
-      {habits.length >= 2 && (
-        <HabitInsightsCard habits={habits} logs={habitLogs} todayISO={todayISO} />
-      )}
-
       </div>
 
+      <div>
       {habits.length > 0 && (
         <HabitsInFocusBox
           habits={habits}
@@ -507,6 +504,11 @@ export default function DashPage() {
           todayISO={todayISO}
         />
       )}
+
+      {habits.length >= 2 && (
+        <HabitInsightsCard habits={habits} logs={habitLogs} todayISO={todayISO} />
+      )}
+      </div>
 
       </div>
 
