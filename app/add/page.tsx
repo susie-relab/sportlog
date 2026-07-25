@@ -240,6 +240,8 @@ export default function AddPage() {
   const [workoutVibes, setWorkoutVibes] = useState<string[]>([]);
   const [duplicateCheck, setDuplicateCheck] = useState<{ existing: Activity; onConfirm: () => void } | null>(null);
   const [quickAddFixed, setQuickAddFixed] = useState<QuickAddItem[] | null>(null); // null = auto mode
+  const [editingPillIdx, setEditingPillIdx] = useState<number | 'new' | null>(null);
+  const [pillPickerType, setPillPickerType] = useState<ExerciseType>('run');
   const [editingQuickAdd, setEditingQuickAdd] = useState(false);
   const paceManuallyEdited = useRef(false);
   const nameManuallyEdited = useRef(false);
@@ -692,63 +694,98 @@ export default function AddPage() {
       {(() => {
         const displayItems = (quickAddFixed ?? quickAddItems).filter(i => !!i.subType);
         if (displayItems.length === 0 && !editingQuickAdd) return null;
+        const subOptionsFor = (type: ExerciseType): { key: string; label: string; color: string }[] => {
+          const typeColor = EXERCISE_TYPE_COLORS[type];
+          if (type === 'run') return [...RUN_TYPE_WORKOUT, ...RUN_TYPE_TERRAIN].map(k => ({ key: k, label: `${RUN_TYPE_LABELS[k as RunType]} Run`, color: RUN_TYPE_COLORS[k as RunType] }));
+          const labelMap: Record<string, string> =
+            type === 'sport' ? SPORT_SUB_LABELS : type === 'hiit' ? GYM_SUB_LABELS :
+            type === 'bike' ? BIKE_SUB_LABELS : type === 'swim' ? SWIM_SUB_LABELS :
+            type === 'solo_fitness' ? FITNESS_SUB_LABELS : type === 'stretch' ? STRETCH_SUB_LABELS :
+            type === 'walk' ? WALK_SUB_LABELS : type === 'water' ? WATER_SUB_LABELS :
+            type === 'snow' ? SNOW_SUB_LABELS : {};
+          return Object.entries(labelMap).map(([k, l]) => ({ key: k, label: l, color: typeColor }));
+        };
+        const makePillItem = (type: ExerciseType, subKey: string, label: string, color: string): QuickAddItem =>
+          ({ exerciseType: type, subType: subKey, label, color });
+        const applyPillEdit = (subKey: string, label: string, color: string) => {
+          const item = makePillItem(pillPickerType, subKey, label, color);
+          if (editingPillIdx === 'new') {
+            setQuickAddFixed([...(quickAddFixed ?? []), item]);
+          } else if (typeof editingPillIdx === 'number') {
+            setQuickAddFixed((quickAddFixed ?? []).map((p, i) => i === editingPillIdx ? item : p));
+          }
+          setEditingPillIdx(null);
+        };
+        const openPillPicker = (idx: number | 'new', currentType?: ExerciseType) => {
+          setPillPickerType(currentType ?? 'run');
+          setEditingPillIdx(idx);
+        };
         return (
           <div className="mb-4">
             <p className="text-[10px] font-semibold text-[#475569] uppercase tracking-wide mb-1.5">Quick add</p>
             <div className="flex gap-2 flex-wrap items-center">
               {displayItems.map((item, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => !editingQuickAdd && applyQuickAdd(item)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                    editingQuickAdd
-                      ? 'border-[#334155] text-[#64748B]'
-                      : 'border-[#334155] text-[#94A3B8] hover:border-[#475569] hover:text-white'
-                  }`}
-                >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.color }} />
-                  {item.label}
-                  {editingQuickAdd && quickAddFixed && (
-                    <span
-                      className="ml-1 text-[#64748B] hover:text-red-400 cursor-pointer"
-                      onClick={e => { e.stopPropagation(); setQuickAddFixed(quickAddFixed.filter((_, idx) => idx !== i)); }}
-                    >✕</span>
-                  )}
-                </button>
-              ))}
-              <div className="ml-auto flex items-center gap-2 flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setEditingQuickAdd(v => !v)}
-                  className="text-xs text-[#475569] hover:text-[#94A3B8] transition-colors"
-                >
-                  {editingQuickAdd ? 'Done' : '⚙ Edit'}
-                </button>
-                {!editingQuickAdd && (
-                  <button type="button" onClick={openRepeatPicker} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 border border-blue-500/30 rounded-full px-2.5 py-1">
-                    ↻ Repeat recent
+                <div key={i} className={`flex items-center gap-1 rounded-full border text-xs font-medium transition-all ${editingQuickAdd ? 'border-[#475569] bg-[#1E293B]' : 'border-[#334155] hover:border-[#475569]'}`}>
+                  <button
+                    type="button"
+                    onClick={() => !editingQuickAdd && applyQuickAdd(item)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 ${editingQuickAdd ? 'text-[#94A3B8] cursor-default' : 'text-[#94A3B8] hover:text-white'}`}
+                  >
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.color }} />
+                    {item.label}
                   </button>
+                  {editingQuickAdd && (
+                    <>
+                      <button type="button" onClick={() => openPillPicker(i, item.exerciseType)} className={`px-1.5 py-1 text-[#64748B] hover:text-blue-400 transition-colors ${editingPillIdx === i ? 'text-blue-400' : ''}`} title="Edit">✏</button>
+                      <button type="button" onClick={() => { setQuickAddFixed((quickAddFixed ?? []).filter((_, idx) => idx !== i)); setEditingPillIdx(null); }} className="pr-2 text-[#64748B] hover:text-red-400 transition-colors" title="Remove">✕</button>
+                    </>
+                  )}
+                </div>
+              ))}
+              {editingQuickAdd && displayItems.length < 5 && (
+                <button type="button" onClick={() => openPillPicker('new')} className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border transition-all ${editingPillIdx === 'new' ? 'border-blue-500 text-blue-300 bg-blue-500/10' : 'border-dashed border-[#475569] text-[#64748B] hover:border-[#94A3B8] hover:text-[#94A3B8]'}`}>
+                  + Add
+                </button>
+              )}
+              <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+                {editingQuickAdd ? (
+                  <button type="button" onClick={() => { setEditingQuickAdd(false); setEditingPillIdx(null); }} className="text-xs text-[#94A3B8] hover:text-white transition-colors">Done</button>
+                ) : (
+                  <>
+                    <button type="button" onClick={() => { setEditingQuickAdd(true); if (!quickAddFixed) setQuickAddFixed([...quickAddItems.filter(i => !!i.subType)]); }} className="text-xs text-[#475569] hover:text-[#94A3B8] transition-colors">Fix quick add options</button>
+                    <button type="button" onClick={openRepeatPicker} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 border border-blue-500/30 rounded-full px-2.5 py-1">↻ Repeat recent</button>
+                  </>
                 )}
               </div>
             </div>
-            {editingQuickAdd && (
-              <div className="mt-2 p-3 rounded-lg border border-[#334155] bg-[#1E293B] flex flex-col gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => { setQuickAddFixed(null); setEditingQuickAdd(false); }}
-                  className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-all ${!quickAddFixed ? 'border-blue-500/50 bg-blue-500/10 text-blue-300' : 'border-[#334155] text-[#64748B] hover:border-[#475569]'}`}
-                >
-                  <span>🔄</span> Auto adjust from last 30 days
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { if (!quickAddFixed) setQuickAddFixed([...quickAddItems.filter(i => !!i.subType)]); }}
-                  className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-all ${quickAddFixed ? 'border-blue-500/50 bg-blue-500/10 text-blue-300' : 'border-[#334155] text-[#64748B] hover:border-[#475569]'}`}
-                >
-                  <span>📌</span> Fix these choices (remove ✕ to drop one)
-                </button>
+
+            {editingQuickAdd && editingPillIdx !== null && (
+              <div className="mt-2 p-3 rounded-lg border border-[#334155] bg-[#0F172A]">
+                <p className="text-[10px] font-semibold text-[#475569] uppercase tracking-wide mb-2">Choose type</p>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {EXERCISE_TYPE_ORDER.map(t => (
+                    <button key={t} type="button" onClick={() => setPillPickerType(t)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${pillPickerType === t ? 'border-blue-500 bg-blue-500/15 text-blue-300' : 'border-[#334155] text-[#64748B] hover:border-[#475569] hover:text-[#94A3B8]'}`}>
+                      <span className="w-1.5 h-1.5 rounded-full inline-block mr-1" style={{ background: EXERCISE_TYPE_COLORS[t] }} />{EXERCISE_TYPE_LABELS[t]}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] font-semibold text-[#475569] uppercase tracking-wide mb-2">Choose subtype</p>
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
+                  {subOptionsFor(pillPickerType).map(opt => (
+                    <button key={opt.key} type="button" onClick={() => applyPillEdit(opt.key, opt.label, opt.color)}
+                      className="px-2.5 py-1 rounded-full text-xs border border-[#334155] text-[#94A3B8] hover:border-[#475569] hover:text-white transition-all flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: opt.color }} />{opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
+            )}
+
+            {editingQuickAdd && (
+              <button type="button" onClick={() => { setQuickAddFixed(null); setEditingQuickAdd(false); setEditingPillIdx(null); }} className="mt-2 text-xs text-[#475569] hover:text-[#94A3B8]">
+                🔄 Reset to auto (last 30 days)
+              </button>
             )}
           </div>
         );
