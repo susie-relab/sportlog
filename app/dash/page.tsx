@@ -20,6 +20,7 @@ import FavouritesCard from '@/components/FavouritesCard';
 import YearTotalsCard from '@/components/YearTotalsCard';
 import TrainingMonthCalendar from '@/components/TrainingMonthCalendar';
 import HabitsInFocusBox from '@/components/HabitsInFocusBox';
+import HabitInsightsCard from '@/components/HabitInsightsCard';
 
 /** The subtype label for any activity — sub_type for most types, run_type for runs. */
 function activitySubLabel(a: Activity): string | null {
@@ -490,6 +491,12 @@ export default function DashPage() {
         </div>
       )}
 
+      {habits.length >= 2 && (
+        <HabitInsightsCard habits={habits} logs={habitLogs} todayISO={todayISO} />
+      )}
+
+      </div>
+
       {habits.length > 0 && (
         <HabitsInFocusBox
           habits={habits}
@@ -500,8 +507,6 @@ export default function DashPage() {
           todayISO={todayISO}
         />
       )}
-
-      </div>
 
       </div>
 
