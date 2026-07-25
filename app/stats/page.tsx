@@ -5,18 +5,6 @@ import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
 import { formatDuration, daysAgo } from '@/lib/utils';
 
-const CHART_BLUES: Record<ExerciseType, string> = {
-  run:          '#3B82F6',
-  swim:         '#22D3EE',
-  bike:         '#60A5FA',
-  sport:        '#818CF8',
-  walk:         '#93C5FD',
-  hiit:         '#1D4ED8',
-  stretch:      '#BAE6FD',
-  solo_fitness: '#38BDF8',
-  snow:         '#BFDBFE',
-  water:        '#0EA5E9',
-};
 
 function StatTile({ value, label, delta }: { value: string; label: string; delta?: { text: string; positive: boolean } | null }) {
   return (
@@ -92,7 +80,7 @@ export default function StatsPage() {
 
   if (loading) return <div className="text-[#64748B] text-sm">Loading...</div>;
 
-  const chartTypes = (Object.keys(CHART_BLUES) as ExerciseType[]).filter(t => current.some(a => a.exercise_type === t));
+  const chartTypes = (Object.keys(EXERCISE_TYPE_COLORS) as ExerciseType[]).filter(t => current.some(a => a.exercise_type === t));
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -170,7 +158,7 @@ export default function StatsPage() {
             const dayMins = dayActivities.reduce((s, a) => s + a.duration_minutes, 0);
             const height = dayMins > 0 ? Math.max(4, (dayMins / maxMins) * 56) : 2;
             const dominant = [...dayActivities].sort((a, b) => b.duration_minutes - a.duration_minutes)[0];
-            const barColor = dominant ? CHART_BLUES[dominant.exercise_type] : undefined;
+            const barColor = dominant ? EXERCISE_TYPE_COLORS[dominant.exercise_type] : undefined;
             return (
               <div key={dateStr} className="flex-1 flex flex-col items-center gap-1">
                 <div
@@ -192,7 +180,7 @@ export default function StatsPage() {
           <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
             {chartTypes.map(t => (
               <div key={t} className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CHART_BLUES[t] }} />
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: EXERCISE_TYPE_COLORS[t] }} />
                 <span className="text-[10px] text-[#64748B]">{EXERCISE_TYPE_LABELS[t]}</span>
               </div>
             ))}
