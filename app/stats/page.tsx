@@ -5,6 +5,37 @@ import { useAuth } from '@/components/AuthProvider';
 import { Activity, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS } from '@/types';
 import { formatDuration, daysAgo } from '@/lib/utils';
 
+const CHART_BLUES: Record<ExerciseType, string> = {
+  run:          '#3B82F6',
+  swim:         '#22D3EE',
+  bike:         '#60A5FA',
+  sport:        '#818CF8',
+  walk:         '#93C5FD',
+  hiit:         '#1D4ED8',
+  stretch:      '#BAE6FD',
+  solo_fitness: '#38BDF8',
+  snow:         '#BFDBFE',
+  water:        '#0EA5E9',
+};
+
+function StatTile({ value, label, delta }: { value: string; label: string; delta?: { text: string; positive: boolean } | null }) {
+  return (
+    <div className="stat-card">
+      <div className="stat-value">{value}</div>
+      <div className="stat-label">{label}</div>
+      {delta && (
+        <div className={`text-[11px] mt-0.5 ${delta.positive ? 'text-green-400' : 'text-red-400'}`}>{delta.text} vs prior</div>
+      )}
+    </div>
+  );
+}
+
+function diff(curr: number, prev: number, fmt: (n: number) => string) {
+  const d = curr - prev;
+  if (d === 0) return null;
+  return { text: `${d > 0 ? '+' : ''}${fmt(d)}`, positive: d > 0 };
+}
+
 export default function StatsPage() {
   const { user } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -16,7 +47,7 @@ export default function StatsPage() {
       .from('activities')
       .select('*')
       .eq('user_id', user.id)
-      .gte('date', daysAgo(14).split('T')[0])
+      .gte('date', daysAgo(60).split('T')[0])
       .order('date', { ascending: false })
       .then(({ data }) => {
         setActivities((data as Activity[]) || []);
@@ -24,45 +55,75 @@ export default function StatsPage() {
       });
   }, [user]);
 
-  const totalActivities = activities.length;
-  const totalDistanceKm = activities.reduce((s, a) => s + (a.distance_km || 0), 0);
-  const totalMinutes = activities.reduce((s, a) => s + a.duration_minutes, 0);
-  const totalIntensityMins = activities.reduce((s, a) => s + (a.intensity_minutes || 0), 0);
+  const cutoff = daysAgo(14).split('T')[0];
+  const priorCutoff = daysAgo(28).split('T')[0];
+  const current = activities.filter(a => a.date >= cutoff);
+  const prior = activities.filter(a => a.date >= priorCutoff && a.date < cutoff);
+
+  const totalActivities   = current.length;
+  const totalDistanceKm   = current.reduce((s, a) => s + (a.distance_km || 0), 0);
+  const totalMinutes      = current.reduce((s, a) => s + a.duration_minutes, 0);
+  const totalIntensityMins = current.reduce((s, a) => s + (a.intensity_minutes || 0), 0);
+
+  const priorActivities    = prior.length;
+  const priorDistanceKm    = prior.reduce((s, a) => s + (a.distance_km || 0), 0);
+  const priorMinutes       = prior.reduce((s, a) => s + a.duration_minutes, 0);
+  const priorIntensityMins = prior.reduce((s, a) => s + (a.intensity_minutes || 0), 0);
+
+  const allDates = new Set(activities.map(a => a.date));
+  const activeDayCount = new Set(current.map(a => a.date)).size;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  let streak = 0;
+  const streakStart = allDates.has(todayStr) ? 0 : 1;
+  for (let i = streakStart; i < 60; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    if (allDates.has(d.toISOString().split('T')[0])) streak++;
+    else break;
+  }
 
   const byType: Partial<Record<ExerciseType, number>> = {};
-  for (const a of activities) {
+  for (const a of current) {
     byType[a.exercise_type] = (byType[a.exercise_type] || 0) + 1;
   }
 
+  const maxMins = Math.max(...current.map(a => a.duration_minutes), 1);
+
   if (loading) return <div className="text-[#64748B] text-sm">Loading...</div>;
+
+  const chartTypes = (Object.keys(CHART_BLUES) as ExerciseType[]).filter(t => current.some(a => a.exercise_type === t));
 
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-5">
         <h1 className="text-xl font-bold text-white">Last 14 Days</h1>
         <span className="text-xs text-[#64748B] bg-[#1E293B] border border-[#334155] px-2 py-1 rounded">
-          {new Date(daysAgo(14)).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' })} → Today
+          {new Date(cutoff).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' })} → Today
         </span>
       </div>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div className="stat-card">
-          <div className="stat-value">{totalActivities}</div>
-          <div className="stat-label">Activities</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{totalDistanceKm.toFixed(1)}</div>
-          <div className="stat-label">km Total</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{formatDuration(totalMinutes)}</div>
-          <div className="stat-label">Total Time</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{totalIntensityMins}</div>
-          <div className="stat-label">Intensity Mins</div>
-        </div>
+      {/* Summary tiles */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+        <StatTile value={String(totalActivities)} label="Activities"
+          delta={diff(totalActivities, priorActivities, n => String(Math.abs(n)))} />
+        <StatTile value={totalDistanceKm.toFixed(1)} label="km Total"
+          delta={diff(totalDistanceKm, priorDistanceKm, n => `${Math.abs(n).toFixed(1)} km`)} />
+        <StatTile value={formatDuration(totalMinutes)} label="Total Time"
+          delta={diff(totalMinutes, priorMinutes, n => formatDuration(Math.abs(n)))} />
+        <StatTile value={String(totalIntensityMins)} label="Intensity Mins"
+          delta={diff(totalIntensityMins, priorIntensityMins, n => String(Math.abs(n)))} />
+      </div>
+
+      {/* Consistency */}
+      <div className="flex items-center gap-2 mb-6 px-1 text-sm text-[#94A3B8]">
+        <span>{activeDayCount} of 14 days active</span>
+        {streak > 0 && (
+          <>
+            <span className="text-[#334155]">·</span>
+            <span>{streak} day streak 🔥</span>
+          </>
+        )}
       </div>
 
       {/* By exercise type */}
@@ -73,7 +134,7 @@ export default function StatsPage() {
         ) : (
           <div className="flex flex-col gap-3">
             {(Object.entries(byType) as [ExerciseType, number][]).sort((a, b) => b[1] - a[1]).map(([type, count]) => {
-              const typeActivities = activities.filter(a => a.exercise_type === type);
+              const typeActivities = current.filter(a => a.exercise_type === type);
               const dist = typeActivities.reduce((s, a) => s + (a.distance_km || 0), 0);
               const mins = typeActivities.reduce((s, a) => s + a.duration_minutes, 0);
               const color = EXERCISE_TYPE_COLORS[type];
@@ -97,7 +158,7 @@ export default function StatsPage() {
         )}
       </div>
 
-      {/* Daily breakdown */}
+      {/* Daily bar chart */}
       <div className="card">
         <h2 className="text-sm font-semibold text-[#94A3B8] mb-4 uppercase tracking-wide">Daily Activity</h2>
         <div className="flex gap-1 items-end h-16">
@@ -105,17 +166,18 @@ export default function StatsPage() {
             const d = new Date();
             d.setDate(d.getDate() - (13 - i));
             const dateStr = d.toISOString().split('T')[0];
-            const dayActivities = activities.filter(a => a.date === dateStr);
-            const maxMins = Math.max(...activities.map(a => a.duration_minutes), 1);
+            const dayActivities = current.filter(a => a.date === dateStr);
             const dayMins = dayActivities.reduce((s, a) => s + a.duration_minutes, 0);
             const height = dayMins > 0 ? Math.max(4, (dayMins / maxMins) * 56) : 2;
+            const dominant = [...dayActivities].sort((a, b) => b.duration_minutes - a.duration_minutes)[0];
+            const barColor = dominant ? CHART_BLUES[dominant.exercise_type] : undefined;
             return (
-              <div key={dateStr} className="flex-1 flex flex-col items-center gap-1" title={`${dateStr}: ${dayActivities.length} activities`}>
+              <div key={dateStr} className="flex-1 flex flex-col items-center gap-1">
                 <div
                   className="w-full rounded-sm transition-all"
                   style={{
                     height,
-                    background: dayActivities.length > 0 ? '#3B82F6' : '#1E293B',
+                    background: dayActivities.length > 0 ? barColor : '#1E293B',
                     border: dayActivities.length === 0 ? '1px solid #334155' : 'none',
                   }}
                 />
@@ -126,6 +188,16 @@ export default function StatsPage() {
             );
           })}
         </div>
+        {chartTypes.length > 0 && (
+          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
+            {chartTypes.map(t => (
+              <div key={t} className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CHART_BLUES[t] }} />
+                <span className="text-[10px] text-[#64748B]">{EXERCISE_TYPE_LABELS[t]}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
