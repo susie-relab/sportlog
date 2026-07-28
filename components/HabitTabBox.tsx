@@ -44,11 +44,11 @@ interface Props {
   }, applyOption: ApplyOption, customDate?: string) => void;
   onArchiveHabit: (id: string) => void;
   onDeleteHabit: (id: string) => void;
-  onIncrementToday: (habit: Habit) => void;
-  onDecrementToday: (habit: Habit) => void;
-  onMarkFailedToday: (habit: Habit) => void;
-  onSkipToday: (habit: Habit) => void;
-  onTickToday: (habit: Habit) => void;
+  onIncrement: (habit: Habit, date: string) => void;
+  onDecrement: (habit: Habit, date: string) => void;
+  onMarkFailed: (habit: Habit, date: string) => void;
+  onSkip: (habit: Habit, date: string) => void;
+  onTick: (habit: Habit, date: string) => void;
   autoOpenEditId?: string | null;
   onAutoOpenEditCleared?: () => void;
 }
@@ -325,7 +325,7 @@ export function FrequencyApplyPicker({
  *  reorder). */
 export default function HabitTabBox({
   categories, activeCategory, onSelectCategory, onReorderCategory, onRenameCategory, onRemoveCategory, onArchiveCategory, onDuplicateCategory, archivedCategories, onUnarchiveCategory, onCreateCategory, onChangeCategoryEmoji,
-  categoryLabel, habits, logsByHabit, frequencyHistory, selectedHabitId, onSelectHabit, onCreateHabit, onReorderHabit, onUpdateHabit, onChangeFrequency, onArchiveHabit, onDeleteHabit, onIncrementToday, onDecrementToday, onMarkFailedToday, onSkipToday, onTickToday,
+  categoryLabel, habits, logsByHabit, frequencyHistory, selectedHabitId, onSelectHabit, onCreateHabit, onReorderHabit, onUpdateHabit, onChangeFrequency, onArchiveHabit, onDeleteHabit, onIncrement, onDecrement, onMarkFailed, onSkip, onTick,
   autoOpenEditId, onAutoOpenEditCleared,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
@@ -373,6 +373,7 @@ export default function HabitTabBox({
   const [showLastDayNotice, setShowLastDayNotice] = useState(false);
 
   const todayISO = todayLocalISO();
+  const [viewDate, setViewDate] = useState(todayISO);
   const year = Number(todayISO.slice(0, 4));
   const month0 = Number(todayISO.slice(5, 7)) - 1;
   const monthDays = getMonthDays(year, month0);
@@ -616,26 +617,43 @@ export default function HabitTabBox({
       </div>
 
       <div className="flex flex-col items-center gap-2 mb-5 px-3 py-2 rounded-lg bg-black/20">
-        <span className="text-xs font-medium text-[#94A3B8]">Today</span>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setViewDate(addDaysISO(viewDate, -1))} className="p-1 rounded text-[#64748B] hover:text-white hover:bg-[#334155]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button
+            onClick={() => setViewDate(todayISO)}
+            className="text-xs font-medium text-[#94A3B8] hover:text-white min-w-[70px] text-center"
+          >
+            {viewDate === todayISO ? 'Today' : viewDate}
+          </button>
+          <button
+            onClick={() => setViewDate(addDaysISO(viewDate, 1))}
+            disabled={viewDate >= todayISO}
+            className="p-1 rounded text-[#64748B] hover:text-white hover:bg-[#334155] disabled:opacity-30"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
         <div className="flex items-center gap-3">
           {(selected.tracking_style || 'count') !== 'tick' && (
             <>
               <Tip label="Decrease">
                 <button
-                  onClick={() => onDecrementToday(selected)}
-                  disabled={!!logsByDate.get(todayISO)?.locked || (logsByDate.get(todayISO)?.count || 0) <= 0}
-                  aria-label="Remove one for today"
+                  onClick={() => onDecrement(selected, viewDate)}
+                  disabled={!!logsByDate.get(viewDate)?.locked || (logsByDate.get(viewDate)?.count || 0) <= 0}
+                  aria-label="Remove one"
                   className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold bg-[#334155] text-white hover:bg-[#475569] disabled:opacity-30"
                 >
                   −
                 </button>
               </Tip>
-              <span className="text-sm font-semibold text-white w-4 text-center">{Math.max(0, logsByDate.get(todayISO)?.count || 0)}</span>
+              <span className="text-sm font-semibold text-white w-4 text-center">{Math.max(0, logsByDate.get(viewDate)?.count || 0)}</span>
               <Tip label="Add">
                 <button
-                  onClick={() => onIncrementToday(selected)}
-                  disabled={!!logsByDate.get(todayISO)?.locked}
-                  aria-label="Add one for today"
+                  onClick={() => onIncrement(selected, viewDate)}
+                  disabled={!!logsByDate.get(viewDate)?.locked}
+                  aria-label="Add one"
                   className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold bg-[#334155] text-white hover:bg-[#475569] disabled:opacity-30"
                 >
                   +
@@ -646,9 +664,9 @@ export default function HabitTabBox({
           {(selected.tracking_style === 'tick' || selected.tracking_style === 'both') && (
             <Tip label="Done">
               <button
-                onClick={() => onTickToday(selected)}
+                onClick={() => onTick(selected, viewDate)}
                 aria-label="Mark done"
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${logsByDate.get(todayISO)?.locked && (logsByDate.get(todayISO)?.count || 0) > 0 ? 'bg-green-500/80 text-white' : 'bg-[#334155] text-white hover:bg-[#475569]'}`}
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${logsByDate.get(viewDate)?.locked && (logsByDate.get(viewDate)?.count || 0) > 0 ? 'bg-green-500/80 text-white' : 'bg-[#334155] text-white hover:bg-[#475569]'}`}
               >
                 ✓
               </button>
@@ -656,23 +674,23 @@ export default function HabitTabBox({
           )}
           <Tip label="Didn't happen">
             <button
-              onClick={() => onMarkFailedToday(selected)}
+              onClick={() => onMarkFailed(selected, viewDate)}
               aria-label="Didn't happen"
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${logsByDate.get(todayISO)?.count === -1 ? 'bg-red-500/80 text-white' : 'bg-[#334155] text-white hover:bg-[#475569]'}`}
+              className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${logsByDate.get(viewDate)?.count === -1 ? 'bg-red-500/80 text-white' : 'bg-[#334155] text-white hover:bg-[#475569]'}`}
             >
               ×
             </button>
           </Tip>
           {isSkippableFrequency(selected.frequency_type) && (
-          <Tip label="Skip for today">
+          <Tip label="Skip">
             <button
               onClick={() => {
-                const alreadySkipped = logsByDate.get(todayISO)?.count === -2;
-                if (!alreadySkipped && periodBoundsFor(selected, todayISO)[1] === todayISO) { setShowLastDayNotice(true); return; }
-                onSkipToday(selected);
+                const alreadySkipped = logsByDate.get(viewDate)?.count === -2;
+                if (!alreadySkipped && viewDate === todayISO && periodBoundsFor(selected, todayISO)[1] === todayISO) { setShowLastDayNotice(true); return; }
+                onSkip(selected, viewDate);
               }}
-              aria-label="Skip for today"
-              className={`w-7 h-7 rounded-full flex items-center justify-center ${logsByDate.get(todayISO)?.count === -2 ? 'bg-slate-400/80 text-white' : 'bg-[#334155] text-white hover:bg-[#475569]'}`}
+              aria-label="Skip"
+              className={`w-7 h-7 rounded-full flex items-center justify-center ${logsByDate.get(viewDate)?.count === -2 ? 'bg-slate-400/80 text-white' : 'bg-[#334155] text-white hover:bg-[#475569]'}`}
             >
               <SkipForward size={14} fill="currentColor" />
             </button>

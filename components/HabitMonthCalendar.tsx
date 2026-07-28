@@ -28,6 +28,16 @@ function sortForPopover(habits: Habit[]): Habit[] {
   });
 }
 
+function groupByCategory(habits: Habit[]): { category: string; habits: Habit[] }[] {
+  const map = new Map<string, Habit[]>();
+  for (const h of habits) {
+    const cat = h.category || '';
+    if (!map.has(cat)) map.set(cat, []);
+    map.get(cat)!.push(h);
+  }
+  return Array.from(map.entries()).map(([category, habits]) => ({ category, habits }));
+}
+
 function hexToRgba(hex: string, alpha: number): string {
   const m = hex.replace('#', '');
   const r = parseInt(m.substring(0, 2), 16);
@@ -191,24 +201,30 @@ export default function HabitMonthCalendar({ habits, logs, frequencyHistory, foc
             )}
             {(() => {
               const allScheduled = habitsForDate(selectedDate);
-              const active = sortForPopover(allScheduled.filter(h => !isSkippedLog(logsByHabitDate.get(`${h.id}|${selectedDate}`))));
-              const skippedHabits = sortForPopover(allScheduled.filter(h => isSkippedLog(logsByHabitDate.get(`${h.id}|${selectedDate}`))));
               const isFuture = selectedDate > todayISO;
-              const renderHabitRow = (h: Habit, forceSkipped = false) => {
+              const active = sortForPopover(allScheduled.filter(h => {
+                const log = logsByHabitDate.get(`${h.id}|${selectedDate}`);
+                return !isSkippedLog(log) && !isFailedLog(log);
+              }));
+              const skippedHabits = sortForPopover(allScheduled.filter(h => isSkippedLog(logsByHabitDate.get(`${h.id}|${selectedDate}`))));
+              const failedHabits = sortForPopover(allScheduled.filter(h => isFailedLog(logsByHabitDate.get(`${h.id}|${selectedDate}`))));
+              const activeGroups = groupByCategory(active);
+
+              const renderHabitRow = (h: Habit) => {
                 const log = logsByHabitDate.get(`${h.id}|${selectedDate}`);
                 const failed = isFailedLog(log);
-                const skipped = forceSkipped || isSkippedLog(log);
+                const skipped = isSkippedLog(log);
                 const count = (failed || skipped) ? 0 : (log?.count ?? 0);
                 const dayTarget = resolveFrequencyAt(h, frequencyHistory, selectedDate).target_per_period;
                 const ratio = completionRatio(h, log, dayTarget);
-                const complete = !skipped && ratio >= 1;
+                const complete = !skipped && !failed && ratio >= 1;
                 const locked = failed || skipped;
                 const canSkip = isSkippableFrequency(h.frequency_type);
                 return (
                   <div
                     key={h.id}
                     className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-[#334155]"
-                    style={{ background: complete ? h.color : ratio > 0 && !skipped ? hexToRgba(h.color, Math.max(0.12, ratio * 0.3)) : 'transparent' }}
+                    style={{ background: complete ? h.color : ratio > 0 && !locked ? hexToRgba(h.color, Math.max(0.12, ratio * 0.3)) : 'transparent' }}
                   >
                     <button
                       onClick={() => { if (!locked && !complete) onCycle(h, selectedDate); }}
@@ -218,13 +234,17 @@ export default function HabitMonthCalendar({ habits, logs, frequencyHistory, foc
                       {!complete && (
                         <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: h.color }} />
                       )}
-                      <span className={`text-sm truncate ${complete ? 'text-white font-semibold' : skipped ? 'text-[#64748B] italic' : 'text-white'}`}>{h.name}</span>
+                      <span className={`text-sm truncate ${complete ? 'text-white font-semibold' : (skipped || failed) ? 'text-[#64748B] italic' : 'text-white'}`}>{h.name}</span>
                     </button>
                     <span className="flex items-center gap-1.5 flex-shrink-0">
                       {locked ? (
-                        <span className={`text-xs font-medium ${failed ? 'text-red-400' : 'text-[#64748B]'}`}>
+                        <button
+                          onClick={() => failed ? onMarkFailed(h, selectedDate) : onSkipForDate(h, selectedDate)}
+                          className={`text-xs font-medium underline underline-offset-2 decoration-dotted ${failed ? 'text-red-400 hover:text-red-300' : 'text-[#64748B] hover:text-[#94A3B8]'}`}
+                          title="Tap to undo"
+                        >
                           {failed ? "Didn't happen" : 'Skipped'}
-                        </span>
+                        </button>
                       ) : (
                         <>
                           <span className={`text-xs font-medium ${complete ? 'text-white/90' : 'text-[#94A3B8]'}`}>
@@ -256,17 +276,36 @@ export default function HabitMonthCalendar({ habits, logs, frequencyHistory, foc
                   </div>
                 );
               };
+
+              const Divider = ({ label }: { label: string }) => (
+                <div className="flex items-center gap-2 my-1">
+                  <div className="flex-1 border-t border-[#334155]" />
+                  <span className="text-[10px] font-semibold text-[#475569] uppercase tracking-wide">{label}</span>
+                  <div className="flex-1 border-t border-[#334155]" />
+                </div>
+              );
+
               return (
                 <div className="flex flex-col gap-2">
-                  {active.map(h => renderHabitRow(h))}
+                  {activeGroups.map(({ category, habits: catHabits }, gi) => (
+                    <div key={category} className="flex flex-col gap-2">
+                      {gi > 0 && <Divider label={category || 'Other'} />}
+                      {gi === 0 && activeGroups.length > 1 && category && (
+                        <Divider label={category} />
+                      )}
+                      {catHabits.map(h => renderHabitRow(h))}
+                    </div>
+                  ))}
+                  {failedHabits.length > 0 && (
+                    <>
+                      <Divider label="Didn't happen" />
+                      {failedHabits.map(h => renderHabitRow(h))}
+                    </>
+                  )}
                   {skippedHabits.length > 0 && (
                     <>
-                      <div className="flex items-center gap-2 my-1">
-                        <div className="flex-1 border-t border-[#334155]" />
-                        <span className="text-[10px] font-semibold text-[#475569] uppercase tracking-wide">Skipped</span>
-                        <div className="flex-1 border-t border-[#334155]" />
-                      </div>
-                      {skippedHabits.map(h => renderHabitRow(h, true))}
+                      <Divider label="Skipped" />
+                      {skippedHabits.map(h => renderHabitRow(h))}
                     </>
                   )}
                   {allScheduled.length === 0 && (

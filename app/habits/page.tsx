@@ -1075,11 +1075,11 @@ export default function HabitsPage() {
               onDeleteHabit={deleteHabit}
               onUpdateHabit={updateHabit}
               onChangeFrequency={changeHabitFrequency}
-              onIncrementToday={incrementToday}
-              onDecrementToday={decrementToday}
-              onMarkFailedToday={markFailedToday}
-              onSkipToday={skipToday}
-              onTickToday={tickHabitToday}
+              onIncrement={(habit, date) => date === todayISO ? incrementToday(habit) : logHabit(habit, date, Math.max(0, (logsByHabit.get(habit.id)?.find(l => l.date === date)?.count ?? 0) + 1))}
+              onDecrement={(habit, date) => date === todayISO ? decrementToday(habit) : logHabit(habit, date, Math.max(0, (logsByHabit.get(habit.id)?.find(l => l.date === date)?.count ?? 0) - 1))}
+              onMarkFailed={(habit, date) => setSentinelForDate(habit, date, -1)}
+              onSkip={(habit, date) => setSentinelForDate(habit, date, -2)}
+              onTick={(habit, date) => { if (date === todayISO) { tickHabitToday(habit); } else { const cur = logsByHabit.get(habit.id)?.find(l => l.date === date); logHabit(habit, date, (cur?.locked && (cur?.count ?? 0) > 0) ? 0 : 1); } }}
               autoOpenEditId={autoOpenEditId}
               onAutoOpenEditCleared={() => setAutoOpenEditId(null)}
             />
