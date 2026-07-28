@@ -24,9 +24,9 @@ function computeInsights(habits: Habit[], logs: HabitLog[], todayISO: string): I
     const hLogs = logs.filter(l => l.habit_id === h.id);
     const streak = currentStreak(h, hLogs, todayISO, []);
     const best = bestStreak(h, hLogs, []);
-    const weekPct = completionPctInRange(h, hLogs, addDaysISO(todayISO, -6), todayISO);
-    const monthPct = completionPctInRange(h, hLogs, addDaysISO(todayISO, -29), todayISO);
-    const prevMonthPct = completionPctInRange(h, hLogs, addDaysISO(todayISO, -59), addDaysISO(todayISO, -30));
+    const weekPct = completionPctInRange(h, hLogs, addDaysISO(todayISO, -6), todayISO) / 100;
+    const monthPct = completionPctInRange(h, hLogs, addDaysISO(todayISO, -29), todayISO) / 100;
+    const prevMonthPct = completionPctInRange(h, hLogs, addDaysISO(todayISO, -59), addDaysISO(todayISO, -30)) / 100;
 
     // Streak at best
     if (streak > 0 && streak === best && best >= 7) {
@@ -60,7 +60,7 @@ function computeInsights(habits: Habit[], logs: HabitLog[], todayISO: string): I
   }
 
   // Cross-habit coaching summary
-  const monthPcts = habits.map(h => completionPctInRange(h, logs.filter(l => l.habit_id === h.id), addDaysISO(todayISO, -29), todayISO));
+  const monthPcts = habits.map(h => completionPctInRange(h, logs.filter(l => l.habit_id === h.id), addDaysISO(todayISO, -29), todayISO) / 100);
   const avgMonthPct = monthPcts.length > 0 ? monthPcts.reduce((s, p) => s + p, 0) / monthPcts.length : 0;
   const topHabit = habits.reduce<{ h: Habit | null; pct: number }>((best, h, i) => monthPcts[i] > best.pct ? { h, pct: monthPcts[i] } : best, { h: null, pct: -1 });
   const weakHabit = habits.reduce<{ h: Habit | null; pct: number }>((worst, h, i) => monthPcts[i] < worst.pct ? { h, pct: monthPcts[i] } : worst, { h: null, pct: 2 });
