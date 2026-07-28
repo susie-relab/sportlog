@@ -379,3 +379,8 @@ create index if not exists training_plans_user on training_plans(user_id, create
 -- Migration: activity feeling_after + workout_vibes
 -- alter table activities add column if not exists feeling_after integer;
 -- alter table activities add column if not exists workout_vibes text[];
+
+-- Migration: activity location + walk style
+-- alter table activities add column if not exists location text;
+-- alter table activities add column if not exists walk_style text;
+

@@ -32,25 +32,28 @@ export async function POST(req: Request) {
   }).join('\n');
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const message = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 400,
-    messages: [{
-      role: 'user',
-      content: `You are a supportive, practical sports coach. Based on the athlete's last 2 weeks of training below, give 3–4 short, specific, actionable coaching insights or tips. Be encouraging but honest. Focus on patterns, recovery, variety, effort distribution, or what to do next. Keep each insight to 1–2 sentences. Return ONLY a JSON array of strings, no other text.
-
-Training data (last 14 days):
-${summary}`,
-    }],
-  });
 
   let insights: string[] = [];
   try {
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `You are a supportive, practical sports coach. Based on the athlete's last 2 weeks of training below, give 3–4 short, specific, actionable coaching insights or tips. Be encouraging but honest. Focus on patterns, recovery, variety, effort distribution, or what to do next. Keep each insight to 1–2 sentences. Return ONLY a JSON array of strings, no other text.
+
+Training data (last 14 days):
+${summary}`,
+      }],
+    });
+
     const text = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
     const cleaned = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
     insights = JSON.parse(cleaned);
-  } catch {
-    insights = ['Unable to parse insights — try refreshing.'];
+    if (!Array.isArray(insights)) throw new Error('not an array');
+  } catch (err) {
+    console.error('Training insights error:', err);
+    insights = ['Coaching tips temporarily unavailable — try refreshing in a moment.'];
   }
 
   return NextResponse.json({ insights });
