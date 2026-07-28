@@ -9,10 +9,11 @@ import {
   EXERCISE_TYPE_COLORS, RUN_TYPE_COLORS,
   EXERCISE_TYPE_ORDER, RUN_TYPE_TERRAIN, RUN_TYPE_WORKOUT,
   SportSubType, SportFocus, SportStyle, GymSubType, WaterSubType, WaterStyle, SnowSubType, SnowStyle, SwimSubType, SwimFocus, SwimStyle, FitnessSubType, BikeSubType, StretchSubType, WalkSubType,
-  GymFocus, GymStyle, BikeFocus, BikeStyle, StretchFocus, StretchStyle, FitnessFocus, FitnessStyle,
+  GymFocus, GymStyle, BikeFocus, BikeStyle, StretchFocus, StretchStyle, FitnessFocus, FitnessStyle, WalkStyle,
   SPORT_SUB_LABELS, SPORT_FOCUS_LABELS, SPORT_STYLE_LABELS, SPORT_STYLE_COLORS, GYM_SUB_LABELS, WATER_SUB_LABELS, WATER_STYLE_LABELS, SNOW_SUB_LABELS, SNOW_STYLE_LABELS, SWIM_SUB_LABELS, SWIM_FOCUS_LABELS, SWIM_STYLE_LABELS, SWIM_STYLE_COLORS, FITNESS_SUB_LABELS, BIKE_SUB_LABELS, STRETCH_SUB_LABELS, WALK_SUB_LABELS,
-  GYM_FOCUS_LABELS, GYM_STYLE_LABELS, BIKE_FOCUS_LABELS, BIKE_FOCUS_TOOLTIPS, BIKE_STYLE_LABELS, STRETCH_FOCUS_LABELS, STRETCH_STYLE_LABELS, FITNESS_FOCUS_LABELS, FITNESS_STYLE_LABELS,
+  GYM_FOCUS_LABELS, GYM_STYLE_LABELS, BIKE_FOCUS_LABELS, BIKE_FOCUS_TOOLTIPS, BIKE_STYLE_LABELS, STRETCH_FOCUS_LABELS, STRETCH_STYLE_LABELS, FITNESS_FOCUS_LABELS, FITNESS_STYLE_LABELS, WALK_STYLE_LABELS,
   suggestedMaxHr, suggestedAvgHr,
+  ActivityLocation, ACTIVITY_LOCATION_LABELS,
   Companion, COMPANION_LABELS, COMPANION_EMOJI, WeatherCondition, CONDITION_LABELS, CONDITION_EMOJI,
   Activity,
 } from '@/types';
@@ -188,6 +189,8 @@ export default function AddPage() {
   const [stretchStyle, setStretchStyle] = useState<StretchStyle | ''>('');
   const [fitnessFocus, setFitnessFocus] = useState<FitnessFocus | ''>('');
   const [fitnessStyle, setFitnessStyle] = useState<FitnessStyle | ''>('');
+  const [walkStyle, setWalkStyle] = useState<WalkStyle | ''>('');
+  const [location, setLocation] = useState<ActivityLocation | ''>('');
   const [companions, setCompanions] = useState<Companion[]>([]);
   const [conditions, setConditions] = useState<WeatherCondition[]>([]);
   const [hours, setHours] = useState('');
@@ -410,6 +413,8 @@ export default function AddPage() {
     setStretchStyle((a.stretch_style as StretchStyle) || '');
     setFitnessFocus((a.fitness_focus as FitnessFocus) || '');
     setFitnessStyle((a.fitness_style as FitnessStyle) || '');
+    setWalkStyle((a.walk_style as WalkStyle) || '');
+    setLocation((a.location as ActivityLocation) || '');
     setCompanions(a.companions ? a.companions.split(',') as Companion[] : []);
     setConditions(a.conditions ? a.conditions.split(',') as WeatherCondition[] : []);
     const totalSec = a.duration_minutes * 60 + (a.duration_seconds || 0);
@@ -429,7 +434,7 @@ export default function AddPage() {
     setMaxHr(a.max_hr != null ? String(a.max_hr) : '');
     setAvgHr(a.avg_hr != null ? String(a.avg_hr) : '');
     setElevationGain(a.elevation_gain_m != null ? String(a.elevation_gain_m) : '');
-    if (a.sport_focus || a.sport_style || a.swim_focus || a.swim_styles || a.snow_styles || a.water_styles || a.gym_focus || a.gym_style || a.bike_focus || a.bike_style || a.stretch_focus || a.stretch_style || a.fitness_focus || a.fitness_style) setShowStyleFocus(true);
+    if (a.sport_focus || a.sport_style || a.swim_focus || a.swim_styles || a.snow_styles || a.water_styles || a.gym_focus || a.gym_style || a.bike_focus || a.bike_style || a.stretch_focus || a.stretch_style || a.fitness_focus || a.fitness_style || a.walk_style) setShowStyleFocus(true);
     if (a.companions || a.conditions) setShowSurroundings(true);
     if (a.pace_min_km != null || a.max_pace_min_km != null || a.max_hr != null || a.avg_hr != null || a.intensity_minutes != null || a.elevation_gain_m != null) setShowMore(true);
     setShowRepeatPicker(false);
@@ -482,6 +487,8 @@ export default function AddPage() {
       stretch_style: exerciseType === 'stretch' ? stretchStyle || null : null,
       fitness_focus: exerciseType === 'solo_fitness' ? fitnessFocus || null : null,
       fitness_style: exerciseType === 'solo_fitness' ? fitnessStyle || null : null,
+      walk_style: exerciseType === 'walk' ? walkStyle || null : null,
+      location: location || null,
       companions: companions.join(',') || null,
       conditions: conditions.join(',') || null,
       duration_minutes: durationMinutes,
@@ -596,7 +603,7 @@ export default function AddPage() {
       setTimeout(() => setConfettiColor(null), 2200);
       if (isPb || pbReasons.length > 0) setPbCelebration(pbReasons);
       else setSavedTitle(randomEncouragement());
-      setName(''); setExerciseType(''); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setWalkTypes([]); setSportFocus(''); setSportStyle(''); setSportHomeAway(''); setSwimFocus(''); setSwimStyles([]); setSnowStyles([]); setWaterStyles([]); setGymFocus(''); setGymStyle(''); setBikeFocus(''); setBikeStyle(''); setStretchFocus(''); setStretchStyle(''); setFitnessFocus(''); setFitnessStyle(''); setCompanions([]); setConditions([]); setHours(''); setMins(''); setSecs('');
+      setName(''); setExerciseType(''); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setWalkTypes([]); setSportFocus(''); setSportStyle(''); setSportHomeAway(''); setSwimFocus(''); setSwimStyles([]); setSnowStyles([]); setWaterStyles([]); setGymFocus(''); setGymStyle(''); setBikeFocus(''); setBikeStyle(''); setStretchFocus(''); setStretchStyle(''); setFitnessFocus(''); setFitnessStyle(''); setWalkStyle(''); setLocation(''); setCompanions([]); setConditions([]); setHours(''); setMins(''); setSecs('');
       setEffort(null); setDistance(''); setNotes(''); setIntensityMins(''); setActivePercent(null);
       setPaceMin(''); setPaceSec(''); setMaxPaceMin(''); setMaxPaceSec('');
       setMaxHr(''); setAvgHr(''); setElevationGain(''); setIsPb(false); setPbDesc('');
@@ -617,7 +624,7 @@ export default function AddPage() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, distance, exerciseType, paceMin, paceSec, durationSeconds, gymTypes, walkTypes, subType, name, runType, runTypeModifier, sportFocus, sportStyle, sportHomeAway, swimFocus, swimStyles, snowStyles, waterStyles, gymFocus, gymStyle, bikeFocus, bikeStyle, stretchFocus, stretchStyle, fitnessFocus, fitnessStyle, companions, conditions, durationMinutes, durationExtraSeconds, effort, notes, intensityMins, maxPaceMin, maxPaceSec, maxHr, avgHr, elevationGain, isPb, pbDesc, images, imageThumbs, feelingAfter, workoutVibes, date, planLink, fromDash, accentColor, planCompleted]);
+  }, [user, distance, exerciseType, paceMin, paceSec, durationSeconds, gymTypes, walkTypes, subType, name, runType, runTypeModifier, sportFocus, sportStyle, sportHomeAway, swimFocus, swimStyles, snowStyles, waterStyles, gymFocus, gymStyle, bikeFocus, bikeStyle, stretchFocus, stretchStyle, fitnessFocus, fitnessStyle, walkStyle, location, companions, conditions, durationMinutes, durationExtraSeconds, effort, notes, intensityMins, maxPaceMin, maxPaceSec, maxHr, avgHr, elevationGain, isPb, pbDesc, images, imageThumbs, feelingAfter, workoutVibes, date, planLink, fromDash, accentColor, planCompleted]);
 
   const handleSave = async () => {
     const issues: string[] = [];
@@ -637,7 +644,7 @@ export default function AddPage() {
 
     const { data: sameDay } = await supabase
       .from('activities')
-      .select('id, name, exercise_type, sub_type, run_type, duration_seconds, effort, date')
+      .select('id, name, exercise_type, sub_type, run_type, duration_minutes, duration_seconds, effort, date')
       .eq('user_id', user!.id)
       .eq('date', date)
       .eq('exercise_type', exerciseType)
@@ -737,9 +744,9 @@ export default function AddPage() {
                   <button
                     type="button"
                     onClick={() => !(editingQuickAdd && quickAddFixed) && applyQuickAdd(item)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 ${editingQuickAdd && quickAddFixed ? 'text-[#94A3B8] cursor-default' : 'text-[#94A3B8] hover:text-white'}`}
+                    className="flex items-center gap-1.5 px-2.5 py-1 font-medium"
+                    style={{ color: editingQuickAdd && quickAddFixed ? '#94A3B8' : item.color }}
                   >
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.color }} />
                     {item.label}
                   </button>
                   {editingQuickAdd && quickAddFixed && (
@@ -843,7 +850,7 @@ export default function AddPage() {
             {EXERCISE_TYPE_ORDER.map(type => (
               <button
                 key={type}
-                onClick={() => { setExerciseType(type); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setWalkTypes([]); setSportFocus(''); setSportStyle(''); setSwimFocus(''); setSwimStyles([]); setSnowStyles([]); setWaterStyles([]); setGymFocus(''); setGymStyle(''); setBikeFocus(''); setBikeStyle(''); setStretchFocus(''); setStretchStyle(''); setFitnessFocus(''); setFitnessStyle(''); }}
+                onClick={() => { setExerciseType(type); setRunType(''); setRunTypeModifier(''); setSubType(''); setGymTypes([]); setWalkTypes([]); setSportFocus(''); setSportStyle(''); setSwimFocus(''); setSwimStyles([]); setSnowStyles([]); setWaterStyles([]); setGymFocus(''); setGymStyle(''); setBikeFocus(''); setBikeStyle(''); setStretchFocus(''); setStretchStyle(''); setFitnessFocus(''); setFitnessStyle(''); setWalkStyle(''); }}
                 className={`flex items-center px-5 py-2.5 rounded-lg text-sm font-medium border transition-all text-left ${
                   exerciseType === type
                     ? 'border-2 text-white'
@@ -942,7 +949,7 @@ export default function AddPage() {
                       {(['home', 'away'] as const).map(v => (
                         <button key={v} onClick={() => setSportHomeAway(sportHomeAway === v ? '' : v)}
                           className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-all capitalize ${sportHomeAway === v ? 'border-orange-500 bg-orange-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
-                          {v === 'home' ? '🏠 Home' : '✈️ Away'}
+                          {v === 'home' ? '🏠 Home' : '🚗 Away'}
                         </button>
                       ))}
                     </div>
@@ -1182,6 +1189,15 @@ export default function AddPage() {
                 );
               })}
             </div>
+            <label className="label mt-3">Walk Style <span className="text-[#64748B]">(optional)</span></label>
+            <div className="grid grid-cols-3 gap-1.5 mt-1">
+              {(Object.keys(WALK_STYLE_LABELS) as WalkStyle[]).map(t => (
+                <button key={t} onClick={() => setWalkStyle(walkStyle === t ? '' : t)}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all text-center ${walkStyle === t ? 'border-orange-500 bg-orange-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                  {WALK_STYLE_LABELS[t]}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {exerciseType === 'stretch' && (
@@ -1406,6 +1422,36 @@ export default function AddPage() {
         />
         {showSurroundings && (
           <div className="flex flex-col gap-3 rounded-xl border border-blue-500/30 bg-blue-500/5 p-4">
+            {/* Location */}
+            <div>
+              <label className="label mb-2">Location <span className="text-[#64748B]">(optional)</span></label>
+              <div className="flex gap-2">
+                {(Object.keys(ACTIVITY_LOCATION_LABELS) as ActivityLocation[]).map(loc => {
+                  const active = location === loc;
+                  return (
+                    <button key={loc} type="button" onClick={() => setLocation(active ? '' : loc)}
+                      className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${active ? 'border-blue-500 bg-blue-500/20 text-white' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}>
+                      {loc === 'home' && (
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="2,10 10,3 18,10" /><rect x="5" y="10" width="10" height="8" rx="1" /><rect x="8" y="14" width="4" height="4" />
+                        </svg>
+                      )}
+                      {loc === 'out' && (
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="10" width="16" height="8" rx="1" /><polyline points="2,10 10,3 18,10" />
+                        </svg>
+                      )}
+                      {loc === 'outside' && (
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="10" cy="7" r="4" /><line x1="10" y1="11" x2="10" y2="18" /><line x1="6" y1="14" x2="14" y2="14" />
+                        </svg>
+                      )}
+                      {ACTIVITY_LOCATION_LABELS[loc]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <TagToggleGrid
               label="Select all that apply"
               groups={[
@@ -1614,10 +1660,10 @@ export default function AddPage() {
             <p className="text-xs text-[#64748B] mb-4">You&apos;ve already logged a <span className="text-white font-medium">{EXERCISE_TYPE_LABELS[duplicateCheck.existing.exercise_type as ExerciseType]}</span> session today:</p>
             <div className="rounded-lg border border-[#334155] bg-[#0F172A] p-3 mb-4 text-sm">
               <p className="font-medium text-white">{duplicateCheck.existing.name}</p>
-              {duplicateCheck.existing.duration_seconds != null && (
+              {duplicateCheck.existing.duration_minutes != null && (
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  {Math.floor((duplicateCheck.existing.duration_seconds ?? 0) / 3600) > 0 && `${Math.floor((duplicateCheck.existing.duration_seconds ?? 0) / 3600)}h `}
-                  {Math.floor(((duplicateCheck.existing.duration_seconds ?? 0) % 3600) / 60)}min
+                  {duplicateCheck.existing.duration_minutes >= 60 && `${Math.floor(duplicateCheck.existing.duration_minutes / 60)}h `}
+                  {duplicateCheck.existing.duration_minutes % 60 > 0 && `${duplicateCheck.existing.duration_minutes % 60}min`}
                   {duplicateCheck.existing.effort ? ` · Effort ${duplicateCheck.existing.effort}` : ''}
                 </p>
               )}

@@ -339,10 +339,18 @@ export default function ActivityLogPage() {
                   <div key={`${a.id}-div`} className="flex flex-col gap-px my-1">
                     <div className="border-t border-[#334155]" />
                     <div className="border-t border-[#334155]" />
+                    <div className="border-t border-[#334155]" />
                   </div>
                 );
               } else if (getWeekStart(a.date) !== getWeekStart(prev.date)) {
-                items.push(<div key={`${a.id}-div`} className="border-t border-[#334155] my-1" />);
+                items.push(
+                  <div key={`${a.id}-div`} className="flex flex-col gap-px my-1">
+                    <div className="border-t border-[#334155]" />
+                    <div className="border-t border-[#334155]" />
+                  </div>
+                );
+              } else if (a.date !== prev.date) {
+                items.push(<div key={`${a.id}-div`} className="border-t border-[#334155]/50 my-0.5" />);
               }
             }
           const color = EXERCISE_TYPE_COLORS[a.exercise_type];
@@ -486,6 +494,18 @@ export default function ActivityLogPage() {
                       <div className="col-span-2">
                         <span className="text-xs text-[#64748B] font-medium">Notes</span>
                         <p className="text-sm text-[#94A3B8] mt-0.5">{a.notes}</p>
+                      </div>
+                    )}
+                    {(a.feeling_after != null || (a.workout_vibes && a.workout_vibes.length > 0)) && (
+                      <div className="col-span-2 flex items-center gap-2 flex-wrap">
+                        {a.feeling_after != null && (
+                          <span className="text-lg" title={`Feeling after: ${a.feeling_after}/10`}>
+                            {({'-1':'🤮','0':'😭','1':'😞','2':'🥵','3':'🥱','4':'🫠','5':'😐','6':'😌','7':'🙂','8':'😊','9':'😄','10':'🤩'} as Record<string, string>)[String(a.feeling_after)]}
+                          </span>
+                        )}
+                        {a.workout_vibes && a.workout_vibes.map((e: string, i: number) => (
+                          <span key={i} className="text-lg">{e}</span>
+                        ))}
                       </div>
                     )}
                     {a.is_pb && a.pb_description && (

@@ -105,6 +105,13 @@ export default function ScrollFieldPicker({ label, unit, value, onChange, max, m
     setOpen(false);
   };
 
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [open]);
+
   const wholeValues = range(min, max);
   const fracValues = range(0, 99);
   const wholeWidth = Math.max(48, String(max).length * 22 + 20);
