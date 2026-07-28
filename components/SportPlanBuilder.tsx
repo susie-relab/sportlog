@@ -25,9 +25,10 @@ interface Props {
   existing?: PlanRecord | null;
   onSaved: (rec: PlanRecord) => void;
   onCancel: () => void;
+  activeByDefault?: boolean;
 }
 
-export default function SportPlanBuilder({ existing, onSaved, onCancel }: Props) {
+export default function SportPlanBuilder({ existing, onSaved, onCancel, activeByDefault = true }: Props) {
   const { user } = useAuth();
   const cfg0 = existing?.plan_data.sportConfig;
   const [name, setName] = useState(cfg0?.name ?? existing?.name ?? '');
@@ -140,7 +141,7 @@ export default function SportPlanBuilder({ existing, onSaved, onCancel }: Props)
       days_per_week: daysCount, days_per_week_min: 0,
       train_days: WEEKDAYS.filter(d => daySessions[d]),
       goal_time_seconds: null, start_distance_km: null,
-      start_date: startDate, name: name.trim() || sportLabel, active: true, plan_data: preview,
+      start_date: startDate, name: name.trim() || sportLabel, active: existing ? (existing.active) : activeByDefault, plan_data: preview,
       updated_at: new Date().toISOString(),
     };
     const q = existing

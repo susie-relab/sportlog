@@ -50,7 +50,7 @@ function PlanCard({ p, onClick, onSwitch, onDeactivate, onActivate, onDelete, on
           <div className="flex items-center gap-2 min-w-0">
             <span className="font-bold text-white truncate">{planTitle(p)}</span>
             {p.active && <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 flex-shrink-0">Active</span>}
-            {!p.active && <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-[#334155] text-[#94A3B8] flex-shrink-0">Ended</span>}
+            {!p.active && <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-[#334155] text-[#94A3B8] flex-shrink-0">Paused</span>}
           </div>
           <span className="text-xs text-[#64748B] capitalize flex-shrink-0">{p.level} · {p.weeks} wks</span>
         </div>
@@ -64,7 +64,7 @@ function PlanCard({ p, onClick, onSwitch, onDeactivate, onActivate, onDelete, on
       </button>
       <div className="flex items-center gap-2 mt-3 flex-wrap">
         {p.active ? (
-          <button onClick={onDeactivate} className="text-xs text-[#64748B] hover:text-white transition-colors px-2 py-1.5">Deactivate</button>
+          <button onClick={onDeactivate} className="text-xs text-[#64748B] hover:text-white transition-colors px-2 py-1.5">Pause Plan</button>
         ) : onSwitch ? (
           <button onClick={onSwitch} className="btn-secondary text-xs px-3 py-1.5">↻ Switch to this plan</button>
         ) : (
@@ -86,7 +86,7 @@ export default function PlanPage() {
   const [buildKind, setBuildKind] = useState<BuildKind | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [editing, setEditing] = useState<PlanRecord | null>(null);
-  const [pendingAction, setPendingAction] = useState<{ kind: 'switch' | 'deactivate' | 'activate' | 'delete'; plan: PlanRecord } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ kind: 'switch' | 'deactivate' | 'activate' | 'delete' | 'activate_blocked'; plan: PlanRecord; blocker?: PlanRecord } | null>(null);
 
   const [celebrate, setCelebrate] = useState(false);
 
@@ -152,7 +152,7 @@ export default function PlanPage() {
       })),
     };
     const baseName = p.plan_kind === 'run' ? runPlanDisplayName(p.distance, p.custom_distance_km) : (p.name || 'Plan');
-    const willActivate = p.plan_kind === 'run' ? !plans.some(x => x.plan_kind === 'run' && x.active) : true;
+    const willActivate = !plans.some(x => x.plan_kind === p.plan_kind && x.active);
     const payload = {
       user_id: user.id, plan_kind: p.plan_kind, distance: p.distance, custom_distance_km: p.custom_distance_km,
       level: p.level, weeks: p.weeks, days_per_week: p.days_per_week, days_per_week_min: p.days_per_week_min,
@@ -176,7 +176,11 @@ export default function PlanPage() {
     if (kind === 'delete') await handleDelete(plan.id);
     else if (kind === 'switch') await handleSwitch(plan);
     else if (kind === 'deactivate') await setActiveFlag(plan, false);
-    else if (kind === 'activate') await setActiveFlag(plan, true);
+    else if (kind === 'activate') {
+      const blocker = plans.find(x => x.plan_kind === plan.plan_kind && x.active && x.id !== plan.id);
+      if (blocker) { setPendingAction({ kind: 'activate_blocked', plan, blocker }); return; }
+      await setActiveFlag(plan, true);
+    }
     setPendingAction(null);
   };
 
@@ -189,8 +193,8 @@ export default function PlanPage() {
   if (buildKind || editing) {
     return (
       <div className="max-w-2xl lg:max-w-4xl mx-auto">
-        {activeKind === 'custom' ? <CustomPlanBuilder existing={editing} onSaved={handleSaved} onCancel={cancelBuild} />
-          : activeKind === 'sport' ? <SportPlanBuilder existing={editing} onSaved={handleSaved} onCancel={cancelBuild} />
+        {activeKind === 'custom' ? <CustomPlanBuilder existing={editing} onSaved={handleSaved} onCancel={cancelBuild} activeByDefault={!plans.some(x => x.plan_kind === 'custom' && x.active && x.id !== editing?.id)} />
+          : activeKind === 'sport' ? <SportPlanBuilder existing={editing} onSaved={handleSaved} onCancel={cancelBuild} activeByDefault={!plans.some(x => x.plan_kind === 'sport' && x.active && x.id !== editing?.id)} />
           : <PlanBuilder existing={editing} hasActiveRunPlan={!!activeRunPlan} onSaved={handleSaved} onCancel={cancelBuild} />}
       </div>
     );
@@ -307,6 +311,17 @@ export default function PlanPage() {
       {/* Unified confirm modal */}
       {pendingAction && (() => {
         const { kind, plan } = pendingAction;
+        if (kind === 'activate_blocked') {
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
+              <div className="bg-[#1E293B] border border-[#334155] rounded-2xl p-6 max-w-sm w-full">
+                <h2 className="text-white font-bold text-lg mb-2">Can&apos;t activate yet</h2>
+                <p className="text-[#94A3B8] text-sm mb-5">Pause your current active plan, <strong className="text-white">{planTitle(pendingAction.blocker!)}</strong>, before activating this one.</p>
+                <button onClick={() => setPendingAction(null)} className="btn-secondary w-full">OK</button>
+              </div>
+            </div>
+          );
+        }
         const copy = {
           switch: {
             title: 'Switch to this plan?',
@@ -316,9 +331,9 @@ export default function PlanPage() {
             cta: 'Switch', danger: false,
           },
           deactivate: {
-            title: 'Deactivate this plan?',
-            body: <>It&apos;ll move to Other Plans and stop showing on your Dash. Your progress is kept — you can reactivate it anytime.</>,
-            cta: 'Deactivate', danger: false,
+            title: 'Pause this plan?',
+            body: <>It&apos;ll move to Other Plans and stop showing on your Dash. Your progress is kept — you can resume it anytime.</>,
+            cta: 'Pause Plan', danger: false,
           },
           activate: {
             title: 'Reactivate this plan?',
