@@ -53,8 +53,7 @@ ${summary}`,
     if (!Array.isArray(insights)) throw new Error('not an array');
   } catch (err) {
     console.error('Training insights error:', err);
-    const msg = err instanceof Error ? err.message : String(err);
-    insights = [`DEBUG: ${msg}`];
+    insights = ['Coaching tips temporarily unavailable — try refreshing in a moment.'];
   }
 
   return NextResponse.json({ insights });
