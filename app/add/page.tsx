@@ -688,7 +688,8 @@ export default function AddPage() {
   const autoPaceDecimal = calcAutoPace(distance, durationSeconds);
   const autoPaceMinVal = autoPaceDecimal ? Math.floor(autoPaceDecimal) : null;
   const autoPaceSecVal = autoPaceDecimal ? Math.round((autoPaceDecimal % 1) * 60) : null;
-  const progressCount = [!!name.trim(), !!exerciseType, durationSeconds > 0, !!effort, !!distance, !!notes.trim()].filter(Boolean).length;
+  const requiredFields = [!!name.trim(), !!exerciseType, durationSeconds > 0, !!effort];
+  const progressCount = requiredFields.filter(Boolean).length;
 
   return (
     <div className="max-w-lg md:max-w-4xl mx-auto relative">
@@ -1599,13 +1600,14 @@ export default function AddPage() {
 
       {/* Sticky save + progress bar — all screen sizes */}
       <div className="fixed bottom-14 md:bottom-0 left-0 md:left-56 right-0 z-40 bg-[#0F172A]/95 backdrop-blur-sm border-t border-[#334155]">
-        {progressCount > 0 && (
-          <div className="md:max-w-4xl md:mx-auto">
-            <div className="h-1 w-full bg-[#1E293B]">
-              <div className="h-full transition-all duration-300" style={{ width: `${(progressCount / 6) * 100}%`, background: accentColor }} />
-            </div>
+        <div className="md:max-w-4xl md:mx-auto px-3 pt-2 flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-[#1E293B] rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-300" style={{ width: `${(progressCount / 4) * 100}%`, background: progressCount === 4 ? accentColor : accentColor }} />
           </div>
-        )}
+          <span className="text-[10px] font-medium flex-shrink-0" style={{ color: progressCount === 4 ? accentColor : '#475569' }}>
+            {progressCount === 4 ? 'Ready to save' : `${progressCount}/4 required`}
+          </span>
+        </div>
         <div className="p-3 md:max-w-4xl md:mx-auto">
         <button
           onClick={handleSave}
