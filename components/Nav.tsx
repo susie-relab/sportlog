@@ -43,11 +43,11 @@ export default function Nav() {
   const [logTypeLabel, setLogTypeLabel] = useState('Runs');
 
   useEffect(() => {
-    const update = () => setLogTypeLabel(EXERCISE_TYPE_LABELS[getStoredLogType()]);
+    const update = () => setLogTypeLabel(EXERCISE_TYPE_LABELS[getStoredLogType(user?.id)]);
     update();
     window.addEventListener('logtype-change', update);
     return () => window.removeEventListener('logtype-change', update);
-  }, []);
+  }, [user?.id]);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (isDirty && path === '/add' && href !== '/add') {

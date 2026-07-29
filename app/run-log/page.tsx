@@ -25,7 +25,7 @@ export default function RunLogPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Activity | null>(null);
   const [period, setPeriod] = useState<Period>('14d');
-  const { logType, setLogType } = useLogType();
+  const { logType, setLogType } = useLogType(user?.id ?? '');
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [filterRunType, setFilterRunType] = useState<RunType | ''>('');
   const [search, setSearch] = useState('');

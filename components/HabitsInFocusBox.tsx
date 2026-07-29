@@ -94,7 +94,7 @@ export default function HabitsInFocusBox({ habits, logs, focusIds, onSetFocusIds
                       className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                       style={{ background: h.color, boxShadow: done ? `0 0 0 2px ${h.color}55` : 'none' }}
                     />
-                    <span className={`text-sm font-semibold flex-1 truncate ${done ? 'text-green-400 line-through' : skipped ? 'text-[#64748B] italic' : failed ? 'text-red-400/60' : 'text-white'}`}>
+                    <span className={`text-sm font-semibold flex-1 truncate ${done ? 'text-green-400 line-through' : skipped ? 'text-[#94A3B8] italic' : failed ? 'text-red-400' : 'text-white'}`}>
                       {h.name}
                     </span>
                     <span className={`text-xs font-semibold flex-shrink-0 ${done ? 'text-green-400' : skipped ? 'text-[#64748B]' : failed ? 'text-red-400' : 'text-[#94A3B8]'}`}>
