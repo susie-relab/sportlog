@@ -1502,7 +1502,7 @@ export default function AddPage() {
         </div>
 
         {/* Feeling after + session vibes */}
-        <div className="flex flex-col gap-3 rounded-xl border border-[#334155] bg-[#1E293B]/50 p-4">
+        <div className="flex flex-col gap-3 rounded-xl border border-[#334155] bg-[#1E293B] p-4">
           <div>
             <label className="label mb-2">How did you feel after? <span className="text-[#64748B]">(optional)</span></label>
             <div className="flex flex-wrap gap-1">

@@ -271,6 +271,26 @@ select.input {
 [data-theme="light"] .text-orange-400 { color: #C2410C !important; }
 [data-theme="light"] .text-indigo-300 { color: #4338CA !important; }
 
+/* Opacity-variant backgrounds not caught by exact-class selectors above */
+[data-theme="light"] .bg-\[\#0F172A\]\/40,
+[data-theme="light"] .bg-\[\#0F172A\]\/60,
+[data-theme="light"] .bg-\[\#0F172A\]\/80 { background: #F1F5F9 !important; }
+[data-theme="light"] .bg-\[\#1E293B\]\/50,
+[data-theme="light"] .bg-\[\#1E293B\]\/80 { background: #FFFFFF !important; }
+
+/* Training insights + other muted copy that's unreadable on white */
+[data-theme="light"] .text-\[\#CBD5E1\] { color: #334155 !important; }
+
+/* Black overlay icon buttons in habit rows — too dark on light bg */
+[data-theme="light"] .bg-black\/25 { background: rgba(0,0,0,0.07) !important; }
+[data-theme="light"] .bg-black\/40 { background: rgba(0,0,0,0.12) !important; }
+[data-theme="light"] .text-white\/70 { color: #475569 !important; }
+[data-theme="light"] .text-white\/50 { color: #64748B !important; }
+
+/* Habit calendar day cells — give them a clean white surface */
+[data-theme="light"] .border-\[\#334155\].bg-\[\#0F172A\]\/40,
+[data-theme="light"] .border-\[\#334155\] { border-color: #E2E8F0 !important; }
+
 /* Print: clean, compact plan layout — hide app chrome + interactive controls,
    and show the dedicated print-only summary/table instead of the on-screen views. */
 .plan-print-only { display: none; }

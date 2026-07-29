@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
-import { Activity, RunType, RUN_TYPE_LABELS, RUN_TYPE_COLORS, RUN_TYPE_WORKOUT, RUN_TYPE_TERRAIN, combinedRunTypeLabel } from '@/types';
+import { Activity, RunType, RUN_TYPE_LABELS, RUN_TYPE_COLORS, RUN_TYPE_WORKOUT, RUN_TYPE_TERRAIN, combinedRunTypeLabel, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, EXERCISE_TYPE_ORDER } from '@/types';
 import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
 import ShareCard, { ShareStat } from '@/components/ShareCard';
@@ -24,6 +24,7 @@ export default function RunLogPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Activity | null>(null);
   const [period, setPeriod] = useState<Period>('14d');
+  const [logType, setLogType] = useState<ExerciseType>('run');
   const [filterRunType, setFilterRunType] = useState<RunType | ''>('');
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -35,17 +36,18 @@ export default function RunLogPage() {
 
   useEffect(() => {
     if (!user) return;
+    setLoading(true);
     supabase
       .from('activities')
       .select('*')
       .eq('user_id', user.id)
-      .eq('exercise_type', 'run')
+      .eq('exercise_type', logType)
       .order('date', { ascending: false })
       .then(({ data }) => {
         setRuns((data as Activity[]) || []);
         setLoading(false);
       });
-  }, [user]);
+  }, [user, logType]);
 
   const runsByPeriod = runs.filter(r => {
     if (period === 'week') return r.date >= daysAgo(7).split('T')[0];
@@ -62,9 +64,13 @@ export default function RunLogPage() {
 
   const filtered = runsByPeriod.filter(r => {
     const matchSearch = !search || r.name.toLowerCase().includes(search.toLowerCase());
-    const matchType = !filterRunType || r.run_type === filterRunType || r.run_type_modifier === filterRunType;
+    const matchType = logType !== 'run' || !filterRunType || r.run_type === filterRunType || r.run_type_modifier === filterRunType;
     return matchSearch && matchType;
   });
+
+  const isRun = logType === 'run';
+  const typeLabel = EXERCISE_TYPE_LABELS[logType];
+  const typeColor = EXERCISE_TYPE_COLORS[logType];
 
   // Stats for current period
   const totalDist = runsByPeriod.reduce((s, r) => s + (r.distance_km || 0), 0);
@@ -92,8 +98,8 @@ export default function RunLogPage() {
       <div className="absolute top-0 right-0 z-10">
         <AccountSwitcher compact />
       </div>
-      <div className="flex items-center justify-between mb-4 gap-2 pr-24 sm:pr-32">
-        <h1 className="text-xl font-bold text-white">Run Log</h1>
+      <div className="flex items-center justify-between mb-3 gap-2 pr-24 sm:pr-32">
+        <h1 className="text-xl font-bold text-white" style={{ color: typeColor }}>{typeLabel} Log</h1>
         <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
           <ShareRangeMenu activities={runs} icon={WEEK_SHARE_ICON} accentColor="#3B82F6" nounSingular="Run" nounPlural="Runs" showPace defaultScopeKey="run_share" />
           <button
@@ -104,6 +110,20 @@ export default function RunLogPage() {
             ↓ Export
           </button>
         </div>
+      </div>
+
+      {/* Exercise type switcher */}
+      <div className="flex gap-1.5 flex-wrap mb-3">
+        {EXERCISE_TYPE_ORDER.map(t => (
+          <button
+            key={t}
+            onClick={() => { setLogType(t); setFilterRunType(''); setSearch(''); setExpanded(null); }}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${logType === t ? 'text-white border-2' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
+            style={logType === t ? { borderColor: EXERCISE_TYPE_COLORS[t], background: EXERCISE_TYPE_COLORS[t] + '22' } : {}}
+          >
+            {EXERCISE_TYPE_LABELS[t]}
+          </button>
+        ))}
       </div>
 
       {/* Period selector */}
@@ -162,10 +182,10 @@ export default function RunLogPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <div className="stat-card">
           <div className="stat-value">{runsByPeriod.length}</div>
-          <div className="stat-label">Runs</div>
+          <div className="stat-label">Sessions</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{totalDist.toFixed(1)}</div>
+          <div className="stat-value">{totalDist > 0 ? totalDist.toFixed(1) : '—'}</div>
           <div className="stat-label">Total km</div>
         </div>
         <div className="stat-card">
@@ -178,31 +198,40 @@ export default function RunLogPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className={`grid gap-3 mb-4 ${isRun ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <div className="stat-card">
           <div className="stat-value">{avgTime > 0 ? formatDuration(Math.round(avgTime)) : '—'}</div>
           <div className="stat-label">Avg Time</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value">{avgPace > 0 ? formatPaceMinKm(avgPace) : '—'}</div>
-          <div className="stat-label">Avg Pace</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value text-sm leading-tight pt-1">
-            {Object.entries(runTypeCounts).length === 0 ? '—' : (
-              <div className="flex flex-col gap-0.5">
-                {(Object.entries(runTypeCounts) as [RunType, number][]).map(([t, c]) => (
-                  <div key={t} className="flex items-center gap-1 text-xs">
-                    <span style={{ color: RUN_TYPE_COLORS[t] }}>●</span>
-                    <span className="text-[#94A3B8]">{RUN_TYPE_LABELS[t]}</span>
-                    <span className="text-white font-bold ml-auto">{c}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+        {isRun && (
+          <div className="stat-card">
+            <div className="stat-value">{avgPace > 0 ? formatPaceMinKm(avgPace) : '—'}</div>
+            <div className="stat-label">Avg Pace</div>
           </div>
-          <div className="stat-label">Run Types</div>
-        </div>
+        )}
+        {isRun ? (
+          <div className="stat-card">
+            <div className="stat-value text-sm leading-tight pt-1">
+              {Object.entries(runTypeCounts).length === 0 ? '—' : (
+                <div className="flex flex-col gap-0.5">
+                  {(Object.entries(runTypeCounts) as [RunType, number][]).map(([t, c]) => (
+                    <div key={t} className="flex items-center gap-1 text-xs">
+                      <span style={{ color: RUN_TYPE_COLORS[t] }}>●</span>
+                      <span className="text-[#94A3B8]">{RUN_TYPE_LABELS[t]}</span>
+                      <span className="text-white font-bold ml-auto">{c}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="stat-label">Run Types</div>
+          </div>
+        ) : (
+          <div className="stat-card">
+            <div className="stat-value">{runsByPeriod.filter(r => r.effort).length > 0 ? (runsByPeriod.reduce((s, r) => s + (r.effort || 0), 0) / runsByPeriod.filter(r => r.effort).length).toFixed(1) : '—'}</div>
+            <div className="stat-label">Avg Effort</div>
+          </div>
+        )}
       </div>
 
       {/* Chart */}
@@ -271,26 +300,28 @@ export default function RunLogPage() {
       <div className="flex gap-2 mb-4 flex-wrap">
         <input
           className="input flex-1 min-w-[120px]"
-          placeholder="Search runs..."
+          placeholder={`Search ${typeLabel.toLowerCase()} sessions...`}
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
-        <select
-          className="input w-auto"
-          value={filterRunType}
-          onChange={e => setFilterRunType(e.target.value as RunType | '')}
-        >
-          <option value="">All run types</option>
-          {RUN_TYPES.map(t => <option key={t} value={t}>{RUN_TYPE_LABELS[t]}</option>)}
-        </select>
+        {isRun && (
+          <select
+            className="input w-auto"
+            value={filterRunType}
+            onChange={e => setFilterRunType(e.target.value as RunType | '')}
+          >
+            <option value="">All run types</option>
+            {RUN_TYPES.map(t => <option key={t} value={t}>{RUN_TYPE_LABELS[t]}</option>)}
+          </select>
+        )}
       </div>
 
-      {/* Run list */}
+      {/* Activity list */}
       <div className="flex flex-col gap-2">
         {filtered.length === 0 ? (
-          <div className="card text-[#64748B] text-sm">No runs found.</div>
+          <div className="card text-[#64748B] text-sm">No {typeLabel.toLowerCase()} sessions found.</div>
         ) : filtered.map(r => {
-          const color = r.run_type ? RUN_TYPE_COLORS[r.run_type] : '#3B82F6';
+          const color = isRun && r.run_type ? RUN_TYPE_COLORS[r.run_type] : typeColor;
           const isOpen = expanded === r.id;
           return (
             <div key={r.id} className="card cursor-pointer" onClick={() => setExpanded(isOpen ? null : r.id)}>
@@ -302,8 +333,11 @@ export default function RunLogPage() {
                     {r.is_pb && <span>⭐</span>}
                   </div>
                   <div className="flex gap-2 mt-0.5 flex-wrap">
-                    {combinedRunTypeLabel(r.run_type, r.run_type_modifier) && (
+                    {isRun && combinedRunTypeLabel(r.run_type, r.run_type_modifier) && (
                       <span className="text-xs font-medium" style={{ color }}>{combinedRunTypeLabel(r.run_type, r.run_type_modifier)}</span>
+                    )}
+                    {!isRun && r.sub_type && (
+                      <span className="text-xs font-medium" style={{ color }}>{r.sub_type}</span>
                     )}
                     <span className="text-xs text-[#64748B]">{formatDate(r.date)}</span>
                   </div>
