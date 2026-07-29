@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       max_tokens: 400,
       messages: [{
         role: 'user',
-        content: `You are a supportive, practical sports coach. Based on the athlete's last 2 weeks of training below, give 3–4 short, specific, actionable coaching insights or tips. Be encouraging but honest. Focus on patterns, recovery, variety, effort distribution, or what to do next. Keep each insight to 1–2 sentences. Return ONLY a JSON array of strings, no other text.
+        content: `You are a supportive, practical sports coach. Based on the athlete's last 2 weeks of training below, give 3–4 short, specific, actionable coaching insights or tips, then always end with one positive encouragement note — something genuine they are doing well or a motivating sign-off, no matter how little or inconsistent their training has been. Be encouraging but honest. Focus on patterns, recovery, variety, effort distribution, or what to do next. Keep each insight to 1–2 sentences. The final item must always be a positive/praise note. Return ONLY a JSON array of strings, no other text.
 
 Training data (last 14 days):
 ${summary}`,
