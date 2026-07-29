@@ -3,6 +3,11 @@
 :root {
   --background: #0F172A;
   --foreground: #F1F5F9;
+  --card-bg: #1E293B;
+}
+
+[data-theme="light"] {
+  --card-bg: #FFFFFF;
 }
 
 body {

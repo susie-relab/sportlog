@@ -250,7 +250,7 @@ export default function ProfilePage() {
             <option value="">Year</option>
             {BIRTH_YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
-          <input type="date" className="input flex-1 min-w-[150px]" value={birthday} onClick={openDatePicker} onChange={e => setBirthday(e.target.value)} />
+          <input type="date" className="input flex-1 min-w-[150px]" value={birthday} onChange={e => setBirthday(e.target.value)} />
           {birthday && <span className="text-sm text-[#94A3B8] whitespace-nowrap">Age: {calcAge(birthday)}</span>}
         </div>
         <button onClick={handleUpdateUsername} disabled={saving} className="btn-primary w-full">Save Profile</button>

@@ -197,7 +197,7 @@ export default function HabitListRow({ habit, logs, categories, onIncrement, onD
         onPointerDown={handlePointerDown}
         onClick={e => { if (!(e.target as HTMLElement).closest('button')) toggleDetail(); }}
         className="relative h-9 select-none cursor-pointer"
-        style={{ background: '#1E293B', touchAction: 'none' }}
+        style={{ background: 'var(--card-bg)', touchAction: 'none' }}
       >
         <div
           className="absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out"
