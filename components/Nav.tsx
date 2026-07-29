@@ -1,5 +1,5 @@
 'use client';
-import { Fragment } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Plus, LayoutDashboard, List, Footprints, TrendingUp, Award, BookOpen, Target, CheckCircle2, Upload, Download, LogOut, HelpCircle, User } from 'lucide-react';
@@ -7,6 +7,8 @@ import { useAuth } from './AuthProvider';
 import { useDirtyForm } from './DirtyFormContext';
 import AccountSwitcher from './AccountSwitcher';
 import SportLogRunMark from './SportLogRunMark';
+import { EXERCISE_TYPE_LABELS } from '@/types';
+import { getStoredLogType } from '@/lib/useLogType';
 
 const mainTabs = [
   { href: '/add', label: 'Add', icon: Plus },
@@ -38,6 +40,14 @@ export default function Nav() {
   const path = usePathname();
   const { user, signOut } = useAuth();
   const { isDirty, setShowWarning, setPendingHref } = useDirtyForm();
+  const [logTypeLabel, setLogTypeLabel] = useState('Runs');
+
+  useEffect(() => {
+    const update = () => setLogTypeLabel(EXERCISE_TYPE_LABELS[getStoredLogType()]);
+    update();
+    window.addEventListener('logtype-change', update);
+    return () => window.removeEventListener('logtype-change', update);
+  }, []);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (isDirty && path === '/add' && href !== '/add') {
@@ -70,7 +80,7 @@ export default function Nav() {
                 }`}
               >
                 <Icon size={18} />
-                {label === '14 Days' ? '14 Day Stats' : label === 'Log' ? 'Activity Log' : label === 'Runs' ? 'Run Log' : label === 'Plan' ? 'Training Plan' : label}
+                {label === '14 Days' ? '14 Day Stats' : label === 'Log' ? 'Activity Log' : label === 'Runs' ? `${logTypeLabel} Log` : label === 'Plan' ? 'Training Plan' : label}
               </Link>
             );
           })}
@@ -120,7 +130,7 @@ export default function Nav() {
                 }`}
               >
                 <Icon size={20} />
-                {label}
+                {label === 'Runs' ? logTypeLabel : label}
               </Link>
             );
           })}

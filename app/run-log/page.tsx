@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { Activity, RunType, RUN_TYPE_LABELS, RUN_TYPE_COLORS, RUN_TYPE_WORKOUT, RUN_TYPE_TERRAIN, combinedRunTypeLabel, ExerciseType, EXERCISE_TYPE_LABELS, EXERCISE_TYPE_COLORS, EXERCISE_TYPE_ORDER } from '@/types';
+import { useLogType } from '@/lib/useLogType';
 import { formatDuration, formatDate, formatShortDate, formatPaceMinKm, formatPaceMinMile, formatSpeedKmh, daysAgo } from '@/lib/utils';
 import EditActivityModal from '@/components/EditActivityModal';
 import ShareCard, { ShareStat } from '@/components/ShareCard';
@@ -24,7 +25,8 @@ export default function RunLogPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Activity | null>(null);
   const [period, setPeriod] = useState<Period>('14d');
-  const [logType, setLogType] = useState<ExerciseType>('run');
+  const { logType, setLogType } = useLogType();
+  const [showTypePicker, setShowTypePicker] = useState(false);
   const [filterRunType, setFilterRunType] = useState<RunType | ''>('');
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -99,7 +101,18 @@ export default function RunLogPage() {
         <AccountSwitcher compact />
       </div>
       <div className="flex items-center justify-between mb-3 gap-2 pr-24 sm:pr-32">
-        <h1 className="text-xl font-bold text-white" style={{ color: typeColor }}>{typeLabel} Log</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold" style={{ color: typeColor }}>{typeLabel} Log</h1>
+          <button
+            onClick={() => setShowTypePicker(true)}
+            className="p-1 rounded-md text-[#475569] hover:text-white hover:bg-[#334155] transition-colors"
+            aria-label="Change log type"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.5 1.5a1.414 1.414 0 0 1 2 2L4 11l-2.5.5.5-2.5L9.5 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
         <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
           <ShareRangeMenu activities={runs} icon={WEEK_SHARE_ICON} accentColor="#3B82F6" nounSingular="Run" nounPlural="Runs" showPace defaultScopeKey="run_share" />
           <button
@@ -112,19 +125,29 @@ export default function RunLogPage() {
         </div>
       </div>
 
-      {/* Exercise type switcher */}
-      <div className="flex gap-1.5 flex-wrap mb-3">
-        {EXERCISE_TYPE_ORDER.map(t => (
-          <button
-            key={t}
-            onClick={() => { setLogType(t); setFilterRunType(''); setSearch(''); setExpanded(null); }}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${logType === t ? 'text-white border-2' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
-            style={logType === t ? { borderColor: EXERCISE_TYPE_COLORS[t], background: EXERCISE_TYPE_COLORS[t] + '22' } : {}}
-          >
-            {EXERCISE_TYPE_LABELS[t]}
-          </button>
-        ))}
-      </div>
+      {/* Type picker modal */}
+      {showTypePicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setShowTypePicker(false)}>
+          <div className="w-full max-w-sm bg-[#1E293B] border border-[#334155] rounded-2xl p-5" onClick={e => e.stopPropagation()}>
+            <h2 className="text-white font-bold text-base mb-4">Choose log type</h2>
+            <div className="flex flex-col gap-1.5">
+              {EXERCISE_TYPE_ORDER.map(t => (
+                <button
+                  key={t}
+                  onClick={() => { setLogType(t); setFilterRunType(''); setSearch(''); setExpanded(null); setShowTypePicker(false); }}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium border transition-all text-left ${logType === t ? 'text-white border-2' : 'border-[#334155] text-[#94A3B8] hover:border-[#475569]'}`}
+                  style={logType === t ? { borderColor: EXERCISE_TYPE_COLORS[t], background: EXERCISE_TYPE_COLORS[t] + '22' } : {}}
+                >
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: EXERCISE_TYPE_COLORS[t] }} />
+                  {EXERCISE_TYPE_LABELS[t]} Log
+                  {logType === t && <span className="ml-auto text-xs" style={{ color: EXERCISE_TYPE_COLORS[t] }}>✓ current</span>}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowTypePicker(false)} className="mt-4 w-full text-sm text-[#64748B] hover:text-white transition-colors">Cancel</button>
+          </div>
+        </div>
+      )}
 
       {/* Period selector */}
       <div className="flex gap-1.5 flex-wrap mb-3">
