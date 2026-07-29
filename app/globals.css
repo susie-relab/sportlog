@@ -1,17 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0F172A;
+  --background: #06101E;
   --foreground: #F1F5F9;
-  --card-bg: #1E293B;
+  --card-bg: #0D1B30;
+  --dash-stroke: rgba(255,255,255,0.55);
 }
 
 [data-theme="light"] {
   --card-bg: #FFFFFF;
+  --dash-stroke: rgba(0,0,0,0.35);
 }
 
 body {
-  background: #0F172A;
+  background: #06101E;
   color: #F1F5F9;
   font-family: var(--font-body), 'Segoe UI', Calibri, Aptos, sans-serif;
   font-size: 15px;
@@ -86,8 +88,8 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .card {
-  background: #1E293B;
-  border: 1px solid #334155;
+  background: #0D1B30;
+  border: 1px solid #1A3252;
   border-radius: 12px;
   padding: 1.25rem;
 }
@@ -110,9 +112,9 @@ h1, h2, h3, h4, h5, h6,
 .btn-primary:hover { background: #2563EB; }
 
 .btn-secondary {
-  background: #334155;
+  background: #152842;
   color: #F1F5F9;
-  border: 1px solid #475569;
+  border: 1px solid #1E3A5C;
   border-radius: 8px;
   padding: 0.625rem 1.25rem;
   font-weight: 500;
@@ -124,7 +126,7 @@ h1, h2, h3, h4, h5, h6,
   justify-content: center;
 }
 
-.btn-secondary:hover { background: #475569; }
+.btn-secondary:hover { background: #1E3A5C; }
 
 /* Compact variant — .btn-secondary's own padding and font-size load after Tailwind's
    utilities in this build, so px/py/text-xs utilities on the element can't win the
@@ -138,8 +140,8 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .input {
-  background: #0F172A;
-  border: 1px solid #334155;
+  background: #040A14;
+  border: 1px solid #1A3252;
   border-radius: 8px;
   padding: 0.625rem 0.875rem;
   color: #F1F5F9;
@@ -179,8 +181,8 @@ select.input {
 }
 
 .stat-card {
-  background: #1E293B;
-  border: 1px solid #334155;
+  background: #0D1B30;
+  border: 1px solid #1A3252;
   border-radius: 10px;
   padding: 1rem;
   text-align: center;
@@ -225,6 +227,19 @@ select.input {
     padding: 0.875rem;
   }
 }
+
+/* Dark theme — remap hardcoded Tailwind slate classes to the new blue palette.
+   These classes appear throughout the codebase as inline Tailwind utilities;
+   overriding them here avoids touching every component file. */
+.bg-\[\#0F172A\] { background-color: #06101E !important; }
+.bg-\[\#1E293B\] { background-color: #0D1B30 !important; }
+.bg-\[\#334155\] { background-color: #152842 !important; }
+.bg-\[\#293548\] { background-color: #112236 !important; }
+.bg-\[\#0B1220\] { background-color: #050D1C !important; }
+.bg-\[\#141d2e\] { background-color: #0A1628 !important; }
+.border-\[\#334155\] { border-color: #1A3252 !important; }
+.border-\[\#475569\] { border-color: #204068 !important; }
+.border-\[\#1E293B\] { border-color: #1A3252 !important; }
 
 /* Light theme — flips the core dark surfaces (page/card backgrounds, borders,
    white text) to light equivalents. Applied when <html data-theme="light">.

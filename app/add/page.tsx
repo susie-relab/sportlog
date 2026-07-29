@@ -122,22 +122,22 @@ function DashedToggleButton({ label, hideLabel, expanded, onClick }: { label: st
       {!expanded && (
         <svg aria-hidden className="absolute inset-0 w-full h-full pointer-events-none" style={{overflow:'visible'}}>
           {[13,38,63,88].map(p => (
-            <line key={`l${p}`} x1="0" y1={`${p}%`} x2="-6" y2={`${p}%`} stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+            <line key={`l${p}`} x1="0" y1={`${p}%`} x2="-6" y2={`${p}%`} stroke="var(--dash-stroke)" strokeWidth="1.5" strokeLinecap="round"/>
           ))}
           <g style={{transform:'translateX(100%)', transformBox:'view-box' as never, transformOrigin:'0 0'}}>
             {[13,38,63,88].map(p => (
-              <line key={`r${p}`} x1="0" y1={`${p}%`} x2="6" y2={`${p}%`} stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+              <line key={`r${p}`} x1="0" y1={`${p}%`} x2="6" y2={`${p}%`} stroke="var(--dash-stroke)" strokeWidth="1.5" strokeLinecap="round"/>
             ))}
           </g>
-          <line x1="0" y1="0" x2="-5" y2="-5" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+          <line x1="0" y1="0" x2="-5" y2="-5" stroke="var(--dash-stroke)" strokeWidth="1.5" strokeLinecap="round"/>
           <g style={{transform:'translateX(100%)', transformBox:'view-box' as never, transformOrigin:'0 0'}}>
-            <line x1="0" y1="0" x2="5" y2="-5" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+            <line x1="0" y1="0" x2="5" y2="-5" stroke="var(--dash-stroke)" strokeWidth="1.5" strokeLinecap="round"/>
           </g>
           <g style={{transform:'translateY(100%)', transformBox:'view-box' as never, transformOrigin:'0 0'}}>
-            <line x1="0" y1="0" x2="-5" y2="5" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+            <line x1="0" y1="0" x2="-5" y2="5" stroke="var(--dash-stroke)" strokeWidth="1.5" strokeLinecap="round"/>
           </g>
           <g style={{transform:'translate(100%, 100%)', transformBox:'view-box' as never, transformOrigin:'0 0'}}>
-            <line x1="0" y1="0" x2="5" y2="5" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+            <line x1="0" y1="0" x2="5" y2="5" stroke="var(--dash-stroke)" strokeWidth="1.5" strokeLinecap="round"/>
           </g>
         </svg>
       )}
