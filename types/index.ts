@@ -20,7 +20,7 @@ export const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
   solo_fitness: 'Fitness Training',
   bike: 'Bike',
   swim: 'Swim',
-  walk: 'Walk / Hike',
+  walk: 'Walk',
   stretch: 'Stretch',
   water: 'Water',
   snow: 'Snow',
@@ -215,7 +215,7 @@ export type SwimStyle = 'mixed' | 'freestyle' | 'backstroke' | 'breaststroke' | 
 export type FitnessSubType = 'dance' | 'skateboard' | 'jump_rope' | 'boxing' | 'trampoline' | 'athletics' | 'gymnastics' | 'calisthenics' | 'acrobats' | 'slack_lining' | 'obstacle_course' | 'rock_climbing' | 'abseiling' | 'martial_arts' | 'kapa_haka' | 'juggling_act' | 'unicycling' | 'rollerskate' | 'sandboarding' | 'extreme_air_sport' | 'archery' | 'axe_throwing' | 'cleaning' | 'tidying' | 'lawnmowing' | 'gardening';
 export type BikeSubType = 'mtb' | 'road' | 'mixed_terrain' | 'commute' | 'electric' | 'indoor_spin' | 'bmx' | 'track' | 'bikepacking';
 export type StretchSubType = 'pilates' | 'flexibility' | 'physio';
-export type WalkSubType = 'multi_day' | 'stroll' | 'speed' | 'urban' | 'bush' | 'mountain' | 'farm' | 'road' | 'track_oval' | 'treadmill' | 'beach' | 'push_buggy';
+export type WalkSubType = 'multi_day' | 'stroll' | 'speed' | 'urban' | 'bush' | 'mountain' | 'hike' | 'farm' | 'road' | 'track_oval' | 'treadmill' | 'beach' | 'push_buggy';
 export type GymFocus = 'power' | 'endurance' | 'mobility' | 'deload' | 'technique' | 'competition' | 'assessment' | 'casual';
 export type GymStyle = 'solo' | 'duo' | 'group' | 'class' | 'coached';
 export type BikeFocus = 'zone1' | 'zone2' | 'zone3' | 'zone4' | 'zone5' | 'zone6' | 'zone7' | 'intervals' | 'hill_climb' | 'technical' | 'casual';
@@ -332,7 +332,7 @@ export const STRETCH_SUB_LABELS: Record<StretchSubType, string> = {
 };
 export const WALK_SUB_LABELS: Record<WalkSubType, string> = {
   multi_day: 'Multi-day', stroll: 'Stroll', speed: 'Speed', urban: 'Urban', bush: 'Bush',
-  mountain: 'Mountain', farm: 'Farm', road: 'Road', track_oval: 'Track / Oval',
+  mountain: 'Mountain', hike: 'Hike', farm: 'Farm', road: 'Road', track_oval: 'Track / Oval',
   treadmill: 'Treadmill', beach: 'Beach', push_buggy: 'Push Buggy',
 };
 export const GYM_FOCUS_LABELS: Record<GymFocus, string> = {
