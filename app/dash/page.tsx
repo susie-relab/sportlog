@@ -601,7 +601,7 @@ export default function DashPage() {
         <StatCard value={formatDuration(mins14)} label="Total Time" />
       </div>
       <div className="grid grid-cols-2 gap-3 mb-5">
-        <StatCard value={String(intensity14)} label="Intensity Mins" color="#06B6D4" />
+        <StatCard value={intensity14 >= 60 ? formatDuration(intensity14) : `${intensity14}m`} label="Intensity Mins" color="#06B6D4" />
         <StatCard value={String(total14 > 0 ? Math.round(dist14 / total14 * 10) / 10 : 0)} label="Avg km/session" color="#A78BFA" />
       </div>
 

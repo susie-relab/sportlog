@@ -65,7 +65,7 @@ export default function RecapCard({ activities, plans, weekStartDay, todayISO }:
             {[
               r.maxHr ? `❤️ ${r.maxHr} bpm` : null,
               r.bestPace ? `⚡ ${formatPaceMinKm(r.bestPace)}` : null,
-              r.intensityMins > 0 ? `🔥 ${r.intensityMins}m intensity` : null,
+              r.intensityMins > 0 ? `🔥 ${r.intensityMins >= 60 ? formatDuration(r.intensityMins) : `${r.intensityMins}m`} intensity` : null,
             ].filter(Boolean).join(' · ')}
           </p>
         )}
@@ -106,7 +106,7 @@ export default function RecapCard({ activities, plans, weekStartDay, todayISO }:
             {[
               r.maxHr ? `❤️ ${r.maxHr} bpm` : null,
               r.bestPace ? `⚡ ${formatPaceMinKm(r.bestPace)}` : null,
-              r.intensityMins > 0 ? `🔥 ${r.intensityMins}m intensity` : null,
+              r.intensityMins > 0 ? `🔥 ${r.intensityMins >= 60 ? formatDuration(r.intensityMins) : `${r.intensityMins}m`} intensity` : null,
             ].filter(Boolean).join(' · ')}
           </p>
         )}

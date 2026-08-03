@@ -123,7 +123,7 @@ function recapHtml(title: string, range: string, r: Recap, activitiesInRange: Ac
     ${(r.maxHr || r.bestPace || r.intensityMins > 0) ? line('#94A3B8', esc([
       r.maxHr ? `❤️ ${r.maxHr} bpm` : null,
       r.bestPace ? `⚡ ${formatPaceMinKm(r.bestPace)}` : null,
-      r.intensityMins > 0 ? `🔥 ${r.intensityMins}m intensity` : null,
+      r.intensityMins > 0 ? `🔥 ${r.intensityMins >= 60 ? formatDuration(r.intensityMins) : `${r.intensityMins}m`} intensity` : null,
     ].filter(Boolean).join(' · '))) : ''}
     ${r.planned > 0 ? line('#94A3B8', `Plan sessions: <strong style="color:#fff;">${r.done}/${r.planned}</strong> completed`) : ''}
     ${r.pbs.length > 0 ? line('#FACC15', `⭐ ${r.pbs.length} PB${r.pbs.length > 1 ? 's' : ''} hit: ${esc(r.pbs.map(a => a.name).join(', '))}`) : ''}

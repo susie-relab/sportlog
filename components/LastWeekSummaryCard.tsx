@@ -40,7 +40,7 @@ export default function LastWeekSummaryCard({ activities, plans, weekStartDay, t
         <div className="flex flex-col gap-0.5 mb-1">
           {r.maxHr && <p className="text-xs text-[#94A3B8]">❤️ Max HR: {r.maxHr} bpm</p>}
           {r.bestPace && <p className="text-xs text-[#94A3B8]">⚡ Best pace achieved: {formatPaceMinKm(r.bestPace)}</p>}
-          {r.intensityMins > 0 && <p className="text-xs text-[#94A3B8]">🔥 Total intensity mins: {r.intensityMins}</p>}
+          {r.intensityMins > 0 && <p className="text-xs text-[#94A3B8]">🔥 Total intensity: {r.intensityMins >= 60 ? formatDuration(r.intensityMins) : `${r.intensityMins}m`}</p>}
         </div>
       )}
       {r.planned > 0 && <p className="text-xs text-[#94A3B8] mb-1">Plan sessions: {r.done}/{r.planned} completed</p>}
